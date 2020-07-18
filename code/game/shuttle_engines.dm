@@ -34,12 +34,12 @@
 		else
 			state = ENGINE_UNWRENCHED
 
-/obj/structure/shuttle/engine/wrench_act(mob/living/user, obj/item/I)
+/obj/structure/shuttle/engine/wrench_act(mob/living/user, /datum/component/tool/I)
 	..()
 	default_unfasten_wrench(user, I)
 	return TRUE
 
-/obj/structure/shuttle/engine/welder_act(mob/living/user, obj/item/I)
+/obj/structure/shuttle/engine/welder_act(mob/living/user, /datum/component/tool/I)
 	. = ..()
 	switch(state)
 		if(ENGINE_UNWRENCHED)

@@ -442,7 +442,7 @@
 					var/make_new_component = TRUE
 					for(var/i in GetComponents(new_type))
 						var/datum/component/C = i
-						if(C.CheckDupeComponent(arglist(arguments)))
+						if(C.CheckDupeComponent(arglist(arguments))) 
 							make_new_component = FALSE
 							QDEL_NULL(new_comp)
 							break
