@@ -3,6 +3,8 @@ PROCESSING_SUBSYSTEM_DEF(radiation)
 	flags = SS_NO_INIT | SS_BACKGROUND
 
 	var/list/warned_atoms = list()
+	/// This is used 
+	var/list/affected_turfs = list()
 
 /datum/controller/subsystem/processing/radiation/proc/warn(datum/component/radioactive/contamination)
 	if(!contamination || QDELETED(contamination))

@@ -1,3 +1,65 @@
+
+
+/// Returns true or false to allow the mover to move through src
+/atom/proc/CanAllowThrough(atom/movable/mover, turf/target)
+
+
+/obj/effect/gamma_ray
+	name = "gamma ray"
+	icon = 'icons/obj/projectiles.dmi' // used for testing right now
+	icon_state = "ibeam"
+	anchored = TRUE	// atleast to the radation source
+	density = FALSE
+	pass_flags = PASSTABLE | PASSGLASS | PASSGRILLE | PASSCLOSEDTURF | PASSMACHINE | PASSSTRUCTURE | LETPASSTHROW
+	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	movement_type = FLYING
+	resistance_flags = INDESTRUCTIBLE
+	var/range_modifier
+	var/obj/source
+	var/steps_taken
+	var/intensity
+	/// How much contaminated material it still has
+
+/obj/effect/beam/gamma_ray/Crossed(atom/movable/AM as mob|obj)
+	. = ..()
+	var/turf/L = obj.loc
+	if(l && SSradation.affected_turfs[L])
+		++steps_taken
+		if(steps_taken>1)
+			intensity = INVERSE_SQUARE(intensity, max(range_modifier*steps_taken, 1), 1)
+		// first time we entered this turf, collect, and addjust and see if we even bother
+
+		if(intensity<RAD_BACKGROUND_RADIATION)
+			SSradation.affected_turfs[L] = -1 // end of the chain but we put -1 here so we don't have to  worry about it
+			qdel(src) // do we need this?
+		return TRUE
+
+		return // We allready processed this turf
+	if(istype(AM, /obj/effect/beam))
+		return
+	if (isitem(AM))
+		var/obj/item/I = AM
+		if (I.item_flags & ABSTRACT)
+			return
+	master.trigger_beam(AM, get_turf(src))
+
+
+/obj/effect/proc/check_obstructions(list/atoms)
+	var/width = steps
+	var/cmove_dir = move_dir
+	if(cmove_dir == NORTH || cmove_dir == SOUTH)
+		width--
+	width = 1+(2*width)
+
+	for(var/k in 1 to atoms.len)
+		var/atom/thing = atoms[k]
+		if(!thing)
+			continue
+		if (SEND_SIGNAL(thing, COMSIG_ATOM_RAD_WAVE_PASSING, src, width) & COMPONENT_RAD_WAVE_HANDLED)
+			continue
+		if (thing.rad_insulation != RAD_NO_INSULATION)
+			intensity *= (1-((1-thing.rad_insulation)/width))
+
 /datum/radiation_wave
 	/// The thing that spawned this radiation wave
 	var/source
@@ -17,6 +79,8 @@
 	var/list/__dirs
 	/// Whether or not this radiation wave can create contaminated objects
 	var/can_contaminate
+	/// Max range not taking in account walls and stuff
+	var/max_range
 
 /datum/radiation_wave/New(atom/_source, dir, _intensity=0, _range_modifier=RAD_DISTANCE_COEFFICIENT, _can_contaminate=TRUE)
 
@@ -34,8 +98,28 @@
 	range_modifier = _range_modifier
 	can_contaminate = _can_contaminate
 
-	START_PROCESSING(SSradiation, src)
+	// figure a better way than this
+	max_range = 2
+	while(_intensity > RAD_BACKGROUND_RADIATION)
+		_intensity = INVERSE_SQUARE(_intensity, max(range_modifier*max_range, 1), 1)
 
+
+/proc/circlerange(center=usr,radius=3)
+
+	var/turf/centerturf = get_turf(center)
+	var/list/turfs = new/list()
+	var/rsq = radius * (radius+0.5)
+
+	for(var/atom/T in range(radius, centerturf))
+		var/dx = T.x - centerturf.x
+		var/dy = T.y - centerturf.y
+		if(dx*dx + dy*dy <= rsq)
+			turfs += T
+
+	//turfs += centerturf
+	return turfs
+	START_PROCESSING(SSradiation, src)
+circlular_range
 /datum/radiation_wave/Destroy()
 	. = QDEL_HINT_IWILLGC
 	STOP_PROCESSING(SSradiation, src)

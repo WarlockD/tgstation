@@ -4,7 +4,7 @@
 	name = "banana"
 	damage = 0
 	movement_type = FLYING | UNSTOPPABLE
-	nodamage = TRUE
+	nodamage = TRUE 
 	hitsound = 'sound/items/bikehorn.ogg'
 	icon = 'icons/obj/hydroponics/harvest.dmi'
 	icon_state = "banana"
