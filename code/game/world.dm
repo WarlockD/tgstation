@@ -71,7 +71,7 @@ GLOBAL_VAR(restart_counter)
 	if(fexists(RESTART_COUNTER_PATH))
 		GLOB.restart_counter = text2num(trim(file2text(RESTART_COUNTER_PATH)))
 		fdel(RESTART_COUNTER_PATH)
-
+	params[NO_INIT_PARAMETER]= NO_INIT_PARAMETER
 	if(NO_INIT_PARAMETER in params)
 		return
 
