@@ -2,6 +2,92 @@
 // POWERNET DATUM
 // each contiguous network of cables & nodes
 /////////////////////////////////////
+
+/datum/graph
+	var/list/vertices  = list()
+	var/list/edges = list()
+	/// Node Types, these types are included in searching for connection
+	var/len = 0
+
+/datum/graph/New()
+
+/datum/graph/Destroy()
+	vertex = null
+	edges = null
+	return ..()
+
+/// Running this dosn't mean all the graph components are connected
+/// It just merges all the nodes and vertices
+/datum/graph/proc/merge(datum/graph/G)
+	vertices.Add(G.vertex)
+	edges.Add(G.edges)
+	len = vertices.len + edges.len
+	for(var/datum/component/vertex/T in G.vertices)
+		T.graph = src
+	for(var/datum/component/edge/T in G.edges)
+		T.graph = src
+	qdel(G)
+	return src
+
+/datum/graph/proc/connect_vertex(datum/component/vertex/A, datum/component/vertex/B)
+	if(!vertices[A])
+		vertices[A] = list(B)
+	else
+		vertices[A]:Add(B)
+
+	if(!vertices[B])
+		vertices[B] = list(A)
+	else
+		vertices[B]:Add(A)
+
+	if(A.graph.len > B.graph.len)
+		B.graph = A.graph.merge(B)
+	else
+		A.graph = B.graph.merge(A)
+	len = vertices.len + edges.len
+
+/datum/graph/proc/disconnect_vertex(datum/component/vertex/A, datum/component/vertex/B)
+	ASSERT(A.net == B.net)
+	if(vertices[A])
+		vertices[A]:Remove(B)
+	if(vertices[B])
+		vertices[B]:Remove(A)
+	len = vertices.len + edges.len
+
+/datum/graph/proc/connect_edge(datum/component/vertex/A, datum/component/edge/B)
+	if(!vertices[A])
+		vertices[A] = list(B)
+	else
+		vertices[A].Add(B)
+	edges[B] = A
+
+/datum/graph/proc/disconnect_edge(datum/component/vertex/A, datum/component/edge/B)
+	if(vertices[A])
+		vertices[A]:Remove(B)
+	edges[B] = null
+	edges.Remove(B)
+
+/datum/graph/proc/get_neighbors(datum/component/vertex/A)
+	if(!vertices[A])
+		vertices[A] = list()
+	return vertices[A]
+
+/datum/component/vertex
+	var/list/edges = list()
+	var/list/vertex_type = null
+	var/list/edge_type = null
+	var/graph = null
+
+/datum/component/graph/Destroy()
+	//Go away references, you suck!
+	for(var/obj/structure/cable/C in cables)
+		cables -= C
+		C.powernet = null
+	for(var/obj/machinery/power/M in nodes)
+		nodes -= M
+		M.powernet = null
+
+
 /datum/powernet
 	var/number					// unique id
 	var/list/cables = list()	// all cables & junctions
