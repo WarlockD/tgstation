@@ -11,11 +11,12 @@
 	icon = 'icons/obj/power.dmi'
 	anchored = TRUE
 	obj_flags = CAN_BE_HIT | ON_BLUEPRINTS
-	var/datum/powernet/powernet = null
+	var/datum/graph/powernet/powernet = null
 	use_power = NO_POWER_USE
 	idle_power_usage = 0
 	active_power_usage = 0
 	var/machinery_layer = MACHINERY_LAYER_1 //cable layer to which the machine is connected
+	var/power_use_type = POWER_CONSUMER
 
 /obj/machinery/power/Destroy()
 	disconnect_from_network()
@@ -223,7 +224,7 @@
 //////////////////////////////////////////
 
 ///remove the old powernet and replace it with a new one throughout the network.
-/proc/propagate_network(obj/structure/cable/C, datum/powernet/PN, skip_assigned_powernets = FALSE)
+/proc/propagate_network(obj/structure/cable/C, datum/graph/powernet/PN, skip_assigned_powernets = FALSE)
 	var/list/found_machines = list()
 	var/list/cables = list()
 	var/index = 1
@@ -252,7 +253,7 @@
 
 
 //Merge two powernets, the bigger (in cable length term) absorbing the other
-/proc/merge_powernets(datum/powernet/net1, datum/powernet/net2)
+/proc/merge_powernets(datum/graph/powernet/net1, datum/graph/powernet/net2)
 	if(!net1 || !net2) //if one of the powernet doesn't exist, return
 		return
 
@@ -285,7 +286,7 @@
 		var/obj/structure/cable/Cable = power_source
 		power_source = Cable.powernet
 
-	var/datum/powernet/PN
+	var/datum/graph/powernet/PN
 	var/obj/item/stock_parts/cell/cell
 
 	if (istype(power_source, /datum/powernet))
@@ -328,7 +329,7 @@
 	if (!powernet_info)
 		return FALSE
 
-	var/datum/powernet/PN = powernet_info["powernet"]
+	var/datum/graph/powernet/PN = powernet_info["powernet"]
 	var/obj/item/stock_parts/cell/cell = powernet_info["cell"]
 
 	var/PN_damage = 0

@@ -163,7 +163,7 @@ They *could* go in their appropriate files, but this is supposed to be modular
 
 	. = 0
 
-	var/datum/powernet/PN = powernet
+	var/datum/graph/powernet/PN = powernet
 	while(G.candrain && !maxcapacity && src)
 		drain = (round((rand(G.mindrain, G.maxdrain))/2))
 		var/drained = 0

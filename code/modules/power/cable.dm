@@ -24,7 +24,7 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 	var/node = FALSE //used for sprites display
 	var/cable_layer = CABLE_LAYER_2			//bitflag
 	var/machinery_layer = MACHINERY_LAYER_1 //bitflag
-	var/datum/powernet/powernet
+	var/datum/graph/powernet/powernet
 
 /obj/structure/cable/layer1
 	color = "red"
@@ -254,7 +254,7 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 
 		if(C.linked_dirs & inverse_dir) //we've got a matching cable in the neighbor turf
 			if(!C.powernet) //if the matching cable somehow got no powernet, make him one (should not happen for cables)
-				var/datum/powernet/newPN = new()
+				var/datum/graph/powernet/newPN = new()
 				newPN.add_cable(C)
 
 			if(powernet) //if we already have a powernet, then merge the two powernets
@@ -268,7 +268,7 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 	node = FALSE
 
 	if(!powernet) //if we somehow have no powernet, make one (should not happen for cables)
-		var/datum/powernet/newPN = new()
+		var/datum/graph/powernet/newPN = new()
 		newPN.add_cable(src)
 
 	//first let's add turf cables to our powernet
@@ -329,7 +329,7 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 
 /obj/structure/cable/proc/auto_propagate_cut_cable(obj/O)
 	if(O && !QDELETED(O))
-		var/datum/powernet/newPN = new()// creates a new powernet...
+		var/datum/graph/powernet/newPN = new()// creates a new powernet...
 		propagate_network(O, newPN)//... and propagates it to the other side of the cable
 
 //Makes a new network for the cable and propgates it.
@@ -337,7 +337,7 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 /obj/structure/cable/proc/propagate_if_no_network()
 	if(powernet)
 		return
-	var/datum/powernet/newPN = new()
+	var/datum/graph/powernet/newPN = new()
 	propagate_network(src, newPN, TRUE)
 
 // cut the cable's powernet at this cable and updates the powergrid
@@ -560,7 +560,7 @@ GLOBAL_LIST(cable_radial_layer_list)
 	var/obj/structure/cable/C = new target_type(T)
 
 	//create a new powernet with the cable, if needed it will be merged later
-	var/datum/powernet/PN = new()
+	var/datum/graph/powernet/PN = new()
 	PN.add_cable(C)
 
 	for(var/dir_check in GLOB.cardinals)

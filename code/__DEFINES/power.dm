@@ -3,7 +3,13 @@
 #define CABLE_LAYER_3		4
 
 #define MACHINERY_LAYER_1	1
+#define MACHINERY_LAYER_2	2
+#define MACHINERY_LAYER_3	3
 
 #define SOLAR_TRACK_OFF     0
 #define SOLAR_TRACK_TIMED   1
 #define SOLAR_TRACK_AUTO    2
+
+#define POWER_CONSUMER 		1
+#define POWER_PRODUCER		2
+
