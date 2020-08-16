@@ -25,6 +25,7 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 	var/cable_layer = CABLE_LAYER_2			//bitflag
 	var/machinery_layer = MACHINERY_LAYER_1 //bitflag
 	var/datum/powernet/powernet
+	var/list/neighbors = list()
 
 /obj/structure/cable/layer1
 	color = "red"
@@ -32,6 +33,13 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 	machinery_layer = null
 	layer = WIRE_LAYER - 0.01
 	icon_state = "l1-1-2-4-8-node"
+
+/obj/structure/cable/layer2
+	color = "yellow"
+	cable_layer = CABLE_LAYER_3
+	machinery_layer = MACHINERY_LAYER_1
+	layer = WIRE_LAYER
+	icon_state = "l2-1-2-4-8-node"
 
 /obj/structure/cable/layer3
 	color = "blue"
@@ -42,8 +50,7 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 
 /obj/structure/cable/Initialize(mapload)
 	. = ..()
-
-	GLOB.cable_list += src //add it to the global cable list
+	GLOB.cable_list[src] = neighbors //add it to the global cable list
 	Connect_cable()
 	AddElement(/datum/element/undertile, TRAIT_T_RAY_VISIBLE)
 
@@ -85,6 +92,8 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 		var/inverse = turn(check_dir, 180)
 		for(var/obj/structure/cable/C in TB)
 			if(C.cable_layer & cable_layer)
+				neighbors[C] = check_dir
+				C.neighbors[src] = inverse
 				linked_dirs |= check_dir
 				C.linked_dirs |= inverse
 				C.update_icon()
@@ -93,21 +102,24 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 
 ///Clear the linked indicator bitflags
 /obj/structure/cable/proc/Disconnect_cable()
-	for(var/check_dir in GLOB.cardinals)
-		var/inverse = turn(check_dir, 180)
-		if(linked_dirs & check_dir)
-			var/TB = get_step(loc, check_dir)
-			for(var/obj/structure/cable/C in TB)
-				if(cable_layer & C.cable_layer)
-					C.linked_dirs &= ~inverse
-					C.update_icon()
+	for(var/obj/structure/cable/C in neighbors)
+		C.linked_dirs &= ~get_dir(C, src) // in case we rotated like in a shuttle
+		C.neighbors.Remove(src)
+		C.update_icon()
+	neighbors.Cut()
+
+
+
+
 
 /obj/structure/cable/Destroy()					// called when a cable is deleted
 	Disconnect_cable()
 
 	if(powernet)
 		cut_cable_from_powernet()				// update the powernets
-	GLOB.cable_list -= src							//remove it from global cable list
+
+	GLOB.cable_list.Remove(src)
+	neighbors = null
 
 	return ..()									// then go ahead and delete the cable
 
@@ -125,22 +137,26 @@ GLOBAL_LIST_INIT(wire_node_generating_types, typecacheof(list(/obj/structure/gri
 		icon_state = "l[cable_layer]-noconnection"
 	else
 		var/list/dir_icon_list = list()
-		for(var/check_dir in GLOB.cardinals)
-			if(linked_dirs & check_dir)
-				dir_icon_list += "[check_dir]"
-		var/dir_string = dir_icon_list.Join("-")
-		if(dir_icon_list.len > 1)
-			for(var/obj/O in loc)
-				if(GLOB.wire_node_generating_types[O.type])
-					dir_string = "[dir_string]-node"
+		dir_icon_list += "l[cable_layer]"
+		if(linked_dirs & NORTH)
+			dir_icon_list += "[NORTH]"
+		if(linked_dirs & SOUTH)
+			dir_icon_list += "[SOUTH]"
+		if(linked_dirs & EAST)
+			dir_icon_list += "[EAST]"
+		if(linked_dirs & WEST)
+			dir_icon_list += "[WEST]"
+
+		for(var/obj/O in loc)
+			if(GLOB.wire_node_generating_types[O.type])
+				dir_icon_list += "node"
+				break
+			else if(istype(O, /obj/machinery/power))
+				var/obj/machinery/power/P = O
+				if(P.should_have_node())
+					dir_icon_list += "node"
 					break
-				else if(istype(O, /obj/machinery/power))
-					var/obj/machinery/power/P = O
-					if(P.should_have_node())
-						dir_string = "[dir_string]-node"
-						break
-		dir_string = "l[cable_layer]-[dir_string]"
-		icon_state = dir_string
+		icon_state = dir_icon_list.Join("-")
 
 
 /obj/structure/cable/proc/handlecable(obj/item/W, mob/user, params)

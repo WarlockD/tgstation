@@ -2,6 +2,16 @@
 // POWERNET DATUM
 // each contiguous network of cables & nodes
 /////////////////////////////////////
+
+/datum/mmatrix
+	var/list/M[][]
+
+/datum/mmatrix/New(row,col)
+	var/list/_M[row][col]
+	M = _M
+
+
+
 /datum/powernet
 	var/number					// unique id
 	var/list/cables = list()	// all cables & junctions
@@ -21,13 +31,13 @@
 /datum/powernet/Destroy()
 	//Go away references, you suck!
 	for(var/obj/structure/cable/C in cables)
-		cables -= C
 		C.powernet = null
 	for(var/obj/machinery/power/M in nodes)
-		nodes -= M
 		M.powernet = null
 
 	SSmachines.powernets -= src
+	cables = null
+	nodes = null
 	return ..()
 
 /datum/powernet/proc/is_empty()
@@ -37,7 +47,7 @@
 //if the powernet is then empty, delete it
 //Warning : this proc DON'T check if the cable exists
 /datum/powernet/proc/remove_cable(obj/structure/cable/C)
-	cables -= C
+	cables.Remove(C)
 	C.powernet = null
 	if(is_empty())//the powernet is now empty...
 		qdel(src)///... delete it
@@ -51,13 +61,13 @@
 		else
 			C.powernet.remove_cable(C) //..remove it
 	C.powernet = src
-	cables +=C
+	cables[C] = C.neighbors
 
 //remove a power machine from the current powernet
 //if the powernet is then empty, delete it
 //Warning : this proc DON'T check if the machine exists
 /datum/powernet/proc/remove_machine(obj/machinery/power/M)
-	nodes -=M
+	nodes.Remove(M)
 	M.powernet = null
 	if(is_empty())//the powernet is now empty...
 		qdel(src)///... delete it
