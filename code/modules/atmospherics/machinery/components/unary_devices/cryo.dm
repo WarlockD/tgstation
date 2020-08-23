@@ -203,6 +203,7 @@
 		return
 	if(mob_occupant.stat == DEAD) // We don't bother with dead people.
 		return
+	mob_occupant.updatehealth() // Sometimes the health isn't updated after meds are applyed
 	if(mob_occupant.get_organic_health() >= mob_occupant.getMaxHealth()) // Don't bother with fully healed people.
 		if(iscarbon(mob_occupant))
 			var/mob/living/carbon/C = mob_occupant
@@ -229,7 +230,7 @@
 	var/datum/gas_mixture/air1 = airs[1]
 
 	if(air1.gases.len)
-		if(mob_occupant.bodytemperature < T0C) // Sleepytime. Why? More cryo magic.
+		if(mob_occupant.bodytemperature <= T0C && mob_occupant.bodytemperature >= BODYTEMP_HEAT_DAMAGE_LIMIT) // Sleepytime. Why? More cryo magic.
 			mob_occupant.Sleeping((mob_occupant.bodytemperature * sleep_factor) * 2000)
 			mob_occupant.Unconscious((mob_occupant.bodytemperature * unconscious_factor) * 2000)
 		if(beaker)
@@ -257,17 +258,17 @@
 
 	if(occupant)
 		var/mob/living/mob_occupant = occupant
-		var/cold_protection = 0
+		var/temperature_protection = 0
 		var/temperature_delta = air1.temperature - mob_occupant.bodytemperature // The only semi-realistic thing here: share temperature between the cell and the occupant.
 
 		if(ishuman(occupant))
 			var/mob/living/carbon/human/H = occupant
-			cold_protection = H.get_cold_protection(air1.temperature)
+			temperature_protection = H.get_insulation_protection(air1.temperature)
 
 		if(abs(temperature_delta) > 1)
 			var/air_heat_capacity = air1.heat_capacity()
 
-			var/heat = ((1 - cold_protection) * 0.1 + conduction_coefficient) * temperature_delta * (air_heat_capacity * heat_capacity / (air_heat_capacity + heat_capacity))
+			var/heat = ((1 - temperature_protection) * 0.1 + conduction_coefficient) * temperature_delta * (air_heat_capacity * heat_capacity / (air_heat_capacity + heat_capacity))
 
 			air1.temperature = clamp(air1.temperature - heat / air_heat_capacity, TCMB, MAX_TEMPERATURE)
 			mob_occupant.adjust_bodytemperature(heat / heat_capacity, TCMB)
@@ -405,9 +406,11 @@
 		data["occupant"]["toxLoss"] = round(mob_occupant.getToxLoss(), 1)
 		data["occupant"]["fireLoss"] = round(mob_occupant.getFireLoss(), 1)
 		data["occupant"]["bodyTemperature"] = round(mob_occupant.bodytemperature, 1)
-		if(mob_occupant.bodytemperature < TCRYO)
+		// pyroxadone Starts at BODYTEMP_HEAT_DAMAGE_LIMIT and best at 460
+		// cryoxadone starts at 0C and gets scaling up
+		if(mob_occupant.bodytemperature < TCRYO || mob_occupant.bodytemperature > 460)
 			data["occupant"]["temperaturestatus"] = "good"
-		else if(mob_occupant.bodytemperature < T0C)
+		else if(mob_occupant.bodytemperature < T0C || mob_occupant.bodytemperature > BODYTEMP_HEAT_DAMAGE_LIMIT)
 			data["occupant"]["temperaturestatus"] = "average"
 		else
 			data["occupant"]["temperaturestatus"] = "bad"
