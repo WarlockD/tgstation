@@ -105,8 +105,8 @@
 	contamination_strength = max(contamination_strength, RAD_BACKGROUND_RADIATION)
 	// It'll never reach 100% chance but the further out it gets the more likely it'll contaminate
 	var/contamination_chance = 100 - (90 / (1 + steps * 0.1))
-	for(var/k in atoms)
-		var/atom/thing = k
+	for(var/k in 1 to atoms.len)
+		var/atom/thing = atoms[k]
 		if(QDELETED(thing))
 			continue
 		thing.rad_act(strength)
