@@ -99,8 +99,10 @@
 
 //We used to use linear regression to approximate the answer, but Mloc realized this was actually faster.
 //And lo and behold, it is, and it's more accurate to boot.
-/proc/cheap_hypotenuse(Ax,Ay,Bx,By)
-	return sqrt(abs(Ax - Bx)**2 + abs(Ay - By)**2) //A squared + B squared = C squared
+// /proc/cheap_hypotenuse(Ax,Ay,Bx,By)
+// 	return sqrt(abs(Ax - Bx)**2 + abs(Ay - By)**2) //A squared + B squared = C squared
+// Just a macro version to save a proc call
+#define CHEAP_HYPOTENUSE(AX,AY,BX,BY) sqrt(abs((AX) - (BX))**2 + abs((AY) - (BY))**2)
 
 /proc/circlerange(center=usr,radius=3)
 

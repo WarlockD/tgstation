@@ -111,7 +111,7 @@
 		teleporting = 1
 		var/turf/from_turf = get_turf(user)
 		var/turf/to_turf = get_turf(location)
-		var/distance = cheap_hypotenuse(from_turf.x, from_turf.y, to_turf.x, to_turf.y)
+		var/distance = CHEAP_HYPOTENUSE(from_turf.x, from_turf.y, to_turf.x, to_turf.y)
 		var/phase_in_ds = distance*2
 
 		if(camera)

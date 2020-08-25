@@ -121,7 +121,7 @@ SUBSYSTEM_DEF(explosions)
 	var/list/wipe_colours = list()
 	for(var/turf/T in spiral_range_turfs(max_range, epicenter))
 		wipe_colours += T
-		var/dist = cheap_hypotenuse(T.x, T.y, x0, y0)
+		var/dist = CHEAP_HYPOTENUSE(T.x, T.y, x0, y0)
 
 		if(newmode == "Yes")
 			var/turf/TT = T
@@ -277,7 +277,7 @@ SUBSYSTEM_DEF(explosions)
 
 	for(var/TI in affected_turfs)
 		var/turf/T = TI
-		var/init_dist = cheap_hypotenuse(T.x, T.y, x0, y0)
+		var/init_dist = CHEAP_HYPOTENUSE(T.x, T.y, x0, y0)
 		var/dist = init_dist
 
 		if(reactionary)
