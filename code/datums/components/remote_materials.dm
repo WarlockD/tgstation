@@ -94,12 +94,12 @@ handles linking back and forth.
 
 /datum/component/remote_materials/proc/OnMultitool(datum/source, mob/user, obj/item/I)
 	SIGNAL_HANDLER
-
-	if(!I.multitool_check_buffer(user, I))
-		return COMPONENT_BLOCK_TOOL_ATTACK
 	var/obj/item/multitool/M = I
-	if (!QDELETED(M.buffer) && istype(M.buffer, /obj/machinery/ore_silo))
-		if (silo == M.buffer)
+	if(I)
+		var/obj/machinery/ore_silo/S = M.buffer_menu(user, null, src, /obj/machinery/ore_silo)
+		if(!S)
+			return COMPONENT_BLOCK_TOOL_ATTACK
+		if (silo == S)
 			to_chat(user, "<span class='warning'>[parent] is already connected to [silo]!</span>")
 			return COMPONENT_BLOCK_TOOL_ATTACK
 		if (silo)
@@ -108,7 +108,7 @@ handles linking back and forth.
 		else if (mat_container)
 			mat_container.retrieve_all()
 			qdel(mat_container)
-		silo = M.buffer
+		silo = S
 		silo.connected += src
 		silo.updateUsrDialog()
 		mat_container = silo.GetComponent(/datum/component/material_container)

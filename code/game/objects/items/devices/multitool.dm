@@ -30,7 +30,7 @@
 	custom_premium_price = 450
 	toolspeed = 1
 	usesound = 'sound/weapons/empty.ogg'
-	var/obj/machinery/buffer // simple machine buffer for device linkage
+	var/buffer = null 		//  buffer for device linkage, made it weak in case it dissapers
 	var/mode = 0
 
 /obj/item/multitool/examine(mob/user)
@@ -40,6 +40,72 @@
 /obj/item/multitool/suicide_act(mob/living/carbon/user)
 	user.visible_message("<span class='suicide'>[user] puts the [src] to [user.p_their()] chest. It looks like [user.p_theyre()] trying to pulse [user.p_their()] heart off!</span>")
 	return OXYLOSS//theres a reason it wasn't recommended by doctors
+
+///Check if the multitool has an item in it's data buffer.
+/obj/item/multitool/proc/check_buffer(mob/living/carbon/user = null)
+	if(!buffer)
+		if(user)
+			to_chat(user, "<span class='warning'>The multitool has no data buffer!</span>")
+		return null
+	return buffer
+
+/obj/item/multitool/proc/clear_buffer()
+	SIGNAL_HANDLER
+	if(buffer)
+		UnregisterSignal(buffer, COMSIG_PARENT_QDELETING)
+		buffer = null
+
+/obj/item/multitool/proc/save_buffer(datum/thing)
+	clear_buffer()
+	if(!QDELETED(thing))
+		buffer = thing
+		RegisterSignal(buffer, COMSIG_PARENT_QDELETING, .proc/clear_buffer)
+
+/obj/item/multitool/Destroy()
+	clear_buffer()
+	return ..()
+
+/obj/item/multitool/proc/check_menu(mob/living/user)
+	if(!istype(user))
+		return FALSE
+	if(user.incapacitated() || !user.Adjacent(src))
+		return FALSE
+	return TRUE
+
+/obj/item/multitool/proc/test_buffer(expected_path)
+	if(!buffer || !expected_path)
+		return
+	if(ispath(expected_path))
+		return istype(buffer,expected_path)
+	else if(islist(expected_path))
+		var/list/L = expected_path
+		for(var/i in 1 to L.len)
+			if(ispath(L[i]))
+				return TRUE
+
+// So, lets make this universal and simple.  If something wants to copy settings from one to another
+// it calls this.  The users says "copy" or "link"  That is it will either copy the current thing to the buffer
+// or if its the same type as expect_path, return the buffer
+/obj/item/multitool/proc/buffer_menu(mob/user, datum/thing, obj/target, expected_path)
+	var/list/choices = list()
+	if(thing)
+		choices["Copy"] = image(icon = 'icons/mob/screen_pai.dmi', icon_state = "pda_recieve")
+	if(target && test_buffer(expected_path))
+		choices["Send"] = image(icon= 'icons/mob/screen_pai.dmi', icon_state = "pda_send")
+	if(!choices.len) LAZYACCESS
+		return
+	var/choice = choices.len == 1 ? choicesshow_radial_menu(user, src, choices, custom_check = CALLBACK(src, .proc/check_menu, user), require_near = TRUE, tooltips = TRUE)
+	if(!check_menu(user))
+		return
+	switch(choice)
+		if("Copy")
+			save_buffer(thing)
+			to_chat(user, "<span class='notice'>'[thing]' was saved to the multitool buffer</span>")
+		if("Send")
+			// we already know that the buffer contains the thing the device wants, so just send it
+			to_chat(user, "<span class='notice'>Linking '[thing]' to [target]</span>")
+			return buffer
+
 
 
 // Syndicate device disguised as a multitool; it will turn red when an AI camera is nearby.
