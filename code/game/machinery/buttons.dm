@@ -46,7 +46,7 @@
 /obj/machinery/button/update_icon_state()
 	if(panel_open)
 		icon_state = "button-open"
-	else if(machine_stat & (NOPOWER|BROKEN))
+	else if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		icon_state = "[skin]-p"
 	else
 		icon_state = skin
@@ -160,7 +160,7 @@
 			to_chat(user, "<span class='notice'>You change the button frame's front panel.</span>")
 		return
 
-	if((machine_stat & (NOPOWER|BROKEN)))
+	if((machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)))
 		return
 
 	if(device && device.next_activate > world.time)

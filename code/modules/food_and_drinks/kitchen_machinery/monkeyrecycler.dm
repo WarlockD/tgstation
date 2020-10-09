@@ -54,7 +54,7 @@ GLOBAL_LIST_EMPTY(monkey_recyclers)
 	if(default_deconstruction_crowbar(O))
 		return
 
-	if(machine_stat) //NOPOWER etc
+	if(machine_stat) //MACHINE_STAT_NOPOWER etc
 		return
 	else
 		return ..()

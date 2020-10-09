@@ -251,7 +251,7 @@
 					var/free = R.maximum_volume - R.total_volume
 					var/actual = min(amount, (cell.charge * powerefficiency)*10, free)
 
-					if(!cell.use(actual / powerefficiency))
+					if(cell.use(actual / powerefficiency) > 0)
 						say("Not enough energy to complete operation!")
 						return
 					R.add_reagent(reagent, actual)
@@ -289,7 +289,7 @@
 					var/free = R.maximum_volume - R.total_volume
 					var/actual = min(dispense_amount, (cell.charge * powerefficiency)*10, free)
 					if(actual)
-						if(!cell.use(actual / powerefficiency))
+						if(cell.use(actual / powerefficiency) > 0)
 							say("Not enough energy to complete operation!")
 							return
 						R.add_reagent(reagent, actual)

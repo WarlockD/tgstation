@@ -42,7 +42,7 @@
 	. = ..()
 	if (dirty)
 		. +="grbloody"
-	if(machine_stat & (NOPOWER|BROKEN))
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	if (!occupant)
 		. += "grjam"
@@ -64,7 +64,7 @@
 	. = ..()
 	if(.)
 		return
-	if(machine_stat & (NOPOWER|BROKEN))
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	if(operating)
 		to_chat(user, "<span class='danger'>It's locked and running.</span>")

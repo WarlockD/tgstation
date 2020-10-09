@@ -9,7 +9,7 @@
 	var/list/colorlist = list()
 
 /obj/machinery/pdapainter/update_icon_state()
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		icon_state = "[initial(icon_state)]-broken"
 		return
 
@@ -21,7 +21,7 @@
 /obj/machinery/pdapainter/update_overlays()
 	. = ..()
 
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		return
 
 	if(storedpda)
@@ -65,7 +65,7 @@
 		update_icon()
 
 /obj/machinery/pdapainter/attackby(obj/item/O, mob/user, params)
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		if(O.tool_behaviour == TOOL_WELDER && user.a_intent != INTENT_HARM)
 			if(!O.tool_start_check(user, amount=0))
 				return
@@ -73,10 +73,10 @@
 							"<span class='notice'>You begin repairing [src]...</span>", \
 							"<span class='hear'>You hear welding.</span>")
 			if(O.use_tool(src, user, 40, volume=50))
-				if(!(machine_stat & BROKEN))
+				if(!(machine_stat & MACHINE_STAT_BROKEN))
 					return
 				to_chat(user, "<span class='notice'>You repair [src].</span>")
-				set_machine_stat(machine_stat & ~BROKEN)
+				set_machine_stat(machine_stat & ~MACHINE_STAT_BROKEN)
 				obj_integrity = max_integrity
 				update_icon()
 
@@ -109,7 +109,7 @@
 		return
 
 	if(storedpda)
-		if(machine_stat & BROKEN)	//otherwise the PDA is stuck until repaired
+		if(machine_stat & MACHINE_STAT_BROKEN)	//otherwise the PDA is stuck until repaired
 			ejectpda()
 			to_chat(user, "<span class='info'>You manage to eject the loaded PDA.</span>")
 		else

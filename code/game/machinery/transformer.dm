@@ -35,7 +35,7 @@
 	. = ..()
 
 /obj/machinery/transformer/update_icon_state()
-	if(machine_stat & (BROKEN|NOPOWER) || cooldown == 1)
+	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER) || cooldown == 1)
 		icon_state = "separator-AO0"
 	else
 		icon_state = initial(icon_state)
@@ -68,7 +68,7 @@
 		update_icon()
 
 /obj/machinery/transformer/proc/do_transform(mob/living/carbon/human/H)
-	if(machine_stat & (BROKEN|NOPOWER))
+	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER))
 		return
 	if(cooldown == 1)
 		return

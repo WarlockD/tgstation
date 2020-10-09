@@ -8,9 +8,9 @@ Class Variables:
    use_power (num)
       current state of auto power use.
       Possible Values:
-         NO_POWER_USE -- no auto power use
-         IDLE_POWER_USE -- machine is using power at its idle power level
-         ACTIVE_POWER_USE -- machine is using power at its active power level
+		NO_POWER_USE -- no auto power use
+		IDLE_POWER_USE -- machine is using power at its idle power level
+		ACTIVE_POWER_USE -- machine is using power at its active power level
 
    active_power_usage (num)
       Value for the amount of power to use when in active power mode
@@ -21,20 +21,21 @@ Class Variables:
    power_channel (num)
       What channel to draw from when drawing power for power mode
       Possible Values:
-         AREA_USAGE_EQUIP:0 -- Equipment Channel
-         AREA_USAGE_LIGHT:2 -- Lighting Channel
-         AREA_USAGE_ENVIRON:3 -- Environment Channel
+		AREA_USAGE_EQUIP:0 -- Equipment Channel
+		AREA_USAGE_LIGHT:2 -- Lighting Channel
+		AREA_USAGE_ENVIRON:3 -- Environment Channel
 
    component_parts (list)
       A list of component parts of machine used by frame based machines.
 
-   stat (bitflag)
+   machine_stat (bitflag)
       Machine status bit flags.
       Possible bit flags:
-         BROKEN -- Machine is broken
-         NOPOWER -- No power is being supplied to machine.
-         MAINT -- machine is currently under going maintenance.
-         EMPED -- temporary broken by EMP pulse
+		MACHINE_STAT_BROKEN -- Machine is broken
+		MACHINE_STAT_NOPOWER -- No power is being supplied to machine.
+		MACHINE_STAT_MAINT -- machine is currently under going maintenance.
+		MACHINE_STAT_EMPED -- temporary broken by EMP pulse
+		MACHINE_STAT_OFF	-- switched off manualy
 
 Class Procs:
    Initialize()                     'game/machinery/machine.dm'
@@ -96,19 +97,16 @@ Class Procs:
 	interaction_flags_atom = INTERACT_ATOM_ATTACK_HAND | INTERACT_ATOM_UI_INTERACT
 
 	var/machine_stat = NONE
-	var/use_power = IDLE_POWER_USE
-		//0 = dont run the auto
-		//1 = run auto, use idle
-		//2 = run auto, use active
 	var/idle_power_usage = 0
 	var/active_power_usage = 0
-	var/power_channel = AREA_USAGE_EQUIP
-		//AREA_USAGE_EQUIP,AREA_USAGE_ENVIRON or AREA_USAGE_LIGHT
-	///A combination of factors such as having power, not being broken and so on. Boolean.
-	var/is_operational = TRUE
-	var/wire_compatible = FALSE
+	var/cell_charging_power_usage = 10 	// extra power used to charge the batterys
+	var/power_channel = AREA_USAGE_EQUIP //AREA_USAGE_EQUIP,AREA_USAGE_ENVIRON or AREA_USAGE_LIGHT
+	var/machine_power_setting = MACHINE_SETTING_USE_APC
+	var/chargeEfficiency = 1
+	var/cell = null 		// If we use a battery its put here.  IT can be a list, in the case of a SEMS
 
 	var/list/component_parts = null //list of all the parts used to build it, if made from certain kinds of frames.
+
 	var/panel_open = FALSE
 	var/state_open = FALSE
 	var/critical_machine = FALSE //If this machine is critical to station operation and should have the area be excempted from power failures.
@@ -178,23 +176,82 @@ Class Procs:
 /obj/machinery/proc/process_atmos()//If you dont use process why are you here
 	return PROCESS_KILL
 
+/// Returns total charge in all cells
+/obj/machinery/proc/_cell_total_charge()
+	var/total = 0
+	var/obj/item/stock_parts/cell/C = cell
+	if(C) // normal use
+		total = C.charge
+	else
+		var/list/L = cell
+		if(L)
+			for(var/i in 1 to L.len)
+				C = L[i]
+				total += C.charge
+	return total
+
+/// Uses the cell or cells in the machine.  Returns amount of charge left, returns < 0 if drained
+/obj/machinery/proc/_use_cell(amount)
+	var/total_power = 0
+	var/obj/item/stock_parts/cell/C = cell
+	if(C) // normal use
+		total_power = C.use(amount)
+	else if(islist(cell))
+		var/list/L = cell
+		var/empty_cells = 0
+		var/split_amount = 0
+		while(empty_cells != L.len && amount > 0.1) // hate float errors, though we shouldn't run into those here
+			empty_cells = 0
+			total_power = 0
+			// if your discharging battery's in parallel the power gets split
+			// this simulates that
+			for(var/i in 1 to L.len)
+				C = L[i]
+				split_amount = amount / (L.len - empty_cells)
+				var/excess = C.use(split_amount)
+				amount -= split_amount
+				if(excess > 0)
+					total_power += excess
+					continue // battery still has charge so don't need to do more
+				empty_cells++ // battery is empty
+				amount += excess // we had some charge unused so use it
+	return total_power
+
+/// Charges the cell in the machine, returns excess power if overcharged
+/obj/machinery/proc/_charge_cell(amount)
+	var/excess_power  = 0
+	var/obj/item/stock_parts/cell/C = cell
+	if(C) // normal use
+		excess_power = C.give(amount)
+	else if(islist(cell))
+		var/list/L = cell
+		var/empty_cells = 0
+		var/split_amount = 0
+		while(empty_cells != L.len && amount > 0.1) // hate float errors, though we shouldn't run into those here
+			empty_cells = 0
+			excess_power = 0
+			// if your discharging battery's in parallel the power gets split
+			// this simulates that
+			for(var/i in 1 to L.len)
+				C = L[i]
+				split_amount = amount / (L.len - empty_cells)
+				var/excess = C.give(split_amount)
+				amount -= split_amount - excess
+				if(excess == 0)
+					// We used all the power but we can still go farther on this battery
+					continue
+				empty_cells++ // battery is empty
+				excess_power += excess
+
+	return 	excess_power
 
 ///Called when we want to change the value of the machine_stat variable. Holds bitflags.
 /obj/machinery/proc/set_machine_stat(new_value)
 	if(new_value == machine_stat)
 		return
-	. = machine_stat
+	var/old_value = machine_stat // running conditions...live with it
+	SEND_SIGNAL(src, COMSIG_MACHINERY_MACHINE_STAT_CHANGE, old_value, new_value)
 	machine_stat = new_value
-	on_set_machine_stat(.)
-
-
-///Called when the value of `machine_stat` changes, so we can react to it.
-/obj/machinery/proc/on_set_machine_stat(old_value)
-	if(old_value & (NOPOWER|BROKEN|MAINT))
-		if(!(machine_stat & (NOPOWER|BROKEN|MAINT))) //From off to on.
-			set_is_operational(TRUE)
-	else if(machine_stat & (NOPOWER|BROKEN|MAINT)) //From on to off.
-		set_is_operational(FALSE)
 
 
 /obj/machinery/emp_act(severity)
@@ -244,22 +301,26 @@ Class Procs:
   * Arguments:
   * * subset - If this is not null, only atoms that are also contained within the subset list will be dropped.
   */
-/obj/machinery/proc/dump_inventory_contents(list/subset = null)
+/obj/machinery/proc/dump_inventory_contents(list/subset = list())
+	SHOULD_CALL_PARENT(1)
 	var/turf/this_turf = get_turf(src)
-	for(var/atom/movable/movable_atom in contents)
-		if(subset && !(movable_atom in subset))
-			continue
+	if(!MACHINE_SETTING_ISSET(MACHINE_SETTING_NO_DROP_CONTENTS))
+		for(var/atom/movable/movable_atom in contents & subset)
+			movable_atom.forceMove(this_turf)
+			if(isliving(movable_atom))
+				var/mob/living/living_mob = movable_atom
+				living_mob.update_mobility()
+			if(occupant == movable_atom)
+				occupant = null
 
-		if(movable_atom in component_parts)
-			continue
+	if(!MACHINE_SETTING_ISSET(MACHINE_SETTING_NO_DROP_COMPONENTS))
+		for(var/atom/movable/movable_atom in component_parts & subset)
+			movable_atom.forceMove(this_turf)
+			component_parts.Remove(movable_atom)
 
-		movable_atom.forceMove(this_turf)
-		if(isliving(movable_atom))
-			var/mob/living/living_mob = movable_atom
-			living_mob.update_mobility()
-
-		if(occupant == movable_atom)
-			occupant = null
+	if(!MACHINE_SETTING_ISSET(MACHINE_SETTING_NO_DROP_CIRCUIT))
+		circuit.forceMove(this_turf)
+		circuit = null
 
 /**
  * Puts passed object in to user's hand
@@ -303,6 +364,89 @@ Class Procs:
 	updateUsrDialog()
 	update_icon()
 
+// moved from power.dm...why it was there no one knows
+
+// returns true if the area has power on given channel (or doesn't require power).
+// defaults to power_channel
+/obj/machinery/proc/powered(chan = -1) // defaults to power_channel
+	if(!loc)
+		return FALSE
+	if(!MACHINE_USES_POWER(src))
+		return TRUE
+	// TODO: move power use of wire from power to here and
+	// make power devices devices that send power?  Or just put them
+	// all in machines humm
+	//if(MACHINE_SETTING_ISSET(MACHINE_SETTING_WIRE))
+
+	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_APC))
+		var/area/A = get_area(src)		// make sure it's in an area
+		if(A)
+			if(chan == -1)
+				chan = power_channel
+			if(A.powered(chan))	// return power status of the area
+				return TRUE
+
+	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_CELL))
+		if(cell)
+			return _cell_total_charge() > active_power_usage // we just check if we got battery's, NOT if they are charged
+
+
+// increment the power usage stats for an area
+/obj/machinery/proc/use_power(amount, chan = -1) // defaults to power_channel
+	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_APC))
+		var/area/A = get_area(src)		// make sure it's in an area
+		if(!A)
+			return
+		if(chan == -1)
+			chan = power_channel
+		A.use_power(amount, chan)
+		if(cell && MACHINE_SETTING_ISSET(MACHINE_SETTING_CHARGE_CELL))
+			var/excess = _charge_cell(cell_charging_power_usage)
+			excess = cell_charging_power_usage - excess
+			if(excess > 0) // if we can charge then use the power
+				A.use_power(excess, chan)
+
+	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_CELL))
+
+// Turns the physical power switch on or off and sends the correct signal
+/obj/machinery/proc/set_power_switch(on)
+	if(on && MACHINE_STAT_ISSET(MACHINE_STAT_OFF))
+		if(!MACHINE_STAT_ISSET(MACHINE_STAT_NOPOWER))
+			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_RESTORED)
+		set_machine_stat(machine_stat & ~MACHINE_STAT_OFF)
+		. = TRUE
+	else if(!on && !MACHINE_STAT_ISSET(MACHINE_STAT_OFF))
+		SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_LOST)
+		set_machine_stat(machine_stat | MACHINE_STAT_OFF)
+		. = TRUE
+	if(.)
+		update_icon()
+/**
+  * Called whenever the power settings of the containing area change
+  *
+  * by default, check equipment channel & set flag, can override if needed
+  *
+  * Returns TRUE if the MACHINE_STAT_NOPOWER flag was toggled
+  */
+/obj/machinery/proc/power_change()
+	SIGNAL_HANDLER
+	SHOULD_CALL_PARENT(TRUE)
+
+	if(MACHINE_STAT_ISSET(MACHINE_STAT_BROKEN|MACHINE_STAT_OFF))
+		return
+	if(powered(power_channel))
+		if(MACHINE_STAT_ISSET(MACHINE_STAT_NOPOWER))
+			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_RESTORED)
+			. = TRUE
+		set_machine_stat(machine_stat & ~MACHINE_STAT_NOPOWER)
+	else
+		if(!(MACHINE_STAT_ISSET(MACHINE_STAT_NOPOWER)))
+			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_LOST)
+			. = TRUE
+		set_machine_stat(machine_stat | MACHINE_STAT_NOPOWER)
+	update_icon()
+
+
 /obj/machinery/proc/auto_use_power()
 	if(!powered(power_channel))
 		return FALSE
@@ -313,22 +457,8 @@ Class Procs:
 	return TRUE
 
 
-///Called when we want to change the value of the `is_operational` variable. Boolean.
-/obj/machinery/proc/set_is_operational(new_value)
-	if(new_value == is_operational)
-		return
-	. = is_operational
-	is_operational = new_value
-	on_set_is_operational(.)
-
-
-///Called when the value of `is_operational` changes, so we can react to it.
-/obj/machinery/proc/on_set_is_operational(old_value)
-	return
-
-
 /obj/machinery/can_interact(mob/user)
-	if((machine_stat & (NOPOWER|BROKEN)) && !(interaction_flags_machine & INTERACT_MACHINE_OFFLINE)) // Check if the machine is broken, and if we can still interact with it if so
+	if((machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)) && !(interaction_flags_machine & INTERACT_MACHINE_OFFLINE)) // Check if the machine is broken, and if we can still interact with it if so
 		return FALSE
 
 	var/silicon = issilicon(user)
@@ -467,6 +597,9 @@ Class Procs:
 	RefreshParts()
 
 /obj/machinery/proc/RefreshParts() //Placeholder proc for machines that are built using frames.
+	SHOULD_CALL_PARENT(1)
+	// sanity check here, check if we have any cells or borads and move them to the right vars
+	for(var/thing in src.comp
 	return
 
 /obj/machinery/proc/default_pry_open(obj/item/I)
@@ -505,8 +638,8 @@ Class Procs:
 /obj/machinery/obj_break(damage_flag)
 	SHOULD_CALL_PARENT(TRUE)
 	. = ..()
-	if(!(machine_stat & BROKEN) && !(flags_1 & NODECONSTRUCT_1))
-		set_machine_stat(machine_stat | BROKEN)
+	if(!(machine_stat & MACHINE_STAT_BROKEN) && !(flags_1 & NODECONSTRUCT_1))
+		set_machine_stat(machine_stat | MACHINE_STAT_BROKEN)
 		SEND_SIGNAL(src, COMSIG_MACHINERY_BROKEN, damage_flag)
 		update_icon()
 		return TRUE
@@ -622,7 +755,7 @@ Class Procs:
 							else
 								if(SEND_SIGNAL(W, COMSIG_TRY_STORAGE_TAKE, B, src))
 									component_parts += B
-									B.forceMove(src)
+									B.moveToNullSpace()
 							SEND_SIGNAL(W, COMSIG_TRY_STORAGE_INSERT, A, null, null, TRUE)
 							component_parts -= A
 							to_chat(user, "<span class='notice'>[capitalize(A.name)] replaced with [B.name].</span>")
@@ -645,7 +778,7 @@ Class Procs:
 
 /obj/machinery/examine(mob/user)
 	. = ..()
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		. += "<span class='notice'>It looks broken and non-functional.</span>"
 	if(!(resistance_flags & INDESTRUCTIBLE))
 		if(resistance_flags & ON_FIRE)

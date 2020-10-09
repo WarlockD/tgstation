@@ -81,7 +81,7 @@
 
 /obj/machinery/computer/atmos_alert/update_overlays()
 	. = ..()
-	if(machine_stat & (NOPOWER|BROKEN))
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	if(priority_alarms.len)
 		. += "alert:2"

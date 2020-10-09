@@ -32,7 +32,7 @@
 		. += {"<span class='notice'>\The [src] contains:</span>
 		<span class='notice'>- \A [charging].</span>"}
 
-	if(!(machine_stat & (NOPOWER|BROKEN)))
+	if(!(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)))
 		. += "<span class='notice'>The status display reads:</span>"
 		. += "<span class='notice'>- Recharging <b>[recharge_coeff*10]%</b> cell charge per cycle.</span>"
 		if(charging)
@@ -120,7 +120,7 @@
 		setCharging(null)
 
 /obj/machinery/recharger/process(delta_time)
-	if(machine_stat & (NOPOWER|BROKEN) || !anchored)
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN) || !anchored)
 		return PROCESS_KILL
 
 	using_power = FALSE
@@ -148,7 +148,7 @@
 	. = ..()
 	if (. & EMP_PROTECT_CONTENTS)
 		return
-	if(!(machine_stat & (NOPOWER|BROKEN)) && anchored)
+	if(!(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)) && anchored)
 		if(istype(charging,  /obj/item/gun/energy))
 			var/obj/item/gun/energy/E = charging
 			if(E.cell)
@@ -163,7 +163,7 @@
 	. = ..()
 	SSvis_overlays.remove_vis_overlay(src, managed_vis_overlays)
 	luminosity = 0
-	if(machine_stat & (NOPOWER|BROKEN) || !anchored)
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN) || !anchored)
 		return
 	if(panel_open)
 		SSvis_overlays.add_vis_overlay(src, icon, "recharger-open", layer, plane, dir, alpha)

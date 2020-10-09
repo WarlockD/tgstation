@@ -171,7 +171,7 @@
 	. = ..()
 	if(.)
 		return
-	if(user.stat || machine_stat & (NOPOWER|BROKEN))
+	if(user.stat || machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		to_chat(user, "<span class='warning'>This device is not powered!</span>")
 		return
 

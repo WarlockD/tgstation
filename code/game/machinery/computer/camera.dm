@@ -260,7 +260,7 @@
 
 /obj/machinery/computer/security/telescreen/update_icon_state()
 	icon_state = initial(icon_state)
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		icon_state += "b"
 
 /obj/machinery/computer/security/telescreen/entertainment

@@ -336,12 +336,12 @@
 	air_contents.gases[/datum/gas/nitrogen][MOLES] = (N2STANDARD * maximum_pressure * filled) * air_contents.volume / (R_IDEAL_GAS_EQUATION * air_contents.temperature)
 
 /obj/machinery/portable_atmospherics/canister/update_icon_state()
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		icon_state = "[base_icon_state]-1"
 
 /obj/machinery/portable_atmospherics/canister/update_overlays()
 	. = ..()
-	var/isBroken = machine_stat & BROKEN
+	var/isBroken = machine_stat & MACHINE_STAT_BROKEN
 	///Function is used to actually set the overlays
 	. += "[mode]-[isBroken]"
 	if(isBroken)
@@ -367,7 +367,7 @@
 
 /obj/machinery/portable_atmospherics/canister/deconstruct(disassembled = TRUE)
 	if(!(flags_1 & NODECONSTRUCT_1))
-		if(!(machine_stat & BROKEN))
+		if(!(machine_stat & MACHINE_STAT_BROKEN))
 			canister_break()
 		if(disassembled)
 			switch(mode)
@@ -437,7 +437,7 @@
 
 /obj/machinery/portable_atmospherics/canister/process_atmos(delta_time)
 	..()
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		return PROCESS_KILL
 	if(timing && valve_timer < world.time)
 		valve_open = !valve_open

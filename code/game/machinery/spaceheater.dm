@@ -136,7 +136,7 @@
 
 /obj/machinery/space_heater/emp_act(severity)
 	. = ..()
-	if(machine_stat & (NOPOWER|BROKEN) || . & EMP_PROTECT_CONTENTS)
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN) || . & EMP_PROTECT_CONTENTS)
 		return
 	if(cell)
 		cell.emp_act(severity)

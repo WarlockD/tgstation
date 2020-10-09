@@ -66,7 +66,7 @@
 			var/list/this_pad = list()
 			this_pad["name"] = pad.display_name
 			this_pad["id"] = i
-			if(pad.machine_stat & NOPOWER)
+			if(pad.machine_stat & MACHINE_STAT_NOPOWER)
 				this_pad["inactive"] = TRUE
 			pad_list += list(this_pad)
 		else
@@ -80,7 +80,7 @@
 		data["pad_name"] = current_pad.display_name
 		data["range"] = current_pad.range
 		data["selected_pad"] = current_pad
-		if(QDELETED(current_pad) || (current_pad.machine_stat & NOPOWER))
+		if(QDELETED(current_pad) || (current_pad.machine_stat & MACHINE_STAT_NOPOWER))
 			data["pad_active"] = FALSE
 			return data
 		data["pad_active"] = TRUE

@@ -225,7 +225,7 @@
 	return FALSE
 
 /obj/machinery/lapvend/ui_interact(mob/user, datum/tgui/ui)
-	if(machine_stat & (BROKEN | NOPOWER | MAINT))
+	if(machine_stat & (MACHINE_STAT_BROKEN | MACHINE_STAT_NOPOWER | MACHINE_STAT_MAINT))
 		if(ui)
 			ui.close()
 		return FALSE

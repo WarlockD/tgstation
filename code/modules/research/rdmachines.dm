@@ -29,7 +29,7 @@
 	return ..()
 
 /obj/machinery/rnd/proc/shock(mob/user, prb)
-	if(machine_stat & (BROKEN|NOPOWER))		// unpowered, no shock
+	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER))		// unpowered, no shock
 		return FALSE
 	if(!prob(prb))
 		return FALSE
@@ -69,10 +69,10 @@
 	if(busy)
 		to_chat(user, "<span class='warning'>[src] is busy right now.</span>")
 		return FALSE
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		to_chat(user, "<span class='warning'>[src] is broken.</span>")
 		return FALSE
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		to_chat(user, "<span class='warning'>[src] has no power.</span>")
 		return FALSE
 	if(loaded_item)

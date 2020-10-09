@@ -39,7 +39,7 @@
 
 	You can of course combine these.
 	"SELECT * IN SSmachines.machinery WHERE z == 4"
-	"SELECT * IN SSmachines.machinery WHERE stat & 2" // (2 is NOPOWER, can't use defines from SDQL. Sorry!)
+	"SELECT * IN SSmachines.machinery WHERE stat & 2" // (2 is MACHINE_STAT_NOPOWER, can't use defines from SDQL. Sorry!)
 	"SELECT * IN SSmachines.machinery WHERE stat & 2 && z == 4"
 
 	The possibilities are endless (just don't crash the server, ok?).

@@ -50,7 +50,7 @@
 		. += "<span class='notice'>The status display reads: Recharge power <b>[siunit(recharge_power, "W", 1)]</b>.</span>"
 
 /obj/machinery/mech_bay_recharge_port/process(delta_time)
-	if(machine_stat & NOPOWER || !recharge_console)
+	if(machine_stat & MACHINE_STAT_NOPOWER || !recharge_console)
 		return
 	if(!recharging_mech)
 		recharging_mech = locate(/obj/vehicle/sealed/mecha) in recharging_turf
@@ -138,7 +138,7 @@
 
 /obj/machinery/computer/mech_bay_power_console/update_overlays()
 	. = ..()
-	if(!recharge_port || !recharge_port.recharging_mech || !recharge_port.recharging_mech.cell || !(recharge_port.recharging_mech.cell.charge < recharge_port.recharging_mech.cell.maxcharge) || machine_stat & (NOPOWER|BROKEN))
+	if(!recharge_port || !recharge_port.recharging_mech || !recharge_port.recharging_mech.cell || !(recharge_port.recharging_mech.cell.charge < recharge_port.recharging_mech.cell.maxcharge) || machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	. += "recharge_comp_on"
 

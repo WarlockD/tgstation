@@ -11,7 +11,7 @@
 	var/climb_stun = 20
 	var/climbable = FALSE
 	var/mob/living/structureclimber
-	var/broken = 0 //similar to machinery's stat BROKEN
+	var/broken = 0 //similar to machinery's stat MACHINE_STAT_BROKEN
 
 
 /obj/structure/Initialize()

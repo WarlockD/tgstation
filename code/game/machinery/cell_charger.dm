@@ -20,7 +20,7 @@
 
 	. += image(charging.icon, charging.icon_state)
 	. += "ccharger-on"
-	if(!(machine_stat & (BROKEN|NOPOWER)))
+	if(!(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER)))
 		var/newlevel = 	round(charging.percent() * 4 / 100)
 		. += "ccharger-o[newlevel]"
 
@@ -34,7 +34,7 @@
 
 /obj/machinery/cell_charger/attackby(obj/item/W, mob/user, params)
 	if(istype(W, /obj/item/stock_parts/cell) && !panel_open)
-		if(machine_stat & BROKEN)
+		if(machine_stat & MACHINE_STAT_BROKEN)
 			to_chat(user, "<span class='warning'>[src] is broken!</span>")
 			return
 		if(!anchored)
@@ -108,7 +108,7 @@
 /obj/machinery/cell_charger/emp_act(severity)
 	. = ..()
 
-	if(machine_stat & (BROKEN|NOPOWER) || . & EMP_PROTECT_CONTENTS)
+	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER) || . & EMP_PROTECT_CONTENTS)
 		return
 
 	if(charging)
@@ -120,7 +120,7 @@
 		charge_rate *= C.rating
 
 /obj/machinery/cell_charger/process(delta_time)
-	if(!charging || !anchored || (machine_stat & (BROKEN|NOPOWER)))
+	if(!charging || !anchored || (machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER)))
 		return
 
 	if(charging.percent() >= 100)

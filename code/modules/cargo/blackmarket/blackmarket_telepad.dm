@@ -69,7 +69,7 @@
 	queue += purchase
 
 /obj/machinery/ltsrbt/process(delta_time)
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		return
 
 	if(recharge_cooldown > 0)

@@ -12,7 +12,6 @@
 	anchored = TRUE
 	obj_flags = CAN_BE_HIT | ON_BLUEPRINTS
 	var/datum/powernet/powernet = null
-	use_power = NO_POWER_USE
 	idle_power_usage = 0
 	active_power_usage = 0
 	var/machinery_layer = MACHINERY_LAYER_1 //cable layer to which the machine is connected
@@ -77,30 +76,6 @@
 /obj/machinery/power/proc/disconnect_terminal() // machines without a terminal will just return, no harm no fowl.
 	return
 
-// returns true if the area has power on given channel (or doesn't require power).
-// defaults to power_channel
-/obj/machinery/proc/powered(chan = -1) // defaults to power_channel
-	if(!loc)
-		return FALSE
-	if(!use_power)
-		return TRUE
-
-	var/area/A = get_area(src)		// make sure it's in an area
-	if(!A)
-		return FALSE					// if not, then not powered
-	if(chan == -1)
-		chan = power_channel
-	return A.powered(chan)	// return power status of the area
-
-// increment the power usage stats for an area
-/obj/machinery/proc/use_power(amount, chan = -1) // defaults to power_channel
-	var/area/A = get_area(src)		// make sure it's in an area
-	if(!A)
-		return
-	if(chan == -1)
-		chan = power_channel
-	A.use_power(amount, chan)
-
 /obj/machinery/proc/addStaticPower(value, powerchannel)
 	var/area/A = get_area(src)
 	if(!A)
@@ -110,30 +85,6 @@
 /obj/machinery/proc/removeStaticPower(value, powerchannel)
 	addStaticPower(-value, powerchannel)
 
-/**
-  * Called whenever the power settings of the containing area change
-  *
-  * by default, check equipment channel & set flag, can override if needed
-  *
-  * Returns TRUE if the NOPOWER flag was toggled
-  */
-/obj/machinery/proc/power_change()
-	SIGNAL_HANDLER
-	SHOULD_CALL_PARENT(TRUE)
-
-	if(machine_stat & BROKEN)
-		return
-	if(powered(power_channel))
-		if(machine_stat & NOPOWER)
-			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_RESTORED)
-			. = TRUE
-		set_machine_stat(machine_stat & ~NOPOWER)
-	else
-		if(!(machine_stat & NOPOWER))
-			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_LOST)
-			. = TRUE
-		set_machine_stat(machine_stat | NOPOWER)
-	update_icon()
 
 // connect the machine to a powernet if a node cable or a terminal is present on the turf
 /obj/machinery/power/proc/connect_to_network()

@@ -117,7 +117,7 @@
 		AIarea = get_area(src)
 		if(AIarea)
 			for (var/obj/machinery/power/apc/APC in AIarea)
-				if (!(APC.machine_stat & BROKEN))
+				if (!(APC.machine_stat & MACHINE_STAT_BROKEN))
 					theAPC = APC
 					break
 		if (!theAPC)

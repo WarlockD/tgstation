@@ -35,11 +35,11 @@
 
 /obj/machinery/dna_scannernew/update_icon_state()
 	//no power or maintenance
-	if(machine_stat & (NOPOWER|BROKEN))
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		icon_state = initial(icon_state)+ (state_open ? "_open" : "") + "_unpowered"
 		return
 
-	if((machine_stat & MAINT) || panel_open)
+	if((machine_stat & MACHINE_STAT_MAINT) || panel_open)
 		icon_state = initial(icon_state)+ (state_open ? "_open" : "") + "_maintenance"
 		return
 

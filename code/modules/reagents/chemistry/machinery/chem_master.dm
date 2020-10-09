@@ -103,7 +103,7 @@
 
 /obj/machinery/chem_master/update_overlays()
 	. = ..()
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		. += "waitlight"
 
 /obj/machinery/chem_master/blob_act(obj/structure/blob/B)

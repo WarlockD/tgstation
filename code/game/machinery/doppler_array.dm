@@ -133,7 +133,7 @@
 			took, orig_dev_range, orig_heavy_range, orig_light_range)
 	SIGNAL_HANDLER
 
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		return FALSE
 	var/turf/zone = get_turf(src)
 	if(zone.z != epicenter.z)
@@ -184,7 +184,7 @@
 	return ..()
 
 /obj/machinery/doppler_array/update_icon_state()
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		icon_state = "[initial(icon_state)]-broken"
 	else if(powered())
 		icon_state = initial(icon_state)

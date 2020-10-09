@@ -38,7 +38,7 @@
 
 /// uses fermentation proc similar to fermentation barrels
 /obj/machinery/plumbing/fermenter/proc/ferment(atom/AM)
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		return
 	if(reagents.holder_full())
 		return

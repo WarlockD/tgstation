@@ -17,7 +17,7 @@
 
 /obj/machinery/sheetifier/update_overlays()
 	. = ..()
-	if(machine_stat & (BROKEN|NOPOWER))
+	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER))
 		return
 	var/mutable_appearance/on_overlay = mutable_appearance(icon, "buttons_on")
 	. += on_overlay

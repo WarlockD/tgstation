@@ -46,7 +46,7 @@ GLOBAL_LIST_EMPTY(announcement_systems)
 	if(newheadToggle)
 		. += pinklight
 
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		. += errorlight
 
 /obj/machinery/announcement_system/Destroy()
@@ -62,9 +62,9 @@ GLOBAL_LIST_EMPTY(announcement_systems)
 		update_icon()
 	else if(default_deconstruction_crowbar(P))
 		return
-	else if(P.tool_behaviour == TOOL_MULTITOOL && panel_open && (machine_stat & BROKEN))
+	else if(P.tool_behaviour == TOOL_MULTITOOL && panel_open && (machine_stat & MACHINE_STAT_BROKEN))
 		to_chat(user, "<span class='notice'>You reset [src]'s firmware.</span>")
-		set_machine_stat(machine_stat & ~BROKEN)
+		set_machine_stat(machine_stat & ~MACHINE_STAT_BROKEN)
 		update_icon()
 	else
 		return ..()
@@ -113,7 +113,7 @@ GLOBAL_LIST_EMPTY(announcement_systems)
 		return
 	if(!usr.canUseTopic(src, !issilicon(usr)))
 		return
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		visible_message("<span class='warning'>[src] buzzes.</span>", "<span class='hear'>You hear a faint buzz.</span>")
 		playsound(src.loc, 'sound/machines/buzz-two.ogg', 50, TRUE)
 		return
@@ -146,7 +146,7 @@ GLOBAL_LIST_EMPTY(announcement_systems)
 /obj/machinery/announcement_system/attack_ai(mob/user)
 	if(!user.canUseTopic(src, !issilicon(user)))
 		return
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		to_chat(user, "<span class='warning'>[src]'s firmware appears to be malfunctioning!</span>")
 		return
 	interact(user)
@@ -160,7 +160,7 @@ GLOBAL_LIST_EMPTY(announcement_systems)
 
 /obj/machinery/announcement_system/emp_act(severity)
 	. = ..()
-	if(!(machine_stat & (NOPOWER|BROKEN)) && !(. & EMP_PROTECT_SELF))
+	if(!(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)) && !(. & EMP_PROTECT_SELF))
 		act_up()
 
 /obj/machinery/announcement_system/emag_act()

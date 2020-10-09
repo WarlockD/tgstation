@@ -102,7 +102,7 @@ GLOBAL_LIST_INIT(arcade_prize_pool, list(
 	if(prize_override)
 		override = TRUE
 
-	if(machine_stat & (NOPOWER|BROKEN) || . & EMP_PROTECT_SELF)
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN) || . & EMP_PROTECT_SELF)
 		return
 
 	var/empprize = null

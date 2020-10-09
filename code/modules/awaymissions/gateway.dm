@@ -192,7 +192,7 @@ GLOBAL_LIST_EMPTY(gateway_destinations)
 	update_icon()
 
 /obj/machinery/gateway/process()
-	if((machine_stat & (NOPOWER)) && use_power)
+	if((machine_stat & (MACHINE_STAT_NOPOWER)) && use_power)
 		if(target)
 			deactivate()
 		return

@@ -47,7 +47,7 @@
 		pill_styles += list(SL)
 
 /obj/machinery/plumbing/pill_press/process()
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		return
 	if(reagents.total_volume >= current_volume)
 		if (product == "pill")

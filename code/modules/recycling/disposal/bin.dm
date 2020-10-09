@@ -162,7 +162,7 @@
 
 // monkeys and xenos can only pull the flush lever
 /obj/machinery/disposal/attack_paw(mob/user)
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		return
 	flush = !flush
 	update_icon()
@@ -281,7 +281,7 @@
 	return GLOB.notcontained_state
 
 /obj/machinery/disposal/bin/ui_interact(mob/user, datum/tgui/ui)
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		return
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
@@ -352,7 +352,7 @@
 	SSvis_overlays.remove_vis_overlay(src, managed_vis_overlays)
 	luminosity = 0
 
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		return
 
 	//flush handle
@@ -360,7 +360,7 @@
 		. += "dispover-handle"
 
 	//only handle is shown if no power
-	if(machine_stat & NOPOWER || panel_open)
+	if(machine_stat & MACHINE_STAT_NOPOWER || panel_open)
 		return
 
 	luminosity = 1
@@ -384,7 +384,7 @@
 //timed process
 //charge the gas reservoir and perform flush if ready
 /obj/machinery/disposal/bin/process(delta_time)
-	if(machine_stat & BROKEN) //nothing can happen if broken
+	if(machine_stat & MACHINE_STAT_BROKEN) //nothing can happen if broken
 		return
 
 	flush_count++
@@ -399,7 +399,7 @@
 	if(flush && air_contents.return_pressure() >= SEND_PRESSURE) // flush can happen even without power
 		do_flush()
 
-	if(machine_stat & NOPOWER) // won't charge if no power
+	if(machine_stat & MACHINE_STAT_NOPOWER) // won't charge if no power
 		return
 
 	use_power(100) // base power usage

@@ -186,7 +186,7 @@
 
 /obj/machinery/harvester/examine(mob/user)
 	. = ..()
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		return
 	if(state_open)
 		. += "<span class='notice'>[src] must be closed before harvesting.</span>"

@@ -26,7 +26,7 @@
 /obj/machinery/light_switch/update_icon_state()
 	SSvis_overlays.remove_vis_overlay(src, managed_vis_overlays)
 	luminosity = 0
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		icon_state = "light-p"
 	else
 		luminosity = 1
@@ -60,5 +60,5 @@
 	. = ..()
 	if (. & EMP_PROTECT_SELF)
 		return
-	if(!(machine_stat & (BROKEN|NOPOWER)))
+	if(!(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER)))
 		power_change()

@@ -170,7 +170,7 @@
 		else
 			. += "uv"
 	else if(state_open)
-		if(machine_stat & BROKEN)
+		if(machine_stat & MACHINE_STAT_BROKEN)
 			. += "broken"
 		else
 			. += "open"

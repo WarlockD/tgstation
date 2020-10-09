@@ -138,7 +138,7 @@
 
 /obj/machinery/door/firedoor/attack_ai(mob/user)
 	add_fingerprint(user)
-	if(welded || operating || machine_stat & NOPOWER)
+	if(welded || operating || machine_stat & MACHINE_STAT_NOPOWER)
 		return TRUE
 	if(density)
 		open()
@@ -203,7 +203,7 @@
 
 
 /obj/machinery/door/firedoor/proc/latetoggle()
-	if(operating || machine_stat & NOPOWER || !nextstate)
+	if(operating || machine_stat & MACHINE_STAT_NOPOWER || !nextstate)
 		return
 	switch(nextstate)
 		if(FIREDOOR_OPEN)

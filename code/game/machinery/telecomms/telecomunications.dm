@@ -125,7 +125,7 @@ GLOBAL_LIST_EMPTY(telecomms_list)
 /obj/machinery/telecomms/proc/update_power()
 
 	if(toggled)
-		if(machine_stat & (BROKEN|NOPOWER|EMPED)) // if powered, on. if not powered, off. if too damaged, off
+		if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER|MACHINE_STAT_EMPED)) // if powered, on. if not powered, off. if too damaged, off
 			on = FALSE
 		else
 			on = TRUE
@@ -145,10 +145,10 @@ GLOBAL_LIST_EMPTY(telecomms_list)
 	. = ..()
 	if(. & EMP_PROTECT_SELF)
 		return
-	if(prob(100/severity) && !(machine_stat & EMPED))
-		set_machine_stat(machine_stat | EMPED)
+	if(prob(100/severity) && !(machine_stat & MACHINE_STAT_EMPED))
+		set_machine_stat(machine_stat | MACHINE_STAT_EMPED)
 		var/duration = (300 * 10)/severity
 		addtimer(CALLBACK(src, .proc/de_emp), rand(duration - 20, duration + 20))
 
 /obj/machinery/telecomms/proc/de_emp()
-	set_machine_stat(machine_stat & ~EMPED)
+	set_machine_stat(machine_stat & ~MACHINE_STAT_EMPED)

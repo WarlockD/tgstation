@@ -374,7 +374,7 @@
 	if(. & EMP_PROTECT_SELF)
 		return
 	var/was_on = on
-	stat |= EMPED
+	stat |= MACHINE_STAT_EMPED
 	new /obj/effect/temp_visual/emp(loc)
 	if(paicard)
 		paicard.emp_act(severity)
@@ -385,7 +385,7 @@
 	addtimer(CALLBACK(src, .proc/emp_reset, was_on), severity*30 SECONDS)
 
 /mob/living/simple_animal/bot/proc/emp_reset(was_on)
-	stat &= ~EMPED
+	stat &= ~MACHINE_STAT_EMPED
 	if(was_on)
 		turn_on()
 

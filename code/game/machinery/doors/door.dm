@@ -383,7 +383,7 @@
 	return 1
 
 /obj/machinery/door/proc/hasPower()
-	return !(machine_stat & NOPOWER)
+	return !(machine_stat & MACHINE_STAT_NOPOWER)
 
 /obj/machinery/door/proc/update_freelook_sight()
 	if(!glass && GLOB.cameranet)
@@ -423,7 +423,7 @@
 
 /obj/machinery/door/power_change()
 	. = ..()
-	if(. && !(machine_stat & NOPOWER))
+	if(. && !(machine_stat & MACHINE_STAT_NOPOWER))
 		autoclose_in(DOOR_CLOSE_WAIT)
 
 /obj/machinery/door/zap_act(power, zap_flags)

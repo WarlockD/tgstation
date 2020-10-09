@@ -63,7 +63,7 @@
 		icon_state = "meterX"
 		return FALSE
 
-	if(machine_stat & (BROKEN|NOPOWER))
+	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER))
 		icon_state = "meter0"
 		return FALSE
 
@@ -134,7 +134,7 @@
 	qdel(src)
 
 /obj/machinery/meter/interact(mob/user)
-	if(machine_stat & (NOPOWER|BROKEN))
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	else
 		to_chat(user, status())

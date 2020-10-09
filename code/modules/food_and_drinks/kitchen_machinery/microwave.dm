@@ -82,7 +82,7 @@
 	else
 		. += "<span class='notice'>\The [src] is empty.</span>"
 
-	if(!(machine_stat & (NOPOWER|BROKEN)))
+	if(!(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)))
 		. += "<span class='notice'>The status display reads:</span>\n"+\
 		"<span class='notice'>- Capacity: <b>[max_n_of_items]</b> items.</span>\n"+\
 		"<span class='notice'>- Cook time reduced by <b>[(efficiency - 1) * 25]%</b>.</span>"
@@ -199,7 +199,7 @@
 
 	if(operating || panel_open || !anchored || !user.canUseTopic(src, !issilicon(user)))
 		return
-	if(isAI(user) && (machine_stat & NOPOWER))
+	if(isAI(user) && (machine_stat & MACHINE_STAT_NOPOWER))
 		return
 
 	if(!length(ingredients))
@@ -214,7 +214,7 @@
 	// post choice verification
 	if(operating || panel_open || !anchored || !user.canUseTopic(src, !issilicon(user)))
 		return
-	if(isAI(user) && (machine_stat & NOPOWER))
+	if(isAI(user) && (machine_stat & MACHINE_STAT_NOPOWER))
 		return
 
 	usr.set_machine(src)
@@ -233,7 +233,7 @@
 	ingredients.Cut()
 
 /obj/machinery/microwave/proc/cook()
-	if(machine_stat & (NOPOWER|BROKEN))
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	if(operating || broken > 0 || panel_open || !anchored || dirty == 100)
 		return
@@ -289,7 +289,7 @@
 	loop(MICROWAVE_MUCK, 4)
 
 /obj/machinery/microwave/proc/loop(type, time, wait = max(12 - 2 * efficiency, 2)) // standard wait is 10
-	if((machine_stat & BROKEN) && type == MICROWAVE_PRE)
+	if((machine_stat & MACHINE_STAT_BROKEN) && type == MICROWAVE_PRE)
 		pre_fail()
 		return
 	if(!time)
@@ -307,7 +307,7 @@
 
 /obj/machinery/microwave/power_change()
 	. = ..()
-	if((machine_stat & NOPOWER) && operating)
+	if((machine_stat & MACHINE_STAT_NOPOWER) && operating)
 		pre_fail()
 		eject()
 

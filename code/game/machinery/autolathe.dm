@@ -64,7 +64,7 @@
 	if(!is_operational)
 		return
 
-	if(shocked && !(machine_stat & NOPOWER))
+	if(shocked && !(machine_stat & MACHINE_STAT_NOPOWER))
 		shock(user,50)
 
 	var/dat
@@ -401,7 +401,7 @@
 				disabled = FALSE
 
 /obj/machinery/autolathe/proc/shock(mob/user, prb)
-	if(machine_stat & (BROKEN|NOPOWER))		// unpowered, no shock
+	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER))		// unpowered, no shock
 		return FALSE
 	if(!prob(prb))
 		return FALSE

@@ -60,7 +60,7 @@
 		icon_state = "fire_b[buildstage]"
 		return
 
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		icon_state = "firex"
 		return
 
@@ -70,7 +70,7 @@
 	. = ..()
 	SSvis_overlays.remove_vis_overlay(src, managed_vis_overlays)
 
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		return
 
 	. += "fire_overlay"
@@ -224,9 +224,9 @@
 										"<span class='notice'>You start prying out the circuit...</span>")
 					if(W.use_tool(src, user, 20, volume=50))
 						if(buildstage == 1)
-							if(machine_stat & BROKEN)
+							if(machine_stat & MACHINE_STAT_BROKEN)
 								to_chat(user, "<span class='notice'>You remove the destroyed circuit.</span>")
-								set_machine_stat(machine_stat & ~BROKEN)
+								set_machine_stat(machine_stat & ~MACHINE_STAT_BROKEN)
 							else
 								to_chat(user, "<span class='notice'>You pry out the circuit.</span>")
 								new /obj/item/electronics/firealarm(user.loc)
@@ -280,7 +280,7 @@
 /obj/machinery/firealarm/take_damage(damage_amount, damage_type = BRUTE, damage_flag = 0, sound_effect = 1, attack_dir)
 	. = ..()
 	if(.) //damage received
-		if(obj_integrity > 0 && !(machine_stat & BROKEN) && buildstage != 0)
+		if(obj_integrity > 0 && !(machine_stat & MACHINE_STAT_BROKEN) && buildstage != 0)
 			if(prob(33))
 				alarm()
 
@@ -299,7 +299,7 @@
 /obj/machinery/firealarm/deconstruct(disassembled = TRUE)
 	if(!(flags_1 & NODECONSTRUCT_1))
 		new /obj/item/stack/sheet/metal(loc, 1)
-		if(!(machine_stat & BROKEN))
+		if(!(machine_stat & MACHINE_STAT_BROKEN))
 			var/obj/item/I = new /obj/item/electronics/firealarm(loc)
 			if(!disassembled)
 				I.obj_integrity = I.max_integrity * 0.5
@@ -327,7 +327,7 @@
 	var/static/party_overlay
 
 /obj/machinery/firealarm/partyalarm/reset()
-	if (machine_stat & (NOPOWER|BROKEN))
+	if (machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	var/area/A = get_area(src)
 	if (!A || !A.party)
@@ -336,7 +336,7 @@
 	A.cut_overlay(party_overlay)
 
 /obj/machinery/firealarm/partyalarm/alarm()
-	if (machine_stat & (NOPOWER|BROKEN))
+	if (machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	var/area/A = get_area(src)
 	if (!A || A.party || A.name == "Space")

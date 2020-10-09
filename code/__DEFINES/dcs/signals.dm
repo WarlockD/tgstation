@@ -473,6 +473,8 @@
 #define COMSIG_MACHINERY_POWER_LOST "machinery_power_lost"
 ///from base power_change() when power is restored
 #define COMSIG_MACHINERY_POWER_RESTORED "machinery_power_restored"
+/// the machine stat will change to new value (old_value, new_value)
+#define COMSIG_MACHINERY_MACHINE_STAT_CHANGE "machinery_stat_change"
 
 // /obj/machinery/door/airlock signals
 

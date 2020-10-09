@@ -78,7 +78,7 @@
 	return TRUE
 
 /obj/machinery/plumbing/receiver/process()
-	if(machine_stat & NOPOWER || panel_open)
+	if(machine_stat & MACHINE_STAT_NOPOWER || panel_open)
 		return
 
 	if(senders.len)

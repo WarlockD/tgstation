@@ -59,7 +59,7 @@
 	. = ..()
 
 /obj/machinery/roulette/ui_interact(mob/user, datum/tgui/ui)
-	if(machine_stat & MAINT)
+	if(machine_stat & MACHINE_STAT_MAINT)
 		return
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
@@ -104,7 +104,7 @@
 
 ///Handles setting ownership and the betting itself.
 /obj/machinery/roulette/attackby(obj/item/W, mob/user, params)
-	if(machine_stat & MAINT && is_wire_tool(W))
+	if(machine_stat & MACHINE_STAT_MAINT && is_wire_tool(W))
 		wires.interact(user)
 		return
 	if(playing)
@@ -112,7 +112,7 @@
 	if(istype(W, /obj/item/card/id))
 		playsound(src, 'sound/machines/card_slide.ogg', 50, TRUE)
 
-		if(machine_stat & MAINT || !on || locked)
+		if(machine_stat & MACHINE_STAT_MAINT || !on || locked)
 			to_chat(user, "<span class='notice'>The machine appears to be disabled.</span>")
 			return FALSE
 
@@ -326,7 +326,7 @@
 /obj/machinery/roulette/update_icon(payout, color, rolled_number, is_winner = FALSE)
 	cut_overlays()
 
-	if(machine_stat & MAINT)
+	if(machine_stat & MACHINE_STAT_MAINT)
 		return
 
 	if(playing)
@@ -366,17 +366,17 @@
 
 /obj/machinery/roulette/welder_act(mob/living/user, obj/item/I)
 	. = ..()
-	if(machine_stat & MAINT)
+	if(machine_stat & MACHINE_STAT_MAINT)
 		to_chat(user, "<span class='notice'>You start re-attaching the top section of [src]...</span>")
 		if(I.use_tool(src, user, 30, volume=50))
 			to_chat(user, "<span class='notice'>You re-attach the top section of [src].</span>")
-			set_machine_stat(machine_stat & ~MAINT)
+			set_machine_stat(machine_stat & ~MACHINE_STAT_MAINT)
 			icon_state = "idle"
 	else
 		to_chat(user, "<span class='notice'>You start welding the top section from [src]...</span>")
 		if(I.use_tool(src, user, 30, volume=50))
 			to_chat(user, "<span class='notice'>You removed the top section of [src].</span>")
-			set_machine_stat(machine_stat | MAINT)
+			set_machine_stat(machine_stat | MACHINE_STAT_MAINT)
 			icon_state = "open"
 
 /obj/machinery/roulette/proc/shock(mob/user, prb)

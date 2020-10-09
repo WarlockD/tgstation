@@ -135,17 +135,17 @@ DEFINE_BITFIELD(turret_flags, list(
 
 /obj/machinery/porta_turret/proc/check_should_process()
 	if (datum_flags & DF_ISPROCESSING)
-		if (!on || !anchored || (machine_stat & BROKEN) || !powered())
+		if (!on || !anchored || (machine_stat & MACHINE_STAT_BROKEN) || !powered())
 			end_processing()
 	else
-		if (on && anchored && !(machine_stat & BROKEN) && powered())
+		if (on && anchored && !(machine_stat & MACHINE_STAT_BROKEN) && powered())
 			begin_processing()
 
 /obj/machinery/porta_turret/update_icon_state()
 	if(!anchored)
 		icon_state = "turretCover"
 		return
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		icon_state = "[base_icon_state]_broken"
 	else
 		if(powered())
@@ -278,13 +278,13 @@ DEFINE_BITFIELD(turret_flags, list(
 
 /obj/machinery/porta_turret/power_change()
 	. = ..()
-	if(!anchored || (machine_stat & BROKEN) || !powered())
+	if(!anchored || (machine_stat & MACHINE_STAT_BROKEN) || !powered())
 		update_icon()
 		remove_control()
 	check_should_process()
 
 /obj/machinery/porta_turret/attackby(obj/item/I, mob/user, params)
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		if(I.tool_behaviour == TOOL_CROWBAR)
 			//If the turret is destroyed, you can remove it with a crowbar to
 			//try and salvage its components
@@ -397,14 +397,14 @@ DEFINE_BITFIELD(turret_flags, list(
 /obj/machinery/porta_turret/process()
 	//the main machinery process
 	if(cover == null && anchored)	//if it has no cover and is anchored
-		if(machine_stat & BROKEN)	//if the turret is borked
+		if(machine_stat & MACHINE_STAT_BROKEN)	//if the turret is borked
 			qdel(cover)	//delete its cover, assuming it has one. Workaround for a pesky little bug
 		else
 			if(has_cover)
 				cover = new /obj/machinery/porta_turret_cover(loc)	//if the turret has no cover and is anchored, give it a cover
 				cover.parent_turret = src	//assign the cover its parent_turret, which would be this (src)
 
-	if(!on || (machine_stat & (NOPOWER|BROKEN)) || manual_control)
+	if(!on || (machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)) || manual_control)
 		return PROCESS_KILL
 
 	var/list/targets = list()
@@ -487,7 +487,7 @@ DEFINE_BITFIELD(turret_flags, list(
 		return
 	if(raising || raised)
 		return
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		return
 	invisibility = 0
 	raising = 1
@@ -503,7 +503,7 @@ DEFINE_BITFIELD(turret_flags, list(
 /obj/machinery/porta_turret/proc/popDown()	//pops the turret down
 	if(raising || !raised)
 		return
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		return
 	layer = OBJ_LAYER
 	raising = 1
@@ -890,12 +890,12 @@ DEFINE_BITFIELD(turret_flags, list(
 
 /obj/machinery/turretid/examine(mob/user)
 	. += ..()
-	if(issilicon(user) && !(machine_stat & BROKEN))
+	if(issilicon(user) && !(machine_stat & MACHINE_STAT_BROKEN))
 		. += {"<span class='notice'>Ctrl-click [src] to [ enabled ? "disable" : "enable"] turrets.</span>
 					<span class='notice'>Alt-click [src] to set turrets to [ lethal ? "stun" : "kill"].</span>"}
 
 /obj/machinery/turretid/attackby(obj/item/I, mob/user, params)
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		return
 
 	if(I.tool_behaviour == TOOL_MULTITOOL)
@@ -958,7 +958,7 @@ DEFINE_BITFIELD(turret_flags, list(
 		if("lock")
 			if(!usr.has_unlimited_silicon_privilege)
 				return
-			if((obj_flags & EMAGGED) || (machine_stat & BROKEN))
+			if((obj_flags & EMAGGED) || (machine_stat & MACHINE_STAT_BROKEN))
 				to_chat(usr, "<span class='warning'>The turret control is unresponsive!</span>")
 				return
 			locked = !locked
@@ -997,7 +997,7 @@ DEFINE_BITFIELD(turret_flags, list(
 	update_icon()
 
 /obj/machinery/turretid/update_icon_state()
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		icon_state = "control_off"
 	else if (enabled)
 		if (lethal)

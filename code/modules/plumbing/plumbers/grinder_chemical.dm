@@ -36,7 +36,7 @@
 	grind(AM)
 
 /obj/machinery/plumbing/grinder_chemical/proc/grind(atom/AM)
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		return
 	if(reagents.holder_full())
 		return

@@ -36,7 +36,7 @@
 /obj/machinery/computer/station_alert/proc/triggerAlarm(class, area/A, O, obj/source)
 	if(source.z != z)
 		return
-	if(machine_stat & (BROKEN))
+	if(machine_stat & (MACHINE_STAT_BROKEN))
 		return
 
 	var/list/L = alarms[class]
@@ -60,7 +60,7 @@
 
 
 /obj/machinery/computer/station_alert/proc/cancelAlarm(class, area/A, obj/origin)
-	if(machine_stat & (BROKEN))
+	if(machine_stat & (MACHINE_STAT_BROKEN))
 		return
 	var/list/L = alarms[class]
 	var/cleared = 0
@@ -77,7 +77,7 @@
 
 /obj/machinery/computer/station_alert/update_overlays()
 	. = ..()
-	if(machine_stat & (NOPOWER|BROKEN))
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	var/active_alarms = FALSE
 	for(var/cat in alarms)

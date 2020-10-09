@@ -15,7 +15,7 @@
 /datum/wires/roulette/interactable(mob/user)
 	. = FALSE
 	var/obj/machinery/roulette/R = holder
-	if(R.machine_stat & MAINT)
+	if(R.machine_stat & MACHINE_STAT_MAINT)
 		. = TRUE
 
 /datum/wires/roulette/get_status()

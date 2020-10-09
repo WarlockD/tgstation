@@ -253,7 +253,7 @@
 		update_icon()
 
 /obj/machinery/biogenerator/ui_status(mob/user)
-	if(machine_stat & BROKEN || panel_open)
+	if(machine_stat & MACHINE_STAT_BROKEN || panel_open)
 		return UI_CLOSE
 	return ..()
 

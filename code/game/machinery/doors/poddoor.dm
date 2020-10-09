@@ -92,7 +92,7 @@
 	return
 
 /obj/machinery/door/poddoor/try_to_crowbar(obj/item/I, mob/user)
-	if(machine_stat & NOPOWER)
+	if(machine_stat & MACHINE_STAT_NOPOWER)
 		open(TRUE)
 
 /obj/machinery/door/poddoor/attack_alien(mob/living/carbon/alien/humanoid/user)

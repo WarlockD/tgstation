@@ -246,7 +246,7 @@ IF YOU MODIFY THE PRODUCTS LIST OF A MACHINE, MAKE SURE TO UPDATE ITS RESUPPLY C
 		..()
 
 /obj/machinery/vending/update_icon_state()
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		icon_state = "[initial(icon_state)]-broken"
 		set_light(0)
 	else if(powered())
@@ -263,7 +263,7 @@ IF YOU MODIFY THE PRODUCTS LIST OF A MACHINE, MAKE SURE TO UPDATE ITS RESUPPLY C
 		return
 
 	SSvis_overlays.remove_vis_overlay(src, managed_vis_overlays)
-	if(!(machine_stat & BROKEN) && powered())
+	if(!(machine_stat & MACHINE_STAT_BROKEN) && powered())
 		SSvis_overlays.add_vis_overlay(src, icon, light_mask, EMISSIVE_LAYER, EMISSIVE_PLANE)
 
 /obj/machinery/vending/obj_break(damage_flag)
@@ -441,7 +441,7 @@ GLOBAL_LIST_EMPTY(vending_products)
 	if(refill_canister && istype(I, refill_canister))
 		if (!panel_open)
 			to_chat(user, "<span class='warning'>You should probably unscrew the service panel first!</span>")
-		else if (machine_stat & (BROKEN|NOPOWER))
+		else if (machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER))
 			to_chat(user, "<span class='notice'>[src] does not respond.</span>")
 		else
 			//if the panel is open we attempt to refill the machine
@@ -702,7 +702,7 @@ GLOBAL_LIST_EMPTY(vending_products)
 	to_chat(user, "<span class='notice'>You short out the product lock on [src].</span>")
 
 /obj/machinery/vending/_try_interact(mob/user)
-	if(seconds_electrified && !(machine_stat & NOPOWER))
+	if(seconds_electrified && !(machine_stat & MACHINE_STAT_NOPOWER))
 		if(shock(user, 100))
 			return
 
@@ -872,7 +872,7 @@ GLOBAL_LIST_EMPTY(vending_products)
 			vend_ready = TRUE
 
 /obj/machinery/vending/process(delta_time)
-	if(machine_stat & (BROKEN|NOPOWER))
+	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER))
 		return PROCESS_KILL
 	if(!active)
 		return
@@ -897,7 +897,7 @@ GLOBAL_LIST_EMPTY(vending_products)
   * * message - the message to speak
   */
 /obj/machinery/vending/proc/speak(message)
-	if(machine_stat & (BROKEN|NOPOWER))
+	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER))
 		return
 	if(!message)
 		return
@@ -961,7 +961,7 @@ GLOBAL_LIST_EMPTY(vending_products)
   * * prb - probability the shock happens
   */
 /obj/machinery/vending/proc/shock(mob/living/user, prb)
-	if(!istype(user) || machine_stat & (BROKEN|NOPOWER))		// unpowered, no shock
+	if(!istype(user) || machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER))		// unpowered, no shock
 		return FALSE
 	if(!prob(prb))
 		return FALSE

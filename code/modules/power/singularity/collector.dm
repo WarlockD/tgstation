@@ -186,7 +186,7 @@
 	. = ..()
 	if(loaded_tank)
 		. += "ptank"
-	if(machine_stat & (NOPOWER|BROKEN))
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 	if(active)
 		. += "on"

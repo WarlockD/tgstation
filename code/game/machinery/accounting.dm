@@ -57,7 +57,7 @@
 	. = ..()
 	SSvis_overlays.remove_vis_overlay(src, managed_vis_overlays)
 	luminosity = 0
-	if(machine_stat & (NOPOWER|BROKEN) || !anchored)
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN) || !anchored)
 		return
 	if(panel_open)
 		SSvis_overlays.add_vis_overlay(src, icon, "recharger-open", layer, plane, dir, alpha)

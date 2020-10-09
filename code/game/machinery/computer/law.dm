@@ -12,7 +12,7 @@
 /obj/machinery/computer/upload/attackby(obj/item/O, mob/user, params)
 	if(istype(O, /obj/item/ai_module))
 		var/obj/item/ai_module/M = O
-		if(machine_stat & (NOPOWER|BROKEN|MAINT))
+		if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN|MACHINE_STAT_MAINT))
 			return
 		if(!current)
 			to_chat(user, "<span class='alert'>You haven't selected anything to transmit laws to!</span>")

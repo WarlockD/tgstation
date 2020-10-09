@@ -4,7 +4,7 @@
 #define AREA_USAGE_LIGHT			2
 #define AREA_USAGE_ENVIRON			3
 #define AREA_USAGE_STATIC_EQUIP 	4
-#define AREA_USAGE_STATIC_LIGHT	5
+#define AREA_USAGE_STATIC_LIGHT		5
 #define AREA_USAGE_STATIC_ENVIRON	6
 #define AREA_USAGE_LEN AREA_USAGE_STATIC_ENVIRON // largest idx
 /// Index of the first dynamic usage channel
@@ -16,7 +16,30 @@
 /// Index of the last static usage channel
 #define AREA_USAGE_STATIC_END AREA_USAGE_STATIC_ENVIRON
 
+// bitflags for machine stat variable
+#define MACHINE_STAT_BROKEN		(1<<0)		// damaged beyond functioning
+#define MACHINE_STAT_NOPOWER	(1<<1)		// no power for the machine
+#define MACHINE_STAT_MAINT		(1<<2)		// under maintenance
+#define MACHINE_STAT_EMPED		(1<<3)		// temporary broken by EMP pulse
+#define MACHINE_STAT_OFF 		(1<<4)		// physically switched off
+// bitflags for machine settings, also priority flags
+#define MACHINE_SETTING_USE_WIRE			(1<<0)	// Use underwire for power...
+#define MACHINE_SETTING_USE_APC				(1<<1)	// If no underwire, use APC
+#define MACHINE_SETTING_USE_CELL			(1<<2)	// None of the above use CELL
+#define MACHINE_SETTING_CHARGE_CELL			(1<<3)  // If we have a battery AND outside power, charge the cell at the same time
+#define MACHINE_SETTING_AUTO_POWER_MODE		(1<<4)
+#define MACHINE_SETTING_ACTIVE_MODE			(1<<5)  // We are always using idle power unless this is switched on.  Pointless if nothing else is set
+// Ok these are drop flags.  When the machine croaks what gets dropped
+#define MACHINE_SETTING_NO_DROP_CONTENTS	(1<<6)	// do not drop contents, even buckled mobs?
+#define MACHINE_SETTING_NO_DROP_COMPONENTS	(1<<7)	// do not drop the construction components
+#define MACHINE_SETTING_NO_DROP_CIRCUIT		(1<<8) // do not drop the circuit board (sleepers and such)
+#define MACHINE_SETTING_USES_POWER_MASK		(~(MACHINE_SETTING_USE_WIRE | MACHINE_SETTING_USE_APC | MACHINE_SETTING_USE_CELL))
 
+// Helper machine macro, ignores emped
+#define MACHINE_STAT_ISSET(FLAG) ((machine_stat & (FLAG)) ? FALSE : TRUE) // can be used for returns
+#define MACHINE_SETTING_ISSET(FLAG) ((machine_setting & (FLAG)) ? FALSE : TRUE) // can be used for returns
+
+#define MACHINE_USES_POWER(M)				((M.machine_setting & MACHINE_SETTING_USES_POWER_MASK) ? TRUE : FALSE)
 //Power use
 #define NO_POWER_USE 0
 #define IDLE_POWER_USE 1

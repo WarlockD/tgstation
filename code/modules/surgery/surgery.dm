@@ -86,7 +86,7 @@
 
 	if(!opcomputer)
 		return
-	if(opcomputer.machine_stat & (NOPOWER|BROKEN))
+	if(opcomputer.machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return .
 	if(replaced_by in opcomputer.advanced_surgeries)
 		return FALSE

@@ -331,7 +331,7 @@ SUBSYSTEM_DEF(shuttle)
 				continue
 		else if(istype(thing, /obj/machinery/computer/communications))
 			var/obj/machinery/computer/communications/C = thing
-			if(C.machine_stat & BROKEN)
+			if(C.machine_stat & MACHINE_STAT_BROKEN)
 				continue
 
 		var/turf/T = get_turf(thing)
@@ -702,7 +702,7 @@ SUBSYSTEM_DEF(shuttle)
 
 	var/list/force_memory = preview_shuttle.movement_force
 	preview_shuttle.movement_force = list("KNOCKDOWN" = 0, "THROW" = 0)
-	preview_shuttle.mode = SHUTTLE_PREARRIVAL//No idle shuttle moving. Transit dock get removed if shuttle moves too long.	
+	preview_shuttle.mode = SHUTTLE_PREARRIVAL//No idle shuttle moving. Transit dock get removed if shuttle moves too long.
 	preview_shuttle.initiate_docking(D)
 	preview_shuttle.movement_force = force_memory
 

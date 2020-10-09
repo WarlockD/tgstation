@@ -139,7 +139,7 @@
 		return
 	if(!pad)
 		return
-	if(!usr.canUseTopic(src, BE_CLOSE) || (machine_stat & (NOPOWER|BROKEN)))
+	if(!usr.canUseTopic(src, BE_CLOSE) || (machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)))
 		return
 	switch(action)
 		if("recalc")

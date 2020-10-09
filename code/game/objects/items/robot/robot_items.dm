@@ -175,7 +175,7 @@
 	if(mode == "draw")
 		if(is_type_in_list(target, charge_machines))
 			var/obj/machinery/M = target
-			if((M.machine_stat & (NOPOWER|BROKEN)) || !M.anchored)
+			if((M.machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)) || !M.anchored)
 				to_chat(user, "<span class='warning'>[M] is unpowered!</span>")
 				return
 
@@ -184,7 +184,7 @@
 				if(!user || !user.cell || mode != "draw")
 					return
 
-				if((M.machine_stat & (NOPOWER|BROKEN)) || !M.anchored)
+				if((M.machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)) || !M.anchored)
 					break
 
 				if(!user.cell.give(150))
@@ -563,7 +563,7 @@
 /obj/item/cautery/prt //it's a subtype of cauteries so that it inherits the cautery sprites and behavior and stuff, because I'm too lazy to make sprites for this thing
 	name = "plating repair tool"
 	desc = "A tiny heating device that's powered by a cyborg's excess heat. Its intended purpose is to repair burnt or damaged hull platings, but it can also be used as a crude lighter or cautery."
-	toolspeed = 1.5 //it's not designed to be used as a cautery (although it's close enough to one to be considered to be a proper cautery instead of just a hot object for the purposes of surgery) 
+	toolspeed = 1.5 //it's not designed to be used as a cautery (although it's close enough to one to be considered to be a proper cautery instead of just a hot object for the purposes of surgery)
 	heat = 3800 //this thing is intended for metal-shaping, so it's the same temperature as a lit welder
 	resistance_flags = FIRE_PROOF //if it's channeling a cyborg's excess heat, it's probably fireproof
 	force = 5

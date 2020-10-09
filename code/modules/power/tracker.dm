@@ -76,7 +76,7 @@
 			var/obj/item/solar_assembly/S = locate() in src
 			if(S)
 				S.forceMove(loc)
-				S.give_glass(machine_stat & BROKEN)
+				S.give_glass(machine_stat & MACHINE_STAT_BROKEN)
 		else
 			playsound(src, "shatter", 70, TRUE)
 			new /obj/item/shard(src.loc)

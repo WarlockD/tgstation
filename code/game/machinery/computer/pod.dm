@@ -33,7 +33,7 @@
   * Initiates launching sequence by checking if all components are functional, opening poddoors, firing mass drivers and then closing poddoors
   */
 /obj/machinery/computer/pod/proc/alarm()
-	if(machine_stat & (NOPOWER|BROKEN))
+	if(machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN))
 		return
 
 	if(!connected)

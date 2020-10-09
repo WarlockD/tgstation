@@ -69,10 +69,10 @@
 	return stasis_enabled && is_operational
 
 /obj/machinery/stasis/update_icon_state()
-	if(machine_stat & BROKEN)
+	if(machine_stat & MACHINE_STAT_BROKEN)
 		icon_state = "stasis_broken"
 		return
-	if(panel_open || machine_stat & MAINT)
+	if(panel_open || machine_stat & MACHINE_STAT_MAINT)
 		icon_state = "stasis_maintenance"
 		return
 	icon_state = "stasis"

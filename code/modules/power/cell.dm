@@ -52,19 +52,23 @@
 /obj/item/stock_parts/cell/proc/percent()		// return % charge of cell
 	return 100*charge/maxcharge
 
-// use power from a cell
+/// To use power from the cell.  Returns more than zero if successful.
+/// >= 0 is the remaining charge in the battery
+/// < 0 the battery was used up and this was the excess power, mainly a helper for charging and use
 /obj/item/stock_parts/cell/use(amount)
 	if(rigged && amount > 0)
 		explode()
 		return FALSE
-	if(charge < amount)
-		return FALSE
-	charge = (charge - amount)
+	var/power_used = (charge - amount)
+	if(power_used < 0)
+		charge = 0		// While the battery didn't have enough power to fully power the target, it still used that power
+		return power_used // return a negative on the excess non processed power
+	charge = power_used
 	if(!istype(loc, /obj/machinery/power/apc))
 		SSblackbox.record_feedback("tally", "cell_used", 1, type)
-	return TRUE
+	return charge	// excess charge
 
-// recharge the cell
+/// recharge the cell, returns excess power
 /obj/item/stock_parts/cell/proc/give(amount)
 	if(rigged && amount > 0)
 		explode()
@@ -73,7 +77,7 @@
 		amount = maxcharge
 	var/power_used = min(maxcharge-charge,amount)
 	charge += power_used
-	return power_used
+	return amount - power_used
 
 /obj/item/stock_parts/cell/examine(mob/user)
 	. = ..()
