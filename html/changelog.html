@@ -1214,10 +1214,77 @@
 			<h3 class="author">ArcaneMusic updated:</h3>
 			<ul class="changes bgimages16">
 				<li class="refactor">Pastries have been refactored for new foods.</li>
+				<li class="bugfix">Fixes ChemMaster not outputting pills to inserted pill bottle</li>
+			<h3 class="author">Timberpoes updated:</h3>
+			<h2 class="date">16 October 2020</h2>
+			<h3 class="author">IndieanaJones updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="bugfix">Abductor spawns in Dynamic actually function now</li>
+			</ul>
+			<h3 class="author">necromanceranne updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="bugfix">Fixes bolt action guns having a mysterious additional bullet chambered upon initialization.</li>
+				<li class="rscadd">Adds an emergency shuttle console to the BYO Shuttle.</li>
+			</ul>
+			<h3 class="author">raffclar updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="bugfix">Monkeys will once again show missing limbs</li>
+			</ul>
+			<h3 class="author">silicons updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="rscadd">Shuttle hijacking has been completely reworked.</li>
+				<li class="rscadd">To hijack the shuttle, you must Alt-Click the emergency shuttle console (the one you emag) to begin the hijack process after a timed delay. You must be hijack capable to do this.</li>
+				<li class="rscadd">Each successful hack attempt (with a time based on antag role and whether or not you have the hijack objective) will push the hijack stage one step, up to 5.</li>
+				<li class="rscadd">After five successful hack attempts, the shuttle will be redirected.</li>
+				<li class="rscadd">The antagonists who can hijack include: traitor, blood brothers, wizard, nuke ops, highlanders, wizards, changelings and heretics.</li>
+				<li class="tweak">Preserves the old hijack as the new 'Elimination' objective. Nobody but highlanders have this, and their version accounts for only their solo hijacking.</li>
+			</ul>
+
+			<h2 class="date">14 September 2020</h2>
+			<h3 class="author">Arkatos updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="rscadd">Guide to Dank Mimery now uses a radial menu.</li>
+			</ul>
+			<h3 class="author">Jimmius updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="rscadd">Adds door seals to the game, printable at engineering and security lathes after they've been researched. Makes airlocks much harder to smash down if you can't remove them.</li>
+				<li class="tweak">Slightly changed how bonus health to an airlock works</li>
+			</ul>
+			<h3 class="author">TiviPlus updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="rscadd">Whiteship is randomly chosen</li>
+			</ul>
+			<h3 class="author">VexingRaven updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="bugfix">Livers once again give peptides when put in a grinder</li>
+			</ul>
+			<h3 class="author">Wallem updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="tweak">Fixes some issues with sign language, such as unique mime text, drunk slurring, punctuation, and megaphones.</li>
+			</ul>
+			<h3 class="author">itseasytosee updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="imageadd">The hydrogen Axe now has back sprites.</li>
+			</ul>
+			<h3 class="author">nightred updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="bugfix">Meta Engineering lobby fixes and tweaks, added missing machine, moved lights in SM</li>
+				<li class="bugfix">Meta The bar and kitchen have had several updates to objects</li>
+				<li class="bugfix">Meta The service hall was widened by one tile</li>
+				<li class="bugfix">Meta Atmosia has a fancy new control room and a bigger storage room for projects</li>
+			</ul>
+			<h3 class="author">tralezab updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="rscadd">Security's Education room has a sparta pit on icebox</li>
+				<li class="rscadd">Countdowns use maptext.</li>
 			</ul>
 			<h3 class="author">Ghommie updated:</h3>
 			<ul class="changes bgimages16">
 				<li class="bugfix">Jungle fever monkeys will now pass canUseTopic() dexterity checks and be able to use tgui machineries.</li>
+				<li class="bugfix">Mechs no longer explode upon deletion. This was a reversion from previous mech code.</li>
+				<li class="bugfix">Fixes null rods that replace your hand being able to be placed into storage slots on accident.</li>
+				<li class="rscadd">Mass Driver Control now uses tgui.</li>
+				<li class="refactor">Mass Driver Controls now process only when needed instead of all the time. In short, free performance for you.</li>
 			</ul>
 			<h3 class="author">Timberpoes updated:</h3>
 			<ul class="changes bgimages16">
@@ -1258,10 +1325,18 @@
 			<h3 class="author">Arkatos, original by dearmochi updated:</h3>
 			<ul class="changes bgimages16">
 				<li class="refactor">Safe now uses tgui.</li>
+				<li class="bugfix">Fixed nanite comm remotes not working at all.</li>
+			<h3 class="author">VexingRaven updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="bugfix">Mechs once again use power when moving and properly show errors when failing to move</li>
+				<li class="bugfix">Gygax Leg Actuator Overload button now works correctly</li>
+				<li class="bugfix">Orbital Mech Pads can once again send mechs</li>
 			</ul>
 			<h3 class="author">CoffeeDragon16 updated:</h3>
 			<ul class="changes bgimages16">
 				<li class="bugfix">You can no longer inject infinite plasma into a light bulb with no addition effect</li>
+				<li class="spellcheck">Lifeform stasis units have all lowercase names now</li>
+				<li class="rscadd">Botany is remade for ice box!</li>
 			</ul>
 			<h3 class="author">Ghommie updated:</h3>
 			<ul class="changes bgimages16">
@@ -2116,298 +2191,6 @@
 			<h3 class="author">nightred updated:</h3>
 			<ul class="changes bgimages16">
 				<li class="bugfix">Fixed some shuttle wall smoothing</li>
-			</ul>
-
-			<h2 class="date">14 August 2020</h2>
-			<h3 class="author">ArcaneMusic updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Fixes a runtime associated with the new ARD.</li>
-			</ul>
-			<h3 class="author">Arkatos updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">pAIs now use a radial menu to choose their holochassis skins.</li>
-			</ul>
-			<h3 class="author">CRITAWAKETS updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Nanotrasen has fixed the missing connectors on their lattices and have removed the ultraviolet paint from their operating tables.</li>
-			</ul>
-			<h3 class="author">Fikou updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">fixes goliath tentacle crusher trophy not working</li>
-			</ul>
-			<h3 class="author">Jared-Fogle updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Request console announcements no longer double encode. This means, for example, you can use apostrophes.</li>
-			</ul>
-			<h3 class="author">LemonInTheDark updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="balance">Tesla coils max efficiency rate has been dropped from 400% to 85% to help prevent the below</li>
-				<li class="bugfix">The tesla coil can no longer make infinite energy</li>
-			</ul>
-			<h3 class="author">Maurukas updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">Revival surgery now puts ghosts back in bodies</li>
-			</ul>
-			<h3 class="author">SteelSlayer updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="refactor">Photocopiers now use TGUI</li>
-				<li class="tweak">You can insert any type of toner cartridge into photocopiers, and regardless of the currently inserted toner's charge level.</li>
-				<li class="tweak">Toner cartridges can be ejected from photocopiers at any time</li>
-			</ul>
-			<h3 class="author">kingofkosmos updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="spellcheck">added personal versions for combat messages (e.g: "You whip John Smith!" instead of "Devin Spock whips John Smith!")</li>
-			</ul>
-
-			<h2 class="date">13 August 2020</h2>
-			<h3 class="author">Angust updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Aggressive spreading space vines no longer deal friendly fire.</li>
-				<li class="bugfix">Aggressive vines now only harm when buckling you or actually spreading to your tile.</li>
-				<li class="balance">Aggressive vines can no longer deafen/explode you, but will deal heavy damage and wounds instead.</li>
-				<li class="balance">Most injuries from aggressive spreading vines are now mitigated by melee armor.</li>
-				<li class="tweak">Aggressive vines will no longer hurt dead people.</li>
-				<li class="tweak">Aggressive vines now cause sound effects and messages when they hit someone.</li>
-				<li class="tweak">Getting hit by aggressive vines will now register in the round's attack log.</li>
-			</ul>
-			<h3 class="author">ArcaneMusic updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">Added the Account Registration Machine to the computerized record-keeping node, from the security lathe.</li>
-			</ul>
-			<h3 class="author">Fhaxaris updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">Flipping your gun no longer overrides every other action. They now happen simultaneously.</li>
-			</ul>
-			<h3 class="author">Time-Green updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">Adds a Chemical Beacon and a Chemical Recipient. They can be used to teleport chemicals over a long distance, altough the Chemical Recipient must be researched and printed in the medical protolathe. Simply use a multitool on the Recipient and then on any subsequent Chemical Beacons.</li>
-				<li class="code_imp">Reworked plumbing RCD code a bit to support every object, not just subtypes of the abstract plumbing machinery class</li>
-			</ul>
-			<h3 class="author">spessbro updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">Office supplies bounties</li>
-				<li class="rscadd">slime core exports</li>
-				<li class="rscadd">humanlike meat exports</li>
-				<li class="rscadd">cloth, sheetzza, meat and durathread exports</li>
-				<li class="rscadd">very profitable contraband tail exports</li>
-				<li class="rscadd">high value export for [REDACTED]</li>
-			</ul>
-			<h3 class="author">zxaber updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">The Fission360 app can now detect nukes and nuke disks on other Z levels (though it won't start tracking until you're on the same level).</li>
-			</ul>
-
-			<h2 class="date">12 August 2020</h2>
-			<h3 class="author">Fikou updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">fixes ice box pods landing 3 tiles away</li>
-				<li class="bugfix">fixes wrong path on ninja pinpointer objective</li>
-			</ul>
-			<h3 class="author">Jared-Fogle updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscdel">Removed reinforcement chromosomes, AKA mutadone resistance.</li>
-				<li class="tweak">You can now craft cable restraints directly from the radial menu.</li>
-			</ul>
-			<h3 class="author">LemonInTheDark updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">If you attach something to a grenade's boom wire it won't instantly trigger on pulse, instead using the same timer used for inhand activations.</li>
-				<li class="rscadd">The voice analyzer now says something when it triggers, and plays a short whirrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr sound. The time between parse and trigger has been increased to 2 seconds as well. Oh and they can't be used when whispering.</li>
-				<li class="rscadd">If you are "in" something, and talk, runechat will be displayed as if the thing you are in talked.</li>
-			</ul>
-			<h3 class="author">MrStonedOne updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="refactor">Interface assets (js/css/images) can now be managed using an external webserver instead of byond's one at a time file transfer queue.</li>
-				<li class="admin">Adds admin verb `toggle-cdn` that allows admins to disable the external webserver asset transport and revert to the old system. Useful if the webserver backing this goes down (thanks cloudflare).</li>
-				<li class="config">New config file, resources.txt, (must be loaded by an $include statement from the main config)</li>
-				<li class="server">The `external_rsc_urls.txt` config has been moved to the main config system.</li>
-			</ul>
-			<h3 class="author">Paxilmaniac updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">pistols missing sprites when loaded no longer do that</li>
-				<li class="bugfix">spiderlings not getting flattened by a fly swatter in one hit</li>
-				<li class="tweak">replaced jetpacks in eva on icebox with those random things that were on the floor for some reason</li>
-				<li class="bugfix">some strange area mistakes on meta xenobio</li>
-			</ul>
-			<h3 class="author">WarlockD updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Paper working with stamps again</li>
-				<li class="bugfix">Paper works with doors now, become the next Martin Luther!</li>
-				<li class="bugfix">Dead people cannot write on it if they have the page up</li>
-				<li class="bugfix">Page goes away when you walk around</li>
-			</ul>
-			<h3 class="author">nemvar updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">Added a new option for clients fps: "Recommended". Setting fps in the options to -1 now sets it to the recommended value. Byond version higher or equal to 513.1523 should be used.</li>
-				<li class="tweak">Due to interal byond workings the recommended value for fps is currently 40. Another good value is 100. 60 is not advised.</li>
-			</ul>
-			<h3 class="author">nightred updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Icebox turbine is wired up to safety code.</li>
-			</ul>
-			<h3 class="author">tralezab updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="spellcheck">made the admin keycard doors more plain and straightforward in what they do.</li>
-			</ul>
-
-			<h2 class="date">11 August 2020</h2>
-			<h3 class="author">Bumtickley00 updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Medicated sutures no longer yield more polypyr than it takes to make them when ground</li>
-				<li class="tweak">Aloe cream now automatically repeats when healing</li>
-				<li class="spellcheck">Aloe cream is no longer referred to as "medical stack" in the description</li>
-			</ul>
-			<h3 class="author">Fikou updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">you can now make extendohands with a right and left arm</li>
-				<li class="tweak">byos now mentions that you can buy shuttle engine crates after buying it in its description</li>
-				<li class="bugfix">magboots now update speed</li>
-			</ul>
-			<h3 class="author">Jared-Fogle updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="imageadd">Advanced medibots now have a distinct sprite.</li>
-				<li class="rscadd">The moodlet for giving CPR will now also give to users of defibrillators.</li>
-			</ul>
-			<h3 class="author">LemonInTheDark updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">Trading cards will now ZOOM AND ENHANCE in your bag properly.</li>
-			</ul>
-			<h3 class="author">Paxilmaniac updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">you can no longer place force fields on the same tile as yourself to become god for 30 seconds</li>
-			</ul>
-			<h3 class="author">Timberpoes updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">The security camera console will now correctly track when viewing moving cyborg cameras.</li>
-				<li class="tweak">Some things on the station may allow for more advanced interaction when used alongside telekinesis when they previously did not.</li>
-				<li class="bugfix">Intercoms can now be remotely viewed via telekinesis.</li>
-				<li class="bugfix">Those with an unnatural attachment to life will no longer succumb to critical wounds when whispering.</li>
-				<li class="bugfix">Orbital Mech Pad Consoles can now be successfully linked to multiple pads. In particular, this means you can now properly teleport between all pads in Ice Box's multiple mining outposts as well as add new locations to teleport to.</li>
-				<li class="tweak">Pinpointers are no longer indestructible be default. The Nuke Pinpointers are still indestructible.</li>
-			</ul>
-			<h3 class="author">actioninja updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">big slapps</li>
-			</ul>
-			<h3 class="author">uomo91 updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Nanotrasen has fixed a supply chain problem with green stockings.</li>
-			</ul>
-			<h3 class="author">zxaber updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">Added support for modular PC expansion bays, or hardware bays designed to be used by nonessential hardware. Devices have a limited number of bays (tablets less than others).</li>
-				<li class="balance">The AI card slot, printer, and APC-siphoning recharger are now expansion bay hardware.</li>
-				<li class="balance">AtmoZphere, the modular PC atmos scanner, now requires a new expansion bay hardware item - the sensor package. Certain shift-start tablets have been adjusted to reflect this.</li>
-				<li class="refactor">Modular PC card readers have been split -- The primary ID card reader, which comes pre-installed on nearly all devices, and a secondary ID card reader which is an expansion bay hardware and will need to be purchased separately. Certain shift-start devices have a secondary reader pre-installed.</li>
-				<li class="bugfix">Buying a tablet from the Laptop/Tablet vendor, and paying extra for the nano printer, will now attach the correct printer rather than attempt to stuff a laptop printer into a tablet and silently fail but still take your cash.</li>
-			</ul>
-
-			<h2 class="date">10 August 2020</h2>
-			<h3 class="author">ArcaneDefence updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Pacifists can no longer harm people with baseball bats, powerfists, hierophant clubs, flamethrowers, pneumatic cannons, or syringe guns mounted on mechs.</li>
-			</ul>
-			<h3 class="author">ArcaneMusic updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">Bounties now properly give less profit when completed, but decrease the number of items needed with high inflation.</li>
-				<li class="balance">The station target rate has been lowered at a base, to improve the impact of inflation.</li>
-				<li class="bugfix">Civilian bounty beacons take less time to deploy.</li>
-			</ul>
-			<h3 class="author">Arkatos updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Service cyborgs are now able to properly set a pipe cleaner cable color for their art needs.</li>
-				<li class="tweak">Service cyborgs can now cancel color choosing input for pipe cleaner cables in case they have changed their minds about it.</li>
-				<li class="rscadd">Object reskins now use a radial menu.</li>
-			</ul>
-			<h3 class="author">Fikou updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">You can no longer use singularity hammers to move cult floors or use crates to pick them up</li>
-			</ul>
-			<h3 class="author">Jared-Fogle updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">CPR will now automatically repeat, but you can no longer do it multiple times at once.</li>
-				<li class="rscadd">You will now hear the sound and receive a distinct message when the supermatter explodes while you are safe.</li>
-				<li class="rscadd">Offers will now be retained if the potential taker moves.</li>
-			</ul>
-			<h3 class="author">Paxilmaniac updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">Large fuel tank, able to be ordered from cargo if you're into that sorta thing</li>
-				<li class="tweak">Replaced some fuel tanks in engineering with their larger variants</li>
-				<li class="rscadd">subtype of plasma floors that can't be crowbarred</li>
-				<li class="tweak">replaced all the floors on disco inferno with these new crowbar proof floors</li>
-			</ul>
-			<h3 class="author">Rohesie and Kathy Ryals updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">The Honkworks 5.0 cartridge's software has been updated to be able to hack machines, computers and airlocks to make them honk for a while.</li>
-				<li class="code_imp">Added a new sound_player component to be able to play any sound with any signals.</li>
-			</ul>
-			<h3 class="author">Ryll/Shaps updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscdel">The Longtimer quirk has been removed</li>
-				<li class="tweak">Temporal Scarring has been reworked. Rather than drawing from one of five random slots each round, you now have 3 slots that you will go through sequentially, so if you survive a round with a bunch of scars, they'll be with you 3 rounds from now.</li>
-				<li class="bugfix">The commendation config option no longer breaks the roundend sequence when enabled</li>
-				<li class="bugfix">You can now mend damaged clothing with cloth. I swear, this time you really can.</li>
-			</ul>
-			<h3 class="author">ShizCalev updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Fixed nations and banners not using the global job lists for their job checks.</li>
-				<li class="bugfix">Fixed a scenario which could cause floorbots to end up with negative tiles in their inventory.</li>
-				<li class="bugfix">Fixed floorbots not stopping the process of replacing tiles after turning off replace tiles while they're in the middle of replacing tiles.</li>
-				<li class="bugfix">Fixed a couple things not sending out signals when their icons were updated.</li>
-				<li class="bugfix">Machines will now properly drop their circuit boards again.</li>
-			</ul>
-			<h3 class="author">Timberpoes updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">As part of a recent employee ethical treatment audit, a mob of angry lizardperson housewives successfully ambushed and dismembered the auditor, wearing his bones as new adornments. As the thirteenth auditor lost this quarter in a similar manner, NanoTrasen executives voted unanimously to not mutilate lizardpeople employees and will once again tolerate them expressing their individuality by no longer replacing their tails with generic variants and pulling out all their spines.</li>
-				<li class="bugfix">Observers can now look at the Skill Station interface without a tgui error.</li>
-			</ul>
-			<h3 class="author">TiviPlus updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="refactor">refactored a bunch of /area stuff</li>
-			</ul>
-			<h3 class="author">WarlockD updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Blackmarket uplink is now buildable again</li>
-				<li class="bugfix">Other crafting items should also work now</li>
-			</ul>
-			<h3 class="author">YPOQ updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Fixed an issue that caused diseased mobs to not be deleted properly.</li>
-				<li class="bugfix">Fixed being unable to use the implosion compressor after failing an implosion.</li>
-			</ul>
-			<h3 class="author">ike709 and bobbahbrown updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">Admins can now see your bans on (some) other servers.</li>
-			</ul>
-			<h3 class="author">tralezab updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">Mafia Lobby System reworked</li>
-				<li class="rscadd">Mafia panel redesigned</li>
-				<li class="rscadd">Mafia Trials have a bit more depth</li>
-				<li class="tweak">Mafia misc. tweaks</li>
-				<li class="bugfix">Mafia misc. fixes</li>
-				<li class="balance">removes mecha pilots and elites from the summoning pool</li>
-				<li class="bugfix">You can no longer beetlejuice yourself!</li>
-			</ul>
-			<h3 class="author">uomo91 updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">Nanotrasen's pet budget has increased, and missing pets have been dispatched to various departments.</li>
-				<li class="rscadd">Nanotrasen's signage department has funded the design and placement of signs for the Lawyer's office and courtroom.</li>
-			</ul>
-
-			<h2 class="date">08 August 2020</h2>
-			<h3 class="author">Fikou, MrDoomBringer updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="rscadd">Mecha Orbital Pad! Available in your local Mechbay</li>
-			</ul>
-			<h3 class="author">Timberpoes updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Camera consoles can now see through Cyborg cameras.</li>
-				<li class="rscadd">The AI's camera network now includes the integrated cameras on their cyborgs.</li>
-				<li class="rscadd">The Advanced Camera Console camera network now includes the integrated cameras on cyborgs.</li>
-			</ul>
-			<h3 class="author">uomo91 updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">Petting more animals than just cats and dogs now makes you happy.</li>
 			</ul>
 		</div>
 
