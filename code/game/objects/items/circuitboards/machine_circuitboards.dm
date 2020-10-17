@@ -716,6 +716,16 @@
 		/obj/item/stack/cable_coil = 1,
 		/obj/item/stack/sheet/glass = 2)
 
+/obj/item/circuitboard/machine/sleeper/syndie
+	name = "Totaly Legit Sleeper (Machine Board)"
+	build_path = /obj/machinery/sleeper/syndie
+	req_components = list(
+		/obj/item/stock_parts/matter_bin/bluespace = 1,
+		/obj/item/stock_parts/manipulator/femto = 1,
+		/obj/item/stack/cable_coil = 1,
+		/obj/item/stack/sheet/glass = 2)
+
+
 /obj/item/circuitboard/machine/sleeper/party
 	name = "Party Pod (Machine Board)"
 	build_path = /obj/machinery/sleeper/party

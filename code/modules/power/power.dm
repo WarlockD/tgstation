@@ -330,3 +330,19 @@
 	for(var/obj/machinery/power/apc/APC in GLOB.apcs_list)
 		if(APC.area == src)
 			return APC
+
+
+/area
+	var/obj/machinery/power/apc/apc_cache = null
+
+/area/proc/apc_change()
+	apc_cache = null
+
+/area/proc/get_apc()
+	return GLOB.apcs_list[src]
+	if(apc_null)
+		for(var/obj/machinery/power/apc/APC in GLOB.apcs_list)
+			if(APC.area == src)
+				apc_cache = APC
+				RegesterSignal(APC, COMSIG_PARENT_QDELETING, ./proc/apc_cache)
+	return apc_cache

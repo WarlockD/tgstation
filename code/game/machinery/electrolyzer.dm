@@ -14,8 +14,7 @@
 	circuit = /obj/item/circuitboard/machine/electrolyzer
 	/// We don't use area power, we always use the cell
 	use_power = NO_POWER_USE
-	///used to check if there is a cell in the machine
-	var/obj/item/stock_parts/cell/cell
+	machine_settings = MACHINE_SETTINGS_USE_CELL 
 	///check if the machine is on or off
 	var/on = FALSE
 	///check what mode the machine should be (WORKING, STANDBY)
@@ -24,9 +23,6 @@
 	var/workingPower = 1
 	///Decrease the amount of power usage, changed by upgrading the capacitor tier
 	var/efficiency = 0.5
-
-/obj/machinery/electrolyzer/get_cell()
-	return cell
 
 /obj/machinery/electrolyzer/Initialize()
 	. = ..()

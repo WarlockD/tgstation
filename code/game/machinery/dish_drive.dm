@@ -75,10 +75,11 @@
 	else
 		idle_power_usage = max(0, idle_power_usage - total_rating)
 		active_power_usage = max(0, active_power_usage - total_rating)
-	var/obj/item/circuitboard/machine/dish_drive/board = locate() in component_parts
+	var/obj/item/circuitboard/machine/dish_drive/board = circuit
 	if(board)
 		suction_enabled = board.suction
 		transmit_enabled = board.transmit
+	return ..()
 
 /obj/machinery/dish_drive/process()
 	if(time_since_dishes <= world.time && transmit_enabled)

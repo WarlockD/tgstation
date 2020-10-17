@@ -87,7 +87,6 @@
 					obj_break(ENERGY)
 
 /obj/machinery/computer/deconstruct(disassembled = TRUE, mob/user)
-	on_deconstruction()
 	if(!(flags_1 & NODECONSTRUCT_1))
 		if(circuit) //no circuit, no computer frame
 			var/obj/structure/frame/computer/A = new /obj/structure/frame/computer(src.loc)
@@ -112,7 +111,7 @@
 			circuit = null
 		for(var/obj/C in src)
 			C.forceMove(loc)
-	qdel(src)
+	return ..
 
 /obj/machinery/computer/AltClick(mob/user)
 	. = ..()

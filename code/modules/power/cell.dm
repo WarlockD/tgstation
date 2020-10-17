@@ -182,6 +182,56 @@
 	. = ..()
 	charge = 0
 
+// cells in series, used to process cells a collection of cells at once fast while
+// removing them gives the correct charge on the size.  Not constructable..well for now
+// If you want it constructable you will have to fix explode, rigged, custom_materials
+// and how the pack deconstructs itself
+
+/obj/item/stock_parts/cell/series
+	name = "\improper Space Shack branded plastic cell box"
+	desc = "Plastic box with wires that combine a bunch of cells in a row" //TOTALLY TRADEMARK INFRINGEMENT
+	maxcharge = 0
+	charge = 0
+	var/list/cells = null
+
+/obj/item/stock_parts/cell/series/proc/remove_cell(obj/item/stock_parts/cell/C)
+	if(cells[C])
+		cells.Remove(C)
+		maxcharge -= C.maxcharge
+		charge -= C.charge
+		C.moveToNullSpace() // hopefully you move it to someones hand after this
+		return TRUE
+
+/obj/item/stock_parts/cell/series/proc/insert_cell(obj/item/stock_parts/cell/C)
+	if(!cells[C])
+		C.forceMove(src)
+		maxcharge += C.maxcharge
+		charge += C.charge
+		cells[C] = C.charge
+		return TRUE
+
+/obj/item/stock_parts/cell/series/Initialize()
+	. = ..()
+	if(cells) // prefiled with cell path
+		var/list/path_search =  cells
+		cells = list()
+		for(var/comp_path in cells)
+			if(ispath(comp_path, /obj/item/stock_parts/cell))
+				insert_cell(new comp_path(null)) // nullspace, insert will move it
+			if(istype(comp_path, /obj/item/stock_parts/cell))
+				insert_cell(comp_path)
+	else
+		cells = list()
+
+/obj/item/stock_parts/cell/series/handle_atom_del(atom/A)
+	if(cells[A])
+		cells.Remove(A)
+	return ..()
+
+/obj/item/stock_parts/cell/series/Destroy()
+	cells = null
+	return ..()
+
 /obj/item/stock_parts/cell/crap
 	name = "\improper Nanotrasen brand rechargeable AA battery"
 	desc = "You can't top the plasma top." //TOTALLY TRADEMARK INFRINGEMENT

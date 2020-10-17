@@ -101,10 +101,11 @@ Class Procs:
 	var/active_power_usage = 0
 	var/cell_charging_power_usage = 10 	// extra power used to charge the batterys
 	var/power_channel = AREA_USAGE_EQUIP //AREA_USAGE_EQUIP,AREA_USAGE_ENVIRON or AREA_USAGE_LIGHT
-	var/machine_power_setting = MACHINE_SETTING_USE_APC
+	var/machine_setting = MACHINE_SETTING_USE_APC
 	var/chargeEfficiency = 1
-	var/cell = null 		// If we use a battery its put here.  IT can be a list, in the case of a SEMS
-
+	var/datum/powernet/powernet = null // where we got power from, APC or wire
+	var/machinery_layer = MACHINERY_LAYER_1 | MACHINERY_LAYER_2 | MACHINERY_LAYER_3 // search for any wire layer
+	var/obj/item/stock_parts/cell/cell = null 		// If we use a battery its put here.  If you want to use a bunch of cells use /obj/item/stock_parts/cell/series
 	var/list/component_parts = null //list of all the parts used to build it, if made from certain kinds of frames.
 
 	var/panel_open = FALSE
@@ -112,11 +113,12 @@ Class Procs:
 	var/critical_machine = FALSE //If this machine is critical to station operation and should have the area be excempted from power failures.
 	var/list/occupant_typecache //if set, turned into typecache in Initialize, other wise, defaults to mob/living typecache
 	var/atom/movable/occupant = null
+	var/frame_type =  /obj/structure/frame/machine
 	/// Viable flags to go here are START_PROCESSING_ON_INIT, or START_PROCESSING_MANUALLY. See code\__DEFINES\machines.dm for more information on these flags.
 	var/processing_flags = START_PROCESSING_ON_INIT
 	/// What subsystem this machine will use, which is generally SSmachines or SSfastprocess. By default all machinery use SSmachines. This fires a machine's process() roughly every 2 seconds.
 	var/subsystem_type = /datum/controller/subsystem/machines
-	var/obj/item/circuitboard/circuit // Circuit to be created and inserted when the machinery is created
+	var/obj/item/circuitboard/machine/circuit // Circuit to be created and inserted when the machinery is created
 
 	var/interaction_flags_machine = INTERACT_MACHINE_WIRES_IF_OPEN | INTERACT_MACHINE_ALLOW_SILICON | INTERACT_MACHINE_OPEN_SILICON | INTERACT_MACHINE_SET_MACHINE
 	var/fair_market_price = 69
@@ -125,6 +127,24 @@ Class Procs:
 
 	// For storing and overriding ui id
 	var/tgui_id // ID of TGUI interface
+
+	// Moved id_tag and radio here.  Its in nearly 50% of the machines anyway and is just so much copypasta
+	var/id_tag = null
+	var/frequency = null
+	var/frequency_filter = null // filter for the radio connection
+	var/datum/radio_frequency/radio_connection
+
+
+/// Radio interface
+/obj/machinery/proc/set_frequency(new_frequency)
+	SSradio.remove_object(src, frequency)
+	if(new_frequency)
+		frequency = new_frequency
+		radio_connection = SSradio.add_object(src, frequency, frequency_filter)
+
+
+/obj/machinery/get_cell()
+	return cell
 
 /obj/machinery/Initialize()
 	if(!armor)
@@ -135,12 +155,17 @@ Class Procs:
 	if(ispath(circuit, /obj/item/circuitboard))
 		circuit = new circuit(src)
 		circuit.apply_default_parts(src)
+	else // sanity check, if we never had a board, we do not have anything else
+		machine_setting |= MACHINE_SETTING_NO_CIRCUIT
 
 	if(processing_flags & START_PROCESSING_ON_INIT)
 		begin_processing()
 
 	if(occupant_typecache)
 		occupant_typecache = typecacheof(occupant_typecache)
+
+	if(frequency)
+		set_frequency(frequency)
 
 	return INITIALIZE_HINT_LATELOAD
 
@@ -158,15 +183,52 @@ Class Procs:
 	. = ..()
 	power_change()
 	RegisterSignal(src, COMSIG_ENTER_AREA, .proc/power_change)
-
+	RegisterSignal(src, COMSIG_MOVABLE_SET_ANCHORED, .proc/power_change)
 /obj/machinery/Destroy()
 	GLOB.machines.Remove(src)
 	end_processing()
+	if(frequency)
+		SSradio.remove_object(src,frequency)
 	dump_contents()
 	QDEL_LIST(component_parts)
 	QDEL_NULL(circuit)
 	return ..()
 
+
+/obj/machinery/proc/power_change()
+	// clear the powernet and search again
+	if(powernet)
+		machines_on_power.Remove(src)
+		powernet = null
+
+	// First we check if wired, if so we don't use the APC powernet
+	if(anchored && MACHINE_SETTING_ISSET(MACHINE_SETTING_WIRE))
+		var/turf/T = loc
+		if(T)
+			var/obj/structure/cable/C = T.get_cable_node(machinery_layer)
+			if(C?.powernet) // make sure we have a power net
+				powernet = C.powernet
+				machines_on_power[src] = powernet
+				RegesterSignal(C, COMSIG_PARENT_QDELETING, ./proc/power_change)
+
+	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_APC))
+		var/area/A = get_area(src)		// make sure it's in an area
+
+		if(A) // we use area power then
+			A.get_
+			A.use_power(amount, chan)
+			if(cell && MACHINE_SETTING_ISSET(MACHINE_SETTING_CHARGE_CELL))
+				var/excess = _charge_cell(cell_charging_power_usage)
+				excess = cell_charging_power_usage - excess
+				if(excess > 0) // if we can charge then use the power
+					A.use_power(excess, chan)
+			return
+
+	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_CELL))
+		var/excess = _use_cell(amount)
+
+
+powernet
 /obj/machinery/proc/locate_machinery()
 	return
 
@@ -176,82 +238,43 @@ Class Procs:
 /obj/machinery/proc/process_atmos()//If you dont use process why are you here
 	return PROCESS_KILL
 
-/// Returns total charge in all cells
-/obj/machinery/proc/_cell_total_charge()
-	var/total = 0
-	var/obj/item/stock_parts/cell/C = cell
-	if(C) // normal use
-		total = C.charge
-	else
-		var/list/L = cell
-		if(L)
-			for(var/i in 1 to L.len)
-				C = L[i]
-				total += C.charge
-	return total
 
-/// Uses the cell or cells in the machine.  Returns amount of charge left, returns < 0 if drained
-/obj/machinery/proc/_use_cell(amount)
-	var/total_power = 0
-	var/obj/item/stock_parts/cell/C = cell
-	if(C) // normal use
-		total_power = C.use(amount)
-	else if(islist(cell))
-		var/list/L = cell
-		var/empty_cells = 0
-		var/split_amount = 0
-		while(empty_cells != L.len && amount > 0.1) // hate float errors, though we shouldn't run into those here
-			empty_cells = 0
-			total_power = 0
-			// if your discharging battery's in parallel the power gets split
-			// this simulates that
-			for(var/i in 1 to L.len)
-				C = L[i]
-				split_amount = amount / (L.len - empty_cells)
-				var/excess = C.use(split_amount)
-				amount -= split_amount
-				if(excess > 0)
-					total_power += excess
-					continue // battery still has charge so don't need to do more
-				empty_cells++ // battery is empty
-				amount += excess // we had some charge unused so use it
-	return total_power
-
-/// Charges the cell in the machine, returns excess power if overcharged
-/obj/machinery/proc/_charge_cell(amount)
-	var/excess_power  = 0
-	var/obj/item/stock_parts/cell/C = cell
-	if(C) // normal use
-		excess_power = C.give(amount)
-	else if(islist(cell))
-		var/list/L = cell
-		var/empty_cells = 0
-		var/split_amount = 0
-		while(empty_cells != L.len && amount > 0.1) // hate float errors, though we shouldn't run into those here
-			empty_cells = 0
-			excess_power = 0
-			// if your discharging battery's in parallel the power gets split
-			// this simulates that
-			for(var/i in 1 to L.len)
-				C = L[i]
-				split_amount = amount / (L.len - empty_cells)
-				var/excess = C.give(split_amount)
-				amount -= split_amount - excess
-				if(excess == 0)
-					// We used all the power but we can still go farther on this battery
-					continue
-				empty_cells++ // battery is empty
-				excess_power += excess
-
-	return 	excess_power
-
-///Called when we want to change the value of the machine_stat variable. Holds bitflags.
-/obj/machinery/proc/set_machine_stat(new_value)
+/// Call this instead of setting machine_stat as this will cycle though all the
+/// signals to set.
+/// It also handles signals that need to be sent (powerchange, broken, etc)
+/obj/machinery/proc/machine_stat_change(new_value)
 	if(new_value == machine_stat)
 		return
 	var/old_value = machine_stat // running conditions...live with it
-	SEND_SIGNAL(src, COMSIG_MACHINERY_MACHINE_STAT_CHANGE, old_value, new_value)
 	machine_stat = new_value
+	update_icon() // update the icon because the machine state has changed...humm, should we make panel a bitflag
+	// If this signal is handled then we can ignore the other signals being sent
+	if(SEND_SIGNAL(src, COMSIG_MACHINERY_MACHINE_STAT_CHANGE, old_value, new_value))
+		return // if we return
+	if(!MACHINE_USES_POWER(src)) // if we don't use power, ignore the power signals
+		return
+	// if power changed, then send that signal
+	if((old_value & MACHINE_STAT_OFF) != (machine_stat & MACHINE_STAT_OFF) || (old_value & MACHINE_STAT_NOPOWER) != (machine_stat & MACHINE_STAT_NOPOWER))
+		if((machine_stat & MACHINE_STAT_OFF) || (machine_stat & MACHINE_STAT_NOPOWER))
+			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_LOST)
+		else
+			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_RESTORED)
+
+	if(on && MACHINE_STAT_ISSET(MACHINE_STAT_OFF))
+		if(!MACHINE_STAT_ISSET(MACHINE_STAT_NOPOWER))
+			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_RESTORED)
+		set_machine_stat(machine_stat & ~MACHINE_STAT_OFF)
+		. = TRUE
+	else if(!on && !MACHINE_STAT_ISSET(MACHINE_STAT_OFF))
+		SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_LOST)
+		set_machine_stat(machine_stat | MACHINE_STAT_OFF)
+		. = TRUE
+	if(.)
+		MACHINE_USES_POWER
+// NOTE: Should I change below to be defines?
+
+
+
 
 
 /obj/machinery/emp_act(severity)
@@ -271,56 +294,132 @@ Class Procs:
 	state_open = TRUE
 	density = FALSE
 	if(drop)
-		dump_inventory_contents()
+		_dump_inventory(MACHINE_DROP_CONTENTS)
 	update_icon()
 	updateUsrDialog()
 
-/**
-  * Drop every movable atom in the machine's contents list, including any components and circuit.
-  */
-/obj/machinery/dump_contents()
-	// Start by calling the dump_inventory_contents proc. Will allow machines with special contents
-	// to handle their dropping.
-	dump_inventory_contents()
 
-	// Then we can clean up and drop everything else.
-	var/turf/this_turf = get_turf(src)
-	for(var/atom/movable/movable_atom in contents)
-		movable_atom.forceMove(this_turf)
+// -- START INVENTORY CODE
+// All the code below handles the inventory removal and replacement of component parts, occupants etc..
+// Generally, everything in component_parts are in nullspace.  They are a PART of the machine.  Everything else
+// should go into the standard components list.  We do it like this so if we need to dump out the machine,
+// aka, empty a washer, chem etc, we don't have to exempt the machine parts.  Or if it blows up, again, we
+// can just dump the contents and have the rest of the parts vaporize with the machine.  One exception is the
+// circuit, while also in nullspace, is only refereed in the circuit var.  If it doesn't exist, we don't use
+// component_parts at all and some machines are not allowed to drop it but allowed to drop component_parts
+// (see sleepers and various admin machines)
 
-	// We'll have dropped the occupant, circuit and component parts as part of this.
+
+/// Does a complete qdel of everything except contents without checking flags or settings
+/obj/machinery/proc/_delete_inventory()
+	if(contents.len > 0) // make sure its moved to nullspace to skip handle_atom_del call
+		var/atom/movable/A
+		for(var/i in 1 to contents.len)
+			A = contents[i]
+			A.moveToNullspace()
+			qdel(A)
+		contents.Cut()
+	QDEL_LIST(component_parts)
+	QDEL_NULL(circuit)
 	occupant = null
-	circuit = null
-	LAZYCLEARLIST(component_parts)
+	cell = null
 
-/**
-  * Drop every movable atom in the machine's contents list that is not a component_part.
-  *
-  * Proc does not drop components and will skip over anything in the component_parts list.
-  * Call dump_contents() to drop all contents including components.
-  * Arguments:
-  * * subset - If this is not null, only atoms that are also contained within the subset list will be dropped.
-  */
-/obj/machinery/proc/dump_inventory_contents(list/subset = list())
-	SHOULD_CALL_PARENT(1)
+/// The handle "all in one" code for dumping the inventory of a machine
+/obj/machinery/proc/_dump_inventory(machine_dump_mask, disassembled=TRUE)
 	var/turf/this_turf = get_turf(src)
-	if(!MACHINE_SETTING_ISSET(MACHINE_SETTING_NO_DROP_CONTENTS))
-		for(var/atom/movable/movable_atom in contents & subset)
-			movable_atom.forceMove(this_turf)
-			if(isliving(movable_atom))
-				var/mob/living/living_mob = movable_atom
-				living_mob.update_mobility()
+	machine_dump_mask &= machine_settings // settings overrides whatever you put in dump mask
+
+	// Handle contents
+	if(contents.len > 0 && !(machine_dump_mask & MACHINE_SETTING_NO_DROP_CONTENTS))
+		var/mob/living/living_mob
+		var/atom/movable/movable_atom
+		for(var/i in 1 to contents.len)
+			movable_atom = contents[i]
 			if(occupant == movable_atom)
-				occupant = null
-
-	if(!MACHINE_SETTING_ISSET(MACHINE_SETTING_NO_DROP_COMPONENTS))
-		for(var/atom/movable/movable_atom in component_parts & subset)
+				// Handle occupant
+				if(occupant && !(machine_dump_mask & MACHINE_SETTING_NO_DROP_OCCUPANT))
+					occupant = null
+				else
+					continue // we skip it
 			movable_atom.forceMove(this_turf)
-			component_parts.Remove(movable_atom)
+			living_mob = movable_atom
+			if(living_mob)
+				living_mob.update_mobility()
 
-	if(!MACHINE_SETTING_ISSET(MACHINE_SETTING_NO_DROP_CIRCUIT))
+	// handle frame
+	if(frame_type && ispath(frame_type) && !(machine_dump_mask & MACHINE_SETTING_NO_DROP_FRAME))
+		var/frame_type/frame = new.frame_type(this_turf)
+		if(!disassembled || MACHINE_IS_BROKEN(src))
+			frame.obj_integrity = frame.max_integrity * 0.5 //the frame is already half broken
+		transfer_fingerprints_to(frame)
+		frame.state = 2
+		frame.icon_state = "box_1"
+		frame.set_anchored(anchored)
+		frame.setDir(dir)
+
+
+	// Handle Components
+	if(component_parts.len > 0 && !(machine_dump_mask & MACHINE_SETTING_NO_DROP_COMPONENTS))
+		for(var/obj/O in component_parts) // if this runtimes, its your own damn fault
+			if(istype(O, /obj/item/stack))
+				var/obj/item/stack/S = O // stack off stuff.
+				// wish glass was a subclass
+				if(is_glass_sheet(S) && (!disassembled || MACHINE_IS_BROKEN(src)))
+					var/shared_type = istype(S, /obj/item/sheet/plasmaglass) ? /obj/item/shard/plasma : /obj/item/shard
+					for(var/i in 1 to S.get_amount())
+						new shard_type(this_turf)
+					qdel(O)
+					continue
+			O.forceMove(this_turf) // just it to the floor
+			O.update_icon()
+		component_parts.Cut()
+		cell = null	// clear cell references
+
+	// Handle circuit
+	if(circuit && !(machine_dump_mask & MACHINE_SETTING_NO_DROP_CIRCUIT))
 		circuit.forceMove(this_turf)
 		circuit = null
+
+	// handle frame
+/obj/machinery/dump_contents()
+	_dump_inventory(MACHINE_DROP_CONTENTS) // dump everything that is put in the machine
+	return ..()
+
+// this will be the main function for all of machinery.  The goal is that you never
+// have to override this function as it handles even weird use cases
+// Except for computers, we shouldn't ever need override this as either items
+// will be in contents or parts be in component_parts
+/obj/machinery/deconstruct(disassembled = TRUE)
+	if(!(flags_1 & NODECONSTRUCT_1))
+		// Handle Components
+		_dump_inventory(MACHINE_DUMP_ALL, disassembled)
+		_delete_inventory()
+
+	return ..()
+
+
+/obj/machinery/handle_atom_del(atom/A)
+	if(A == occupant)
+		occupant = null
+		update_icon()
+		updateUsrDialog()
+		return ..()
+
+	if(A == circuit)
+		circuit = null
+		return ..()
+
+	if((A in component_parts) && !QDELETED(src))
+		component_parts.Remove(A)
+		// It would be unusual for a component_part to be qdel'd ordinarily.
+		log_runtime("Machine '[src]' handle_atom_del part '[A]' so there is a logic problem")
+		//deconstruct(FALSE)
+	// if its in contents its moved to nullspace anyway
+
+	return ..()
+
+// -- END INVENTORY CODE
+
 
 /**
  * Puts passed object in to user's hand
@@ -370,7 +469,7 @@ Class Procs:
 // defaults to power_channel
 /obj/machinery/proc/powered(chan = -1) // defaults to power_channel
 	if(!loc)
-		return FALSE
+		return FALSE // we are in null space
 	if(!MACHINE_USES_POWER(src))
 		return TRUE
 	// TODO: move power use of wire from power to here and
@@ -395,61 +494,50 @@ Class Procs:
 /obj/machinery/proc/use_power(amount, chan = -1) // defaults to power_channel
 	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_APC))
 		var/area/A = get_area(src)		// make sure it's in an area
-		if(!A)
-			return
 		if(chan == -1)
 			chan = power_channel
-		A.use_power(amount, chan)
-		if(cell && MACHINE_SETTING_ISSET(MACHINE_SETTING_CHARGE_CELL))
-			var/excess = _charge_cell(cell_charging_power_usage)
-			excess = cell_charging_power_usage - excess
-			if(excess > 0) // if we can charge then use the power
-				A.use_power(excess, chan)
+		if(A && A.powered(chan)) // we use area power then
+			A.use_power(amount, chan)
+			if(cell && MACHINE_SETTING_ISSET(MACHINE_SETTING_CHARGE_CELL))
+				var/excess = _charge_cell(cell_charging_power_usage)
+				excess = cell_charging_power_usage - excess
+				if(excess > 0) // if we can charge then use the power
+					A.use_power(excess, chan)
+			return
 
 	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_CELL))
+		var/excess = _use_cell(amount)
 
-// Turns the physical power switch on or off and sends the correct signal
-/obj/machinery/proc/set_power_switch(on)
-	if(on && MACHINE_STAT_ISSET(MACHINE_STAT_OFF))
-		if(!MACHINE_STAT_ISSET(MACHINE_STAT_NOPOWER))
-			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_RESTORED)
-		set_machine_stat(machine_stat & ~MACHINE_STAT_OFF)
-		. = TRUE
-	else if(!on && !MACHINE_STAT_ISSET(MACHINE_STAT_OFF))
-		SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_LOST)
-		set_machine_stat(machine_stat | MACHINE_STAT_OFF)
-		. = TRUE
-	if(.)
-		update_icon()
-/**
-  * Called whenever the power settings of the containing area change
-  *
-  * by default, check equipment channel & set flag, can override if needed
-  *
-  * Returns TRUE if the MACHINE_STAT_NOPOWER flag was toggled
-  */
-/obj/machinery/proc/power_change()
-	SIGNAL_HANDLER
-	SHOULD_CALL_PARENT(TRUE)
 
-	if(MACHINE_STAT_ISSET(MACHINE_STAT_BROKEN|MACHINE_STAT_OFF))
-		return
-	if(powered(power_channel))
-		if(MACHINE_STAT_ISSET(MACHINE_STAT_NOPOWER))
-			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_RESTORED)
-			. = TRUE
-		set_machine_stat(machine_stat & ~MACHINE_STAT_NOPOWER)
-	else
-		if(!(MACHINE_STAT_ISSET(MACHINE_STAT_NOPOWER)))
+	return PROCESS_KILL // no power
 			SEND_SIGNAL(src, COMSIG_MACHINERY_POWER_LOST)
 			. = TRUE
 		set_machine_stat(machine_stat | MACHINE_STAT_NOPOWER)
-	update_icon()
+
 
 
 /obj/machinery/proc/auto_use_power()
+	if(!MACHINE_USES_POWER(src))
+		return PROCESS_KILL // remove from process, don't check power use
+
+	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_APC))
+		var/area/A = get_area(src)		// make sure it's in an area
+		if(chan == -1)
+			chan = power_channel
+		if(A && A.powered(chan)) // we use area power then
+			A.use_power(amount, chan)
+			if(cell && MACHINE_SETTING_ISSET(MACHINE_SETTING_CHARGE_CELL))
+				var/excess = _charge_cell(cell_charging_power_usage)
+				excess = cell_charging_power_usage - excess
+				if(excess > 0) // if we can charge then use the power
+					A.use_power(excess, chan)
+			return
+
+	if(MACHINE_SETTING_ISSET(MACHINE_SETTING_CELL))
+		var/excess = _use_cell(amount)
+
 	if(!powered(power_channel))
-		return FALSE
+		return PROCESS_KILL
 	if(use_power == 1)
 		use_power(idle_power_usage,power_channel)
 	else if(use_power >= 2)
@@ -592,18 +680,34 @@ Class Procs:
 		return TRUE
 	return ..()
 
+// never use this for machines.  We don't use it anyway... why not though?
+// This is another rabbit hole I am not going down and not relevant for machines
 /obj/machinery/CheckParts(list/parts_list)
-	..()
-	RefreshParts()
+	ASSERT(1)
+	log_runtime("CheckParts run on '[src]' machine.  Shouldn't run it on this?")
 
+///
 /obj/machinery/proc/RefreshParts() //Placeholder proc for machines that are built using frames.
 	SHOULD_CALL_PARENT(1)
-	// sanity check here, check if we have any cells or borads and move them to the right vars
-	for(var/thing in src.comp
-	return
+	// sanity check here, check if we have any cells or boards and move them to the right vars
+	// clear cells
+	cell = null
+	for(var/thing in component_parts)
+		if(istype(thing, /obj/item/circuitboard))
+			log_runtime("There is a '[src]' in component_parts, don't put circuit in component_parts")
+			component_parts.Remove(thing) // don't be in here
+		if(istype(thing, /obj/item/stock_parts/cell))
+			// assign internal cells
+			if(!cell)
+				cell = thing
+			else
+				log_runtime("There is more than one '[src]' in component_parts, don't put more than one cell's in component_parts.  If your using more than one use cell/series")
+				component_parts.Remove(thing)
+
+	update_power() // in case we have new cells in here
 
 /obj/machinery/proc/default_pry_open(obj/item/I)
-	. = !(state_open || panel_open || is_operational || (flags_1 & NODECONSTRUCT_1)) && I.tool_behaviour == TOOL_CROWBAR
+	. = !(state_open || panel_open || MACHINE_IS_OPERATIONAL(src) || (flags_1 & NODECONSTRUCT_1)) && I.tool_behaviour == TOOL_CROWBAR
 	if(.)
 		I.play_tool_sound(src, 50)
 		visible_message("<span class='notice'>[usr] pries open \the [src].</span>", "<span class='notice'>You pry open \the [src].</span>")
@@ -615,25 +719,7 @@ Class Procs:
 		I.play_tool_sound(src, 50)
 		deconstruct(TRUE)
 
-/obj/machinery/deconstruct(disassembled = TRUE)
-	if(!(flags_1 & NODECONSTRUCT_1))
-		on_deconstruction()
-		if(LAZYLEN(component_parts))
-			spawn_frame(disassembled)
-			for(var/obj/item/I in component_parts)
-				I.forceMove(loc)
-			LAZYCLEARLIST(component_parts)
-	return ..()
 
-/obj/machinery/proc/spawn_frame(disassembled)
-	var/obj/structure/frame/machine/M = new /obj/structure/frame/machine(loc)
-	. = M
-	M.set_anchored(anchored)
-	if(!disassembled)
-		M.obj_integrity = M.max_integrity * 0.5 //the frame is already half broken
-	transfer_fingerprints_to(M)
-	M.state = 2
-	M.icon_state = "box_1"
 
 /obj/machinery/obj_break(damage_flag)
 	SHOULD_CALL_PARENT(TRUE)
@@ -648,25 +734,10 @@ Class Procs:
 	if(occupant)
 		occupant.ex_act(severity, target)
 
-/obj/machinery/handle_atom_del(atom/A)
-	if(A == occupant)
-		occupant = null
-		update_icon()
-		updateUsrDialog()
-		return ..()
 
-	// The circuit should also be in component parts, so don't early return.
-	if(A == circuit)
-		circuit = null
-	if((A in component_parts) && !QDELETED(src))
-		component_parts.Remove(A)
-		// It would be unusual for a component_part to be qdel'd ordinarily.
-		deconstruct(FALSE)
-	return ..()
 
 /obj/machinery/CanAllowThrough(atom/movable/mover, turf/target)
 	. = ..()
-
 	if(mover.pass_flags & PASSMACHINE)
 		return TRUE
 
@@ -722,7 +793,41 @@ Class Procs:
 		return FALSE
 	if(can_be_unfasten_wrench(user, TRUE) != SUCCESSFUL_UNFASTEN) //if we aren't explicitly successful, cancel the fuck out
 		return FALSE
-	return TRUE
+
+/// Allows you to replace one part at a time, like a battery cell or just upgrading something by hand
+/obj/machinery/proc/exchange_part(mob/user, obj/item/P)
+	if((flags_1 & NODECONSTRUCT_1) && !W.works_from_distance)
+		return FALSE
+	var/shouldplaysound = 0
+	if(component_parts)
+		if(panel_open)
+			var/obj/item/circuitboard/machine/CB = circuit
+			to_chat(user, display_parts(user))
+			var/P
+			for(var/obj/item/A in component_parts)
+				for(var/D in CB.req_components)
+					if(ispath(A.type, D))
+						P = D
+						break
+					if(istype(B, P) && istype(A, P))
+						if(B.get_part_rating() > A.get_part_rating())
+							if(istype(B,/obj/item/stack)) //conveniently this will mean A is also a stack and I will kill the first person to prove me wrong
+								var/obj/item/stack/SA = A
+								var/obj/item/stack/SB = B
+								var/used_amt = SA.get_amount()
+								if(!SB.use(used_amt))
+									continue //if we don't have the exact amount to replace we don't
+								var/obj/item/stack/SN = new SB.merge_type(null,used_amt)
+								component_parts += SN
+							else
+								if(SEND_SIGNAL(W, COMSIG_TRY_STORAGE_TAKE, B, src))
+									component_parts += B
+									B.moveToNullSpace()
+							SEND_SIGNAL(W, COMSIG_TRY_STORAGE_INSERT, A, null, null, TRUE)
+							component_parts -= A
+							to_chat(user, "<span class='notice'>[capitalize(A.name)] replaced with [B.name].</span>")
+							shouldplaysound = 1 //Only play the sound when parts are actually replaced!
+							break
 
 /obj/machinery/proc/exchange_parts(mob/user, obj/item/storage/part_replacer/W)
 	if(!istype(W))
@@ -732,7 +837,7 @@ Class Procs:
 	var/shouldplaysound = 0
 	if(component_parts)
 		if(panel_open || W.works_from_distance)
-			var/obj/item/circuitboard/machine/CB = locate(/obj/item/circuitboard/machine) in component_parts
+			var/obj/item/circuitboard/machine/CB = circuit
 			var/P
 			if(W.works_from_distance)
 				to_chat(user, display_parts(user))
@@ -795,6 +900,7 @@ Class Procs:
 		. += display_parts(user, TRUE)
 
 //called on machinery construction (i.e from frame to machinery) but not on initialization
+#if 0
 /obj/machinery/proc/on_construction()
 	return
 
@@ -804,6 +910,7 @@ Class Procs:
 
 /obj/machinery/proc/can_be_overridden()
 	. = 1
+#endif
 
 /obj/machinery/zap_act(power, zap_flags)
 	if(prob(85) && (zap_flags & ZAP_MACHINE_EXPLOSIVE) && !(resistance_flags & INDESTRUCTIBLE))
@@ -819,8 +926,6 @@ Class Procs:
 	. = ..()
 	if(AM == occupant)
 		occupant = null
-	if(AM == circuit)
-		circuit = null
 
 /obj/machinery/proc/adjust_item_drop_location(atom/movable/AM)	// Adjust item drop location to a 3x3 grid inside the tile, returns slot id from 0 to 8
 	var/md5 = md5(AM.name)										// Oh, and it's deterministic too. A specific item will always drop from the same slot.
@@ -842,15 +947,19 @@ Class Procs:
  * * len (int)(Optional) Default=5 The length of the name
  * Returns (string) The generated name
  */
-/obj/machinery/proc/assign_random_name(len=5)
+/obj/machinery/proc/assign_random_name(len=5, prefix="", postfix="")
+	var/const/valid_letters = "0123456789ABCDEFGHIJKLMNPQRSTUVWZYZ" // O removed so not to be confused with with some fonts 0
+	var/static/list/all_names = list()
 	var/list/new_name = list()
-	// machine id's should be fun random chars hinting at a larger world
-	for(var/i = 1 to len)
-		switch(rand(1,3))
-			if(1)
-				new_name += ascii2text(rand(65, 90)) // A - Z
-			if(2)
-				new_name += ascii2text(rand(97,122)) // a - z
-			if(3)
-				new_name += ascii2text(rand(48, 57)) // 0 - 9
-	return new_name.Join()
+	var/name = ""
+	do
+		new_name = prefix
+		// machine id's should be fun random chars hinting at a larger world
+		for(var/i = 1 to len)
+			new_name += valid_letters[rand(1, valid_letters.len)] // A - Z
+		new_name += postfix
+		name new_name.Join()
+	while(all_names[name])
+	all_names[name] = TRUE
+	return name
+

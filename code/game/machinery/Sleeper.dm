@@ -31,9 +31,9 @@
 
 /obj/machinery/sleeper/Initialize(mapload)
 	. = ..()
-	if(mapload)
-		LAZYREMOVE(component_parts, circuit)
-		QDEL_NULL(circuit)
+	if(mapload) // sleepers are so old the boards are made of cardboard
+		machine_setting |= MACHINE_SETTING_NO_DROP_CIRCUIT
+
 	occupant_typecache = GLOB.typecache_living
 	update_icon()
 	reset_chem_buttons()
@@ -52,6 +52,7 @@
 	for(var/i in 1 to I)
 		available_chems |= possible_chems[i]
 	reset_chem_buttons()
+	. = ..()
 
 /obj/machinery/sleeper/update_icon_state()
 	if(state_open)
@@ -266,22 +267,7 @@
 /obj/machinery/sleeper/syndie
 	icon_state = "sleeper_s"
 	controls_inside = TRUE
-
-/obj/machinery/sleeper/syndie/fullupgrade/Initialize()
-	. = ..()
-
-	// Cache the old_parts first, we'll delete it after we've changed component_parts to a new list.
-	// This stops handle_atom_del being called on every part when not necessary.
-	var/list/old_parts = component_parts
-
-	component_parts = list()
-	component_parts += new /obj/item/stock_parts/matter_bin/bluespace(src)
-	component_parts += new /obj/item/stock_parts/manipulator/femto(src)
-	component_parts += new /obj/item/stack/sheet/glass(src, 2)
-	component_parts += new /obj/item/stack/cable_coil(src, 1)
-
-	QDEL_LIST(old_parts)
-	RefreshParts()
+	circuit =  /obj/item/circuitboard/machine/sleeper/syndie
 
 /obj/machinery/sleeper/old
 	icon_state = "oldpod"

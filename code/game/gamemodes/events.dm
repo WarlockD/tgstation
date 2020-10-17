@@ -20,7 +20,8 @@
 		A.power_environ = FALSE
 		A.power_change()
 
-	for(var/obj/machinery/power/apc/C in GLOB.apcs_list)
+	for(var/A GLOB.apcs_list)
+		var/obj/machinery/power/apc/C = GLOB.apcs_list[A]
 		if(C.cell && is_station_level(C.z))
 			var/area/A = C.area
 			if(GLOB.typecache_powerfailure_safe_areas[A.type])

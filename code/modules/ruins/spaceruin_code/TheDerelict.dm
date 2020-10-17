@@ -139,7 +139,7 @@
 /obj/machinery/door/airlock/vault/derelict
 	locked = TRUE
 	move_resist = INFINITY
-	use_power = NO_POWER_USE
+	machine_setting = MACHINE_SETTING_USE_NO_POWER
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
 	id_tag = "derelictvault"
 

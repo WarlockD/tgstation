@@ -124,7 +124,7 @@
 
 /obj/machinery/drone_dispenser/process()
 	..()
-	if((machine_stat & (MACHINE_STAT_NOPOWER|MACHINE_STAT_BROKEN)) || !anchored)
+	if(!MACHINE_IS_OPERATIONAL(src) || !anchored)
 		return
 
 	var/datum/component/material_container/materials = GetComponent(/datum/component/material_container)

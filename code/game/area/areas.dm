@@ -453,7 +453,6 @@ GLOBAL_LIST_EMPTY(teleportlocs)
   * per channel power_equip, power_light, power_environ
   */
 /area/proc/powered(chan)		// return true if the area has power to given channel
-
 	if(!requires_power)
 		return TRUE
 	if(always_unpowered)

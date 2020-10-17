@@ -59,9 +59,9 @@
 	for(var/entry in logs)
 		data["logs"] += list(list("entry" = entry))
 
-	for(var/apc in GLOB.apcs_list)
-		if(check_apc(apc))
-			var/obj/machinery/power/apc/A = apc
+	for(var/AREA in GLOB.apcs_list)
+		var/obj/machinery/power/apc/A = GLOB.apcs_list[AREA]
+		if(check_apc(A))
 			var/has_cell = (A.cell) ? TRUE : FALSE
 			data["apcs"] += list(list(
 					"name" = A.area.name,

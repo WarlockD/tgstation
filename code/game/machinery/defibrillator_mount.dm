@@ -31,6 +31,7 @@
 /obj/machinery/defibrillator_mount/handle_atom_del(atom/A)
 	if(A == defib)
 		defib = null
+		cell = null
 		end_processing()
 	return ..()
 
@@ -95,6 +96,7 @@
 		playsound(src, 'sound/machines/click.ogg', 50, TRUE)
 		// Make sure the defib is set before processing begins.
 		defib = I
+		cell = defib.get_cell()
 		begin_processing()
 		update_icon()
 		return
@@ -170,6 +172,7 @@
 	// Make sure processing ends before the defib is nulled
 	end_processing()
 	defib = null
+	cell = null
 	update_icon()
 
 /obj/machinery/defibrillator_mount/charging
@@ -182,24 +185,25 @@
 
 /obj/machinery/defibrillator_mount/charging/Initialize()
 	. = ..()
-	if(is_operational)
+	if(MACHINE_IS_OPERATIONAL(src))
 		begin_processing()
+	RegisterSignal(src, COMSIG_MACHINERY_MACHINE_STAT_CHANGE, .proc/on_set_is_operational)
 
 
-/obj/machinery/defibrillator_mount/charging/on_set_is_operational(old_value)
-	if(old_value) //Turned off
-		end_processing()
+/obj/machinery/defibrillator_mount/charging/proc/on_set_is_operational(old_value, new_value)
+	if(MACHINE_STAT_IS_OPERATIONAL(new_value))
+		begin_processing()
 	else //Turned on
-		begin_processing()
+		end_processing()
+
 
 
 /obj/machinery/defibrillator_mount/charging/process(delta_time)
-	var/obj/item/stock_parts/cell/C = get_cell()
-	if(!C || !is_operational)
+	if(!cell || !MACHINE_IS_OPERATIONAL(src))
 		return PROCESS_KILL
 	if(C.charge < C.maxcharge)
 		use_power(50 * delta_time)
-		C.give(40 * delta_time)
+		_cell_charge(40 * delta_time)
 		update_icon()
 
 //wallframe, for attaching the mounts easily

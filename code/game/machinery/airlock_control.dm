@@ -2,9 +2,7 @@
 
 // This code allows for airlocks to be controlled externally by setting an id_tag and comm frequency (disables ID access)
 /obj/machinery/door/airlock
-	var/id_tag
-	var/frequency
-	var/datum/radio_frequency/radio_connection
+	radio_filter = RADIO_AIRLOCK
 
 
 /obj/machinery/door/airlock/receive_signal(datum/signal/signal)
@@ -58,7 +56,7 @@
 			"door_status" = density ? "closed" : "open",
 			"lock_status" = locked ? "locked" : "unlocked"
 		))
-		radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = RADIO_AIRLOCK)
+		radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = frequency_filter)
 
 
 /obj/machinery/door/airlock/open(surpress_send)
@@ -73,17 +71,6 @@
 		send_status()
 
 
-/obj/machinery/door/airlock/proc/set_frequency(new_frequency)
-	SSradio.remove_object(src, frequency)
-	if(new_frequency)
-		frequency = new_frequency
-		radio_connection = SSradio.add_object(src, frequency, RADIO_AIRLOCK)
-
-/obj/machinery/door/airlock/Destroy()
-	if(frequency)
-		SSradio.remove_object(src,frequency)
-	return ..()
-
 /obj/machinery/airlock_sensor
 	icon = 'icons/obj/airlock_machines.dmi'
 	icon_state = "airlock_sensor_off"
@@ -91,14 +78,8 @@
 	resistance_flags = FIRE_PROOF
 
 	power_channel = AREA_USAGE_ENVIRON
-
-	var/id_tag
-	var/master_tag
-	var/frequency = FREQ_AIRLOCK_CONTROL
-
-	var/datum/radio_frequency/radio_connection
-
-	var/on = TRUE
+	frequency = FREQ_AIRLOCK_CONTROL
+	frequency_filter = RADIO_AIRLOCK
 	var/alert = FALSE
 
 /obj/machinery/airlock_sensor/incinerator_toxmix
@@ -114,7 +95,7 @@
 	master_tag = INCINERATOR_SYNDICATELAVA_AIRLOCK_CONTROLLER
 
 /obj/machinery/airlock_sensor/update_icon_state()
-	if(on)
+	if(MACHINE_IS_ON(src))
 		if(alert)
 			icon_state = "airlock_sensor_alert"
 		else
@@ -131,11 +112,11 @@
 		"command" = "cycle"
 	))
 
-	radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = RADIO_AIRLOCK)
+	radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = frequency_filter)
 	flick("airlock_sensor_cycle", src)
 
 /obj/machinery/airlock_sensor/process()
-	if(on)
+	if(MACHINE_IS_ON(src))
 		var/datum/gas_mixture/air_sample = return_air()
 		var/pressure = round(air_sample.return_pressure(),0.1)
 		alert = (pressure < ONE_ATMOSPHERE*0.8)
@@ -146,19 +127,8 @@
 			"pressure" = num2text(pressure)
 		))
 
-		radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = RADIO_AIRLOCK)
+		radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = frequency_filter)
 
 	update_icon()
 
-/obj/machinery/airlock_sensor/proc/set_frequency(new_frequency)
-	SSradio.remove_object(src, frequency)
-	frequency = new_frequency
-	radio_connection = SSradio.add_object(src, frequency, RADIO_AIRLOCK)
 
-/obj/machinery/airlock_sensor/Initialize()
-	. = ..()
-	set_frequency(frequency)
-
-/obj/machinery/airlock_sensor/Destroy()
-	SSradio.remove_object(src,frequency)
-	return ..()

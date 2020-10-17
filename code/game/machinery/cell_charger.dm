@@ -7,25 +7,26 @@
 	idle_power_usage = 5
 	active_power_usage = 60
 	power_channel = AREA_USAGE_EQUIP
+	power_setting = MACHINE_SETTING_USE_APC
 	circuit = /obj/item/circuitboard/machine/cell_charger
 	pass_flags = PASSTABLE
-	var/obj/item/stock_parts/cell/charging = null
-	var/charge_rate = 250
+	cell_charging_power_usage = 250
 
 /obj/machinery/cell_charger/update_overlays()
 	. = ..()
-
+	var/obj/item/stock_parts/cell/charging = cell
 	if(!charging)
 		return
 
 	. += image(charging.icon, charging.icon_state)
 	. += "ccharger-on"
-	if(!(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER)))
+	if(MACHINE_IS_OPERATIONAL(src))
 		var/newlevel = 	round(charging.percent() * 4 / 100)
 		. += "ccharger-o[newlevel]"
 
 /obj/machinery/cell_charger/examine(mob/user)
 	. = ..()
+	var/obj/item/stock_parts/cell/charging = cell
 	. += "There's [charging ? "a" : "no"] cell in the charger."
 	if(charging)
 		. += "Current charge: [round(charging.percent(), 1)]%."
@@ -40,7 +41,7 @@
 		if(!anchored)
 			to_chat(user, "<span class='warning'>[src] isn't attached to the ground!</span>")
 			return
-		if(charging)
+		if(cell)
 			to_chat(user, "<span class='warning'>There is already a cell in the charger!</span>")
 			return
 		else
@@ -51,10 +52,11 @@
 				to_chat(user, "<span class='warning'>[src] blinks red as you try to insert the cell!</span>")
 				return
 			if(!user.transferItemToLoc(W,src))
+
 				return
 
-			charging = W
 			user.visible_message("<span class='notice'>[user] inserts a cell into [src].</span>", "<span class='notice'>You insert a cell into [src].</span>")
+			RefreshParts()
 			update_icon()
 	else
 		if(!charging && default_deconstruction_screwdriver(user, icon_state, icon_state, W))
@@ -65,16 +67,11 @@
 			return
 		return ..()
 
-/obj/machinery/cell_charger/deconstruct()
-	if(charging)
-		charging.forceMove(drop_location())
-	return ..()
 
-/obj/machinery/cell_charger/Destroy()
-	QDEL_NULL(charging)
-	return ..()
 
 /obj/machinery/cell_charger/proc/removecell()
+	var/obj/item/stock_parts/cell/charging = cell
+	component_parts.Remove(cell)
 	charging.update_icon()
 	charging = null
 	update_icon()
@@ -83,6 +80,7 @@
 	. = ..()
 	if(.)
 		return
+	var/obj/item/stock_parts/cell/charging = cell
 	if(!charging)
 		return
 
@@ -94,6 +92,7 @@
 	removecell()
 
 /obj/machinery/cell_charger/attack_tk(mob/user)
+	var/obj/item/stock_parts/cell/charging = cell
 	if(!charging)
 		return
 
@@ -110,22 +109,23 @@
 
 	if(machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER) || . & EMP_PROTECT_CONTENTS)
 		return
-
+	var/obj/item/stock_parts/cell/charging = cell
 	if(charging)
 		charging.emp_act(severity)
 
 /obj/machinery/cell_charger/RefreshParts()
-	charge_rate = 250
+	cell_charging_power_usage = initial(cell_charging_power_usage)
 	for(var/obj/item/stock_parts/capacitor/C in component_parts)
-		charge_rate *= C.rating
+		cell_charging_power_usage *= C.rating
 
 /obj/machinery/cell_charger/process(delta_time)
+	var/obj/item/stock_parts/cell/charging = cell
 	if(!charging || !anchored || (machine_stat & (MACHINE_STAT_BROKEN|MACHINE_STAT_NOPOWER)))
 		return
 
 	if(charging.percent() >= 100)
 		return
 	use_power(charge_rate * delta_time)
-	charging.give(charge_rate * delta_time)	//this is 2558, efficient batteries exist
+	_charge_cell(charge_rate * delta_time) //this is 2558, efficient batteries exist ... sure
 
 	update_icon()

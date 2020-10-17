@@ -23,23 +23,59 @@
 #define MACHINE_STAT_EMPED		(1<<3)		// temporary broken by EMP pulse
 #define MACHINE_STAT_OFF 		(1<<4)		// physically switched off
 // bitflags for machine settings, also priority flags
+
 #define MACHINE_SETTING_USE_WIRE			(1<<0)	// Use underwire for power...
 #define MACHINE_SETTING_USE_APC				(1<<1)	// If no underwire, use APC
 #define MACHINE_SETTING_USE_CELL			(1<<2)	// None of the above use CELL
 #define MACHINE_SETTING_CHARGE_CELL			(1<<3)  // If we have a battery AND outside power, charge the cell at the same time
 #define MACHINE_SETTING_AUTO_POWER_MODE		(1<<4)
 #define MACHINE_SETTING_ACTIVE_MODE			(1<<5)  // We are always using idle power unless this is switched on.  Pointless if nothing else is set
+#define MACHINE_SETTING_USES_POWER_FLAGS	(MACHINE_SETTING_USE_WIRE | MACHINE_SETTING_USE_APC | MACHINE_SETTING_USE_CELL)
+#define MACHINE_SETTING_USES_POWER_MASK		(~(MACHINE_SETTING_USE_WIRE | MACHINE_SETTING_USE_APC | MACHINE_SETTING_USE_CELL))
+
 // Ok these are drop flags.  When the machine croaks what gets dropped
 #define MACHINE_SETTING_NO_DROP_CONTENTS	(1<<6)	// do not drop contents, even buckled mobs?
 #define MACHINE_SETTING_NO_DROP_COMPONENTS	(1<<7)	// do not drop the construction components
-#define MACHINE_SETTING_NO_DROP_CIRCUIT		(1<<8) // do not drop the circuit board (sleepers and such)
-#define MACHINE_SETTING_USES_POWER_MASK		(~(MACHINE_SETTING_USE_WIRE | MACHINE_SETTING_USE_APC | MACHINE_SETTING_USE_CELL))
+#define MACHINE_SETTING_NO_DROP_CIRCUIT		(1<<8) // do not drop the circuit board (sleepers and admin equipment)
+#define MACHINE_SETTING_NO_DROP_FRAME	    (1<<9) // do not create a frame on disassembly
+#define MACHINE_SETTING_NO_DROP_OCCUPANT    (1<<10) // not sure we will ever use this honestly
 
+// used if the machine has no circuit
+#define MACHINE_SETTING_NO_CIRCUIT			(MACHINE_SETTING_NO_DROP_COMPONENTS | MACHINE_SETTING_NO_DROP_CIRCUIT | MACHINE_SETTING_NO_DROP_FRAME)
+// flags on how to handle dumping.  Mask it with settings
+#define MACHINE_DUMP_CONTENTS				MACHINE_SETTING_NO_DROP_CONTENTS
+#define MACHINE_DUMP_COMPONENTS				MACHINE_SETTING_NO_DROP_COMPONENTS
+#define MACHINE_DUMP_CIRCUIT				MACHINE_SETTING_NO_DROP_CIRCUIT
+#define MACHINE_DUMP_FRAME					MACHINE_SETTING_NO_DROP_FRAME
+#define MACHINE_DUMP_OCCUPANT				MACHINE_SETTING_NO_DROP_OCCUPANT
+
+#define MACHINE_DUMP_ALL					(MACHINE_DUMP_CONTENTS | MACHINE_DUMP_COMPONENTS | MACHINE_DUMP_CIRCUIT | MACHINE_DUMP_FRAME | MACHINE_DUMP_OCCUPANT)
 // Helper machine macro, ignores emped
 #define MACHINE_STAT_ISSET(FLAG) ((machine_stat & (FLAG)) ? FALSE : TRUE) // can be used for returns
 #define MACHINE_SETTING_ISSET(FLAG) ((machine_setting & (FLAG)) ? FALSE : TRUE) // can be used for returns
 
-#define MACHINE_USES_POWER(M)				((M.machine_setting & MACHINE_SETTING_USES_POWER_MASK) ? TRUE : FALSE)
+#define MACHINE_SETTING_USES_POWER(M)			((M & (MACHINE_SETTING_USES_POWER_FLAGS) ? TRUE : FALSE)
+#define MACHINE_SETTING_USING_ACTIVE_POWER(M)	((M & (MACHINE_SETTING_USES_POWER_FLAGS | MACHINE_SETTING_ACTIVE_MODE)) ? TRUE : FALSE)
+#define MACHINE_SETTING_USES_CELL(M)			((M & MACHINE_SETTING_USE_CELL) ? TRUE : FALSE)
+#define MACHINE_STAT_IS_BROKEN(M) 				((M & MACHINE_STAT_BROKEN) ? TRUE : FALSE)
+#define MACHINE_STAT_IS_OPERATIONAL(M) 			((M & (MACHINE_STAT_BROKEN | MACHINE_STAT_NOPOWER | MACHINE_STAT_OFF)) ? FALSE : TRUE)
+#define MACHINE_STAT_IS_ON(M)					((M & (MACHINE_STAT_BROKEN | MACHINE_STAT_NOPOWER | MACHINE_STAT_OFF)) ? FALSE : TRUE)
+
+#define MACHINE_USES_POWER(M)				MACHINE_SETTING_USES_POWER(M.machine_setting)
+#define MACHINE_USES_CELL(M)				MACHINE_SETTING_USES_CELL(M.machine_setting)
+#define MACHINE_USING_ACTIVE_POWER(M)		MACHINE_SETTING_USING_ACTIVE_POWER(M.machine_setting)
+#define MACHINE_USES_AUTO_POWER(M)			MACHINE_SETTING_USES_POWER(M.machine_setting)
+#define MACHINE_IS_BROKEN(M) 				MACHINE_STAT_IS_BROKEN(M.machine_stat)
+#define MACHINE_IS_OPERATIONAL(M) 			MACHINE_STAT_IS_OPERATIONAL(M.machine_stat)
+#define MACHINE_IS_ON(M)					MACHINE_STAT_IS_ON(M.machine_stat)
+
+
+/// Set a flag on machine stat, if its set don't send any signals
+#define machine_stat_set(new_value) 	if(!(new_value & machine_stat)) machine_stat_change(machine_stat | new_value);
+/// Clear a flag on machine stat, if cleared don't send signals
+#define machine_stat_clear(new_value) 	if(new_value & machine_stat) machine_stat_change(machine_stat & ~new_value);
+
+
 //Power use
 #define NO_POWER_USE 0
 #define IDLE_POWER_USE 1
