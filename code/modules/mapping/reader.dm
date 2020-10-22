@@ -299,6 +299,8 @@
 	var/index
 	var/list/members = model[1]
 	var/list/members_attributes = model[2]
+	var/obj/effect/mapping_helpers/preload/helper
+	var/list/helpers = list()
 
 	////////////////
 	//Instanciation
@@ -346,7 +348,19 @@
 
 	//finally instance all remainings objects/mobs
 	for(index in 1 to first_turf_index-1)
-		instance_atom(members[index],members_attributes[index],crds,no_changeturf,placeOnTop)
+		helper = instance_atom(members[index],members_attributes[index],crds,no_changeturf,placeOnTop)
+		if(helper)
+			helpers += helpers
+
+	// yes we got to run this seperately as map helpers require the atoms be created
+	if(helpers.len)
+		for(index in 1 to first_turf_index-1)
+			helper.LateInitialize()	// humm
+			if(!QDELETED(helper))
+				qdel(helper)
+		helpers.Cut()
+	helpers = null
+
 	//Restore initialization to the previous value
 	SSatoms.map_loader_stop()
 

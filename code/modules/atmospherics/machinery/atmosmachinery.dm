@@ -26,7 +26,7 @@
 	var/piping_layer = PIPING_LAYER_DEFAULT
 	var/pipe_flags = NONE
 
-	///This only works on pipes, because they have 1000 subtypes wich need to be visible and invisible under tiles, so we track this here
+	///This only works on pipes, because they have 1000 subtypes witch need to be visible and invisible under tiles, so we track this here
 	var/hide = TRUE
 
 	var/static/list/iconsetids = list()
@@ -51,9 +51,11 @@
 		if(L.ventcrawler)
 			. += "<span class='notice'>Alt-click to crawl through it.</span>"
 
-/obj/machinery/atmospherics/New(loc, process = TRUE, setdir)
+/obj/machinery/atmospherics/New(loc, process = TRUE, setdir, hide)
 	if(!isnull(setdir))
 		setDir(setdir)
+	if(!isnull(hide))
+		src.hide = hide
 	if(pipe_flags & PIPING_CARDINAL_AUTONORMALIZE)
 		normalize_cardinal_directions()
 	nodes = new(device_type)

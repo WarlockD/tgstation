@@ -242,3 +242,77 @@
 	name = "\improper Zauker Gas Miner"
 	overlay_color = "#022e00"
 	spawn_id = /datum/gas/zauker
+
+
+/proc/cmp_list_name(list/a, list/b) // simple sort for gas names on display
+	return sorttext(a["name"], b["name"])
+
+// ONLY FOR ADMIN AND MAP TESTERS, THIS DOES SOME FUCKED UP STUFF
+/obj/machinery/atmospherics/miner/debug
+	var/list/supported_gases	// list of sorted gasses for the display
+	var/list/gas_lookup // because I HATE gas_id2path
+	power_draw = GASMINER_POWER_NONE
+	active = FALSE // Make sure we are off
+
+
+/obj/machinery/atmospherics/miner/debug/Initialize()
+	. = ..()
+	var/list/gas_types = supported_gases
+	if(!gas_types)
+		gas_types = subtypesof(/datum/gas)
+	gas_lookup = list()
+	supported_gases = list()
+	for(var/gas_path in gas_types)
+		var/datum/gas/gas = gas_path
+		var/list/gas_info = list()
+		gas_info["name"] = initial(gas.name)
+		gas_info["id"] = initial(gas.id)
+		gas_info["path"] = gas_path
+		gas_lookup[gas_info["path"]] = gas_info
+		gas_lookup[gas_info["id"]] = gas_info
+		supported_gases += list(gas_info)
+
+	sortTim(supported_gases, /proc/cmp_list_name)
+
+	name = "\improper Unset Gas Miner"
+
+/obj/machinery/atmospherics/miner/debug/can_interact(mob/user)
+	if(check_rights_for(user.client, R_ADMIN)) // Are they allowed?
+		return TRUE
+
+/obj/machinery/atmospherics/miner/debug/ui_interact(mob/user)
+	. = ..()
+	var/list/builder = list()
+
+	builder += "DEBUG GAS MINER: [name]<BR>";
+	builder += "ACTIVE=<B>[active]</B>: [name]<A href='?src=[REF(src)];toggle_active=1'>TOGGLE</A><BR>";
+	var/current_gas_name = spawn_id == null ? "NO GAS SELECTED" : gas_lookup[spawn_id]["name"]
+	builder += "GAS=<B>[current_gas_name]</B><BR>";
+
+	builder += "<b>Gasses:</b><ul>"
+	for(var/list/gas_info in supported_gases)
+		var/id = gas_info["id"]
+		var/gas_name = gas_info["name"]
+		builder += "<li><a href='?src=[REF(src)]&gas=[id]'>[gas_name]</a></li>"
+
+	builder += "</ul>"
+	var/dat = builder.Join()
+
+	user << browse("<HEAD><TITLE>[src]</TITLE></HEAD><TT>[dat]</TT>", "window=gasminer")
+	onclose(user, "gasminer")
+
+/obj/machinery/atmospherics/miner/debug/Topic(href, href_list)
+	if(..())
+		return 1
+	to_chat(world, "CLICK! [href]")
+
+	if(href_list["toggle_active"])
+		set_active(active ? FALSE : TRUE)
+	if(href_list["gas"])
+		var/list/gas_info = gas_lookup[href_list["gas"]]
+		if(!gas_info)
+			to_chat(usr, "Error bad gas id?  We shouldn't be here")
+		else
+			spawn_id = gas_info["path"]
+			var/gas_name = gas_info["name"]
+			name = "\improper [gas_name] Gas Miner"

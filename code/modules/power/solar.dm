@@ -316,8 +316,14 @@
 	. = ..()
 	azimuth_rate = SSsun.base_rotation
 	RegisterSignal(SSsun, COMSIG_SUN_MOVED, .proc/timed_track)
-	connect_to_network()
+	return INITIALIZE_HINT_LATELOAD
+
+
+/obj/machinery/power/solar_control/LateInitialize()
+	if(!powernet)
+		connect_to_network()
 	if(powernet)
+		search_for_connected()
 		set_panels(azimuth_target)
 
 /obj/machinery/power/solar_control/Destroy()

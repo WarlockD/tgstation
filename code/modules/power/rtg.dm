@@ -33,7 +33,7 @@
 	var/part_level = 0
 	for(var/obj/item/stock_parts/SP in component_parts)
 		part_level += SP.rating
-
+	
 	power_gen = initial(power_gen) * part_level
 
 /obj/machinery/power/rtg/examine(mob/user)
@@ -47,6 +47,11 @@
 	else if(default_deconstruction_crowbar(I))
 		return
 	return ..()
+
+// for runtime, because just changing power_gen won't work
+/obj/machinery/power/rtg/debug
+	desc = "If you see me you better be in runtime"
+	power_gen = 50000 // unlimited powwwer
 
 /obj/machinery/power/rtg/advanced
 	desc = "An advanced RTG capable of moderating isotope decay, increasing power output but reducing lifetime. It uses plasma-fueled radiation collectors to increase output even further."

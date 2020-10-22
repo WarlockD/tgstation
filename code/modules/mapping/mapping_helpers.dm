@@ -16,6 +16,8 @@
 	. = ..()
 	return INITIALIZE_HINT_LATELOAD
 
+
+
 /obj/effect/baseturf_helper/LateInitialize()
 	if(!baseturf_to_replace)
 		baseturf_to_replace = typecacheof(list(/turf/open/space,/turf/baseturf_bottom))
@@ -91,11 +93,20 @@
 	icon = 'icons/effects/mapping_helpers.dmi'
 	icon_state = ""
 	var/late = FALSE
+	var/list/created_atoms = list()
 
 /obj/effect/mapping_helpers/Initialize()
 	..()
 	return late ? INITIALIZE_HINT_LATELOAD : INITIALIZE_HINT_QDEL
 
+/obj/effect/mapping_helpers/Destroy()
+	if(created_atoms.len)
+		log_mapping("created_atoms of '[src]' is still filled! qdeling insides")
+		for(var/atom/A in created_atoms)
+			qdel(A)
+		created_atoms.Cut()
+		created_atoms = null
+	return ..()
 
 //airlock helpers
 /obj/effect/mapping_helpers/airlock
@@ -381,7 +392,14 @@ INITIALIZE_IMMEDIATE(/obj/effect/mapping_helpers/no_lava)
 	log_mapping("[src] at [x],[y] could not find an airlock on current turf, cannot place paper note.")
 	qdel(src)
 
-/obj/effect/mapping_helpers/simple_pipes
+
+// Objects created with this are loaded during parsed_map.  If you use this all the work MUST
+// be in LateInitialize and DO NOT call the parent.  you can qdel if you wish
+//
+/obj/effect/mapping_helpers/preload
+	name = "Preload"
+
+/obj/effect/mapping_helpers/preload/simple_pipes
 	name = "Simple Pipes"
 	late = TRUE
 	icon_state = "pipe-3"
@@ -390,14 +408,14 @@ INITIALIZE_IMMEDIATE(/obj/effect/mapping_helpers/no_lava)
 	var/connection_num = 0
 	var/hide = FALSE
 
-/obj/effect/mapping_helpers/simple_pipes/LateInitialize()
+/obj/effect/mapping_helpers/preload/simple_pipes/LateInitialize()
 	var/list/connections = list( dir2text(NORTH)  = FALSE, dir2text(SOUTH) = FALSE , dir2text(EAST) = FALSE , dir2text(WEST) = FALSE)
 	var/list/valid_connectors = typecacheof(/obj/machinery/atmospherics)
 	for(var/direction in connections)
 		var/turf/T = get_step(src,  text2dir(direction))
 		for(var/machine_type_owo in T.contents)
 			if(istype(machine_type_owo,type))
-				var/obj/effect/mapping_helpers/simple_pipes/found = machine_type_owo
+				var/obj/effect/mapping_helpers/preload/simple_pipes/found = machine_type_owo
 				if(found.piping_layer != piping_layer)
 					continue
 				connections[direction] = TRUE
@@ -441,15 +459,25 @@ INITIALIZE_IMMEDIATE(/obj/effect/mapping_helpers/no_lava)
 		if(4)
 			spawn_pipe(dir2text(NORTH),/obj/machinery/atmospherics/pipe/manifold4w)
 
-	qdel(src)
 
 //spawn pipe
-/obj/effect/mapping_helpers/simple_pipes/proc/spawn_pipe(direction,type )
-	var/obj/machinery/atmospherics/pipe/pipe = new type(get_turf(src),TRUE,text2dir(direction))
-	pipe.hide = hide
+/obj/effect/mapping_helpers/preload/simple_pipes/proc/spawn_pipe(direction,type)
+	var/turf/T = get_turf(src)
+	// Ok this took a bit.  Right now we use an element that makes the pipe invisible.  However, if
+	// the mapper runs a "hidden" pipe over a station turf with no tile, it will STILL be invisible
+	// with no way to uncover it.  So this hack checks if we have no tile, and if so overrides the
+	// hide
+
+
+	var/obj/machinery/atmospherics/pipe/pipe = new type(T,TRUE,text2dir(direction))
+	pipe.hide = hide && !istype(T,/turf/open/floor/plating)
 	pipe.piping_layer = piping_layer
 	pipe.update_layer()
 	pipe.paint(pipe_color)
+	//SEND_SIGNAL(pipe, COMSIG_OBJ_HIDE, T, hide)
+
+	//pipe.atmosinit()
+
 
 
 //This helper applies traits to things on the map directly.
