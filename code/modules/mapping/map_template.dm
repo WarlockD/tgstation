@@ -54,8 +54,13 @@
 			if(istype(A, /obj/machinery/atmospherics))
 				atmos_machines += A
 
+	// So this is where the nightmare starts.
+	// First, before ANYTHING else
+	SSmaster.Start
 	SSmapping.reg_in_areas_in_z(areas)
 	SSatoms.InitializeAtoms(areas + turfs + atoms)
+	SSair.queued_for_activation += turfs
+
 	// NOTE, now that Initialize and LateInitialize run correctly, do we really
 	// need these two below?
 	SSmachines.setup_template_powernets(cables)

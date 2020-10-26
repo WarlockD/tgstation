@@ -66,8 +66,12 @@
 #define INITIALIZATION_INSSATOMS 0
 ///New should call Initialize(TRUE)
 #define INITIALIZATION_INNEW_MAPLOAD 2
+///New should queue the atoms Initialize(FALSE)
+#define INITIALIZATION_INNEW_QUEUE 3
 ///New should call Initialize(FALSE)
-#define INITIALIZATION_INNEW_REGULAR 1
+#define INITIALIZATION_INNEW_REGULAR 4
+/// queue up lateloaders
+#define INITIALIZATION_INNEW_QUEUE 5
 
 //! ### Initialization hints
 
@@ -90,7 +94,7 @@
     ..();\
     if(!(flags_1 & INITIALIZED_1)) {\
         args[1] = TRUE;\
-        SSatoms.InitAtom(src, args);\
+        SSatoms.InitAtomImmediate(src, args);\
     }\
 }
 

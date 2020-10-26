@@ -90,12 +90,19 @@
 /obj/effect/mapping_helpers
 	icon = 'icons/effects/mapping_helpers.dmi'
 	icon_state = ""
+	var/list/initialize_args = list(TRUE)
 	var/late = FALSE
+
 
 /obj/effect/mapping_helpers/Initialize()
 	..()
 	return late ? INITIALIZE_HINT_LATELOAD : INITIALIZE_HINT_QDEL
 
+/obj/effect/mapping_helpers/Destroy()
+	if(maphelpers_queue[src])
+		maphelpers_queue[src] = null
+		maphelpers_queue.Remove(src)
+	return ..()
 
 //airlock helpers
 /obj/effect/mapping_helpers/airlock

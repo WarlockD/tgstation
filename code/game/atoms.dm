@@ -160,12 +160,12 @@
 	if(datum_flags & DF_USE_TAG)
 		GenerateTag()
 
-	var/do_initialize = SSatoms.initialized
-	if(do_initialize != INITIALIZATION_INSSATOMS)
-		args[1] = do_initialize == INITIALIZATION_INNEW_MAPLOAD
-		if(SSatoms.InitAtom(src, args))
-			//we were deleted
-			return
+	var/do_initialize = SSatoms.initialized // special case for map helpers
+	if(istype(src, /obj/effect/mapping_helper) || do_initialize == INITIALIZATION_INSSATOMS)
+		return
+	args[1] = FALSE		// false here.  If we are map loading, we resolve this latter
+	SSatoms.InitAtom(src, args)
+
 
 /**
   * The primary method that objects are setup in SS13 with
