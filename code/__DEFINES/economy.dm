@@ -56,3 +56,6 @@
 #define PAYMENT_CLINICAL "clinical"
 #define PAYMENT_FRIENDLY "friendly"
 #define PAYMENT_ANGRY "angry"
+
+#define BANK_ACCOUNT_NUMBER_BEGIN 	111111
+#define BANK_ACCOUNT_NUMBER_END 	999999

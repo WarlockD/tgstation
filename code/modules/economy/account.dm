@@ -13,8 +13,10 @@
 	var/bounty_timer = 0
 
 /datum/bank_account/New(newname, job, modifier = 1)
-	account_holder = newname
-	account_job = job
+	if(newname)
+		account_holder = newname
+	if(job)
+		account_job = job
 	payday_modifier = modifier
 	setup_unique_account_id()
 
@@ -25,19 +27,23 @@
 
 /// Proc guarantees the account_id possesses a unique number. If it doesn't, it tries to find a unique alternative. It then adds it to the `SSeconomy.bank_accounts_by_id` global list.
 /datum/bank_account/proc/setup_unique_account_id()
-	if(account_id && !SSeconomy.bank_accounts_by_id["[account_id]"])
-		SSeconomy.bank_accounts_by_id["[account_id]"] = src
-		return //Already unique
-	for(var/i in 1 to 1000)
-		account_id = rand(111111, 999999)
-		if(!SSeconomy.bank_accounts_by_id["[account_id]"])
-			break
-	if(SSeconomy.bank_accounts_by_id["[account_id]"])
-		stack_trace("Unable to find a unique account ID, substituting currently existing account of id [account_id].")
-	SSeconomy.bank_accounts_by_id["[account_id]"] = src
+	var/start_number
+	if(!account_id)
+		account_id = start_number = rand(BANK_ACCOUNT_NUMBER_BEGIN, BANK_ACCOUNT_NUMBER_END)
+	else
+		start_number = account_id
+	while(SSeconomy.bank_accounts_by_id["[account_id]"])
+		account_id++
+		if(account_id > BANK_ACCOUNT_NUMBER_END)
+			account_id = BANK_ACCOUNT_NUMBER_BEGIN
+		if(account_id == start_number)
+			stack_trace("...Seriously this isn't possible.  I know we get allot of players but this is crazy")
+
+	SSeconomy.bank_accounts_by_id["[account_id]"] = add_to_accounts ? src : new/datum/bank_account/dummmy(src)
 
 /datum/bank_account/vv_edit_var(var_name, var_value) // just so you don't have to do it manually
 	var/old_id = account_id
+	var/datum/bank_account/old_account = SSeconomy.bank_accounts_by_id["[account_id]"]
 	. = ..()
 	switch(var_name)
 		if(NAMEOF(src, account_id))
@@ -45,10 +51,11 @@
 				SSeconomy.bank_accounts_by_id -= "[old_id]"
 				setup_unique_account_id()
 		if(NAMEOF(src, add_to_accounts))
-			if(add_to_accounts)
-				setup_unique_account_id()
-			else
-				SSeconomy.bank_accounts_by_id -= "[account_id]"
+			if(istype(old_account, /datum/bank_account/dummmy))
+				QDEL_NULL(old_account)
+			SSeconomy.bank_accounts_by_id.Remove("[account_id]")
+			setup_unique_account_id()
+
 
 /datum/bank_account/proc/dumpeet()
 	being_dumped = TRUE
@@ -185,5 +192,27 @@
 
 /datum/bank_account/remote // Bank account not belonging to the local station
 	add_to_accounts = FALSE
+
+/datum/bank_account/dummmy // Bank account that exists JUST so that account number doesn't take up space
+	account_holder = "Dummmy Shell Account"
+	var/datum/bank_account/parent = null
+
+/datum/bank_account/dummmy/New(datum/bank_account/P)
+	parent = P
+	account_id = P.account_id
+	account_balance = 0 // and we have no money
+	RegisterSignal(P, COMSIG_PARENT_QDELETING, .proc/Destroy)
+	return ..(P.account_holder, null, 1) // the rest is same but we don't get any money from payday
+
+/datum/bank_account/dummmy/vv_edit_var(var_name, var_value) // just so you don't have to do it manually
+	. = ..()
+	switch(var_name)
+		if(NAMEOF(src, account_id),NAMEOF(src, add_to_accounts), NAMEOF(src, parent))
+			return FALSE // there is no reason for an admin to fuck with this, find the base object
+
+
+/datum/bank_account/dummmy/Destroy()
+	parent = null
+	return ..()
 
 #undef DUMPTIME
