@@ -89,7 +89,7 @@ GLOBAL_LIST_EMPTY(asset_datums)
 #define SPRSZ_ICON 2
 #define SPRSZ_STRIPPED 3
 
-/datum/asset/spritesheet7
+/datum/asset/spritesheet
 	_abstract = /datum/asset/spritesheet
 	var/name
 	var/list/sizes = list()    // "32x32" -> list(10, icon/normal, icon/stripped)

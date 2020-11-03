@@ -1,0 +1,86 @@
+@use '../base.scss';
+@use '../colors.scss';
+
+.SlotMachine {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.SlotMachine__slot {
+  position: relative;
+  display: inline-block;
+  height: 100px;
+  width: 80px;
+}
+
+.SlotMachine__section {
+  position: absolute;
+  border-radius: 15px !important;
+  border: 3px solid black !important;
+  width: 70px;
+  height: 70px;
+  overflow: hidden;
+  background-color: grey;
+  border-radius: 2px;
+  border: 1px solid lightgrey;
+  color: white;
+  font-family: sans-serif;
+  text-align: center;
+  font-size: 25px;
+  line-height: 60px;
+  cursor: default;
+}
+
+.SlotMachine__container {
+  position: absolute;
+  top: 2px;
+  width: 100%;
+  transition: top ease-in-out 0.5s;
+  text-align: center;
+}
+
+.SlotMachine__roll {
+  width: 215px;
+  cursor: pointer;
+  background-color: yellow;
+  padding: 10px;
+  text-align: center;
+  font-size: 20px;
+  border-radius: 20px;
+  border: 3px solid black;
+}
+
+@keyframes SlotMachine__blinkingText   {
+  0% {
+    color: #000;
+  }
+  49% {
+    color: #000;
+  }
+  60% {
+    color: transparent;
+  }
+  99% {
+    color: transparent;
+  }
+  100% {
+    color: #000;
+  }
+}
+@keyframes SlotMachine_movingAnimation {
+
+}
+
+.SlotMachine__rolling  {
+
+  -webkit-animation-name: SlotMachine__slideanimation;
+  animation-name: SlotMachine__slideanimation;
+  -webkit-animation-duration: 5s;
+  animation-duration: 5s;
+}
+
+
+@keyframes SlotMachine__slideanimation {
+  0%    { top: 0; }
+  100%  { top: -200%; }
+}
