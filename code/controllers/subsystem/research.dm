@@ -6,11 +6,14 @@ SUBSYSTEM_DEF(research)
 	//TECHWEB STATIC
 	var/list/techweb_nodes = list()				//associative id = node datum
 	var/list/techweb_designs = list()			//associative id = node datum
+	var/list/techweb_designs_by_category = list()
 	var/list/datum/techweb/techwebs = list()
 	var/datum/techweb/science/science_tech
 	var/datum/techweb/admin/admin_tech
 	var/datum/techweb_node/error_node/error_node	//These two are what you get if a node/design is deleted and somehow still stored in a console.
 	var/datum/design/error_design/error_design
+	// Designs lathe cache,  created at start, do not modify during game.
+	// If you need to modify this, make a copy/deep copy first into your obj
 
 	//ERROR LOGGING
 	var/list/invalid_design_ids = list()		//associative id = number of times
@@ -159,9 +162,56 @@ SUBSYSTEM_DEF(research)
 	if (!verify_techweb_nodes())		//Verify nodes and designs have been crosslinked properly.
 		CRASH("Invalid techweb nodes detected")
 
+
+/*
+ * Creates a list based off a design to be used for any of the lathes tgui interfaces
+ * Still on the fence on doing a raw data dump of everything but it helps server
+ * load when it comes to rebuilding this list every time someone spams the RD button.
+*/
+/datum/controller/subsystem/research/proc/_create_protolathe_record(datum/design/D)
+	PRIVATE_PROC(1)
+	// sub catagories are special.  We can have items be put in two diffrent lists
+	// so that they can be collected or organized in different places.
+	if(!istype(D.category) || !D.category.len)
+		stack_trace("WARNING: Design with no category's detected. Build path: [initial(D.build_path)]")
+		D.category = list("NO CATEGORY")
+
+	if(D.category[1] == CATEGORY_IGNORE_DESIGN)
+		return // we ignore this thing
+		
+	var/list/part = list(
+		"name" = D.name,
+		"desc" = D.desc,
+		"print_type" = D.construction_time,
+		"id" = D.id,
+		"category" =  D.category,
+		"sub_category" = isnull(D.sub_category) ? list(CATEGORY_FLAG_ALL) : islist(D.sub_category) ? D.sub_category : list(D.sub_category),
+		"search_meta" = D.search_metadata
+	)
+
+	// Fill out the material and regent costs
+	if(length(D.materials))
+		var/list/material_cost = list()
+		for(var/datum/material/M in D.materials)
+			material_cost[M.name] = D.materials[M]
+		part["material_cost"] = material_cost
+	if(length(D.reagents_list))
+		var/list/reagents_cost = list()
+		for(var/datum/reagent/R in D.reagents_list)
+			reagents_cost[R.name] = D.reagents_list[R]
+		part["reagent_cost"] = reagents_cost
+	// Lets stick them into catagories
+	var/list/L = techweb_designs_by_category
+	for(var/category_name in part["category"])
+		for(var/sub_category in part["sub_category"])
+			LAZYADDASSOC(L[category_name], sub_category, part)
+		LAZYADDASSOC(L[category_name], CATEGORY_IGNORE_SUB_CATEGORY, part)
+
+
 /datum/controller/subsystem/research/proc/initialize_all_techweb_designs(clearall = FALSE)
 	if(islist(techweb_designs) && clearall)
 		QDEL_LIST(techweb_designs)
+		techweb_designs_by_category.Cut() // Just contains strings and numbers and other lists
 	var/list/returned = list()
 	for(var/path in subtypesof(/datum/design))
 		var/datum/design/DN = path
@@ -177,6 +227,8 @@ SUBSYSTEM_DEF(research)
 			continue
 		DN.InitializeMaterials() //Initialize the materials in the design
 		returned[initial(DN.id)] = DN
+		_create_protolathe_record(DN)
+
 	techweb_designs = returned
 	verify_techweb_designs()
 

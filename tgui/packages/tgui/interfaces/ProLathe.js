@@ -129,7 +129,12 @@ const searchFilter = (search, allparts) => {
   return searchResults;
 };
 
+const createResearchDB = (all_designs, researched_designs) => {
 
+  
+	data["researchedDesigns"] = researched_designs
+	data["allDesigns"] = SSresearch.techweb_designs_by_category
+};
 
 export const ProLathe = (props, context) => {
   const { act, data } = useBackend(context);
@@ -227,12 +232,7 @@ export const ProLathe = (props, context) => {
                 <Section
                   height="100%"
                   overflowY="auto"
-                  title="Categories"
-                  buttons={(
-                    <Button
-                      content="R&D Sync"
-                      onClick={() => act("sync_rnd")} />
-                  )}>
+                  title="Categories">
                   <PartSets />
                 </Section>
               </Flex.Item>
@@ -242,9 +242,10 @@ export const ProLathe = (props, context) => {
                 <Box
                   fillPositionedParent
                   overflowY="auto">
+          {/*
                   <PartLists
                     queueMaterials={materialTally}
-                    materials={materialAsObj} />
+          materials={materialAsObj} /> */}
                 </Box>
               </Flex.Item>
               <Flex.Item

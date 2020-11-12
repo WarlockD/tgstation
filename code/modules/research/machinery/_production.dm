@@ -128,48 +128,7 @@
 	if(in_range(user, src) || isobserver(user))
 		. += "<span class='notice'>The status display reads: Storing up to <b>[rmat.local_size]</b> material units.<br>Material consumption at <b>[component_coeff*100]%</b>.<br>Build time reduced by <b>[100-time_coeff*100]%</b>.</span>"
 
-/**
-  * Generates an info list for a given part.
-  *
-  * Returns a list of part information.
-  * * D - Design datum to get information on.
-  * * parse_categories - tex,t name of the category to find if its a sub category we want to use
-  */
-/obj/machinery/rnd/production/proc/output_part_info(datum/design/D, parse_categories = null)
-	var/list/default_sub_category = list(CATEGORY_FLAG_ALL)
-	var/cost = list()
-	for(var/datum/material/M in D.materials)
-		cost[M.name] = get_resource_cost_w_coeff(D, M)
-	if(uses_regents)
-		for(var/datum/reagent/R in D.reagents_list)
-			cost[R.name] = get_regent_cost_w_coeff(D, R)
 
-	var/obj/built_item = D.build_path
-	var/list/sub_category = default_sub_category
-
-	if(parse_categories)
-		// Unlike mechfab that needs hard coded sub_catagories, we are using the sub
-		// category var off the design
-
-		if(D.sub_category)
-			sub_category = D.sub_category
-			if(!istype(sub_category)) // if its not a list, make it a list
-				sub_category = list(sub_category)
-
-
-	var/list/part = list(
-		"name" = D.name,
-		"desc" = initial(built_item.desc),
-		"printTime" = get_construction_time_w_coeff(initial(D.construction_time))/10,
-		"cost" = cost,
-		"id" = D.id,
-		"category" = parse_categories,
-		"subCategory" = sub_category,
-		"searchMeta" = D.search_metadata
-	)
-
-
-	return part
 
 /**
   * Generates a list of regents available to this Exosuit Fab
@@ -463,8 +422,7 @@
 
 	var/list/queued_parts = list()
 	for(var/datum/design/D in queue)
-		var/list/part = output_part_info(D)
-		queued_parts += list(part)
+		queued_parts += D.id
 	return queued_parts
 
 /obj/machinery/rnd/production/protolathe/deconstruct(disassembled)
@@ -524,45 +482,31 @@
 /obj/machinery/rnd/production/ui_static_data(mob/user)
 	var/list/data = list()
 
-	var/list/buildable_parts = list()
-	var/list/category_order = list()
-#ifdef TESTING
-	var/list/check_dups = list()
-#endif
+	var/list/researched_designs = list()
+	var/list/designs_by_category = SSresearch.techweb_designs_by_category
+	var/list/category_order = list() // We have to make this in case we lose order on json conversion
 	// changed to stop going though the catagories on EACH freaking design
 	// Use index as that will go in order
 	for(var/i in 1 to categories.len)
 		var/cat_name = categories[i]
 		category_order += cat_name
-		var/list/researched_category = stored_research.researched_designs_by_category[cat_name]
-		for(var/datum/design/D in researched_category)
+		var/list/researched_category = designs_by_category[cat_name][CATEGORY_IGNORE_SUB_CATEGORY]
+		for(var/list/part in researched_category)
+			var/datum/design/D = SSresearch.techweb_design_by_id(part["id"])
 			if(D.build_type && !(D.build_type & allowed_buildtypes))
 				continue	// machine cannot build this thing
 			if(!isnull(allowed_department_flags) && !(D.departmental_flags & allowed_department_flags))
 				continue 	// Not the right department
-#ifdef TESTING
-			if(check_dups[D])
-				check_dups[D]++
-				var/number = check_dups[D]
-				testing("FUCK we got a dup of [D] [D.name] = [number]")
-#endif
-			check_dups[D] = 1
 
-			// This is for us.
-			var/list/part = output_part_info(D, cat_name)
-#ifdef DEBUG
-			if(length(D.reagents_list))
-				buildable_parts["DEBUG_REGENT"]  += list(part)
-#endif
+			researched_designs += list(part)
 
-			buildable_parts[cat_name] += list(part)
-#ifdef DEBUG
-	category_order += "DEBUG_REGENT"
-#endif
-	data["buildableParts"] = buildable_parts
-	data["subCategoryOrder"] = categories
+	data["researchedDesigns"] = researched_designs
+	data["allDesigns"] = SSresearch.techweb_designs_by_category
 	data["categoryOrder"] = category_order
 	data["departmentTag"] = department_tag
+	data["timeCoeff"] = time_coeff
+	data["componentCoeff"] = component_coeff
+	data["latheName"] = name
 	return data
 
 /obj/machinery/rnd/production/ui_data(mob/user)

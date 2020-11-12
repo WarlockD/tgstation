@@ -128,6 +128,9 @@
 #define CATEGORY_PLASMAMAN					"plasmaman"
 #define CATEGORY_ETHEREAL					"ethereal"
 
+///! Catagories for Surgery
+#define CATEGORY_SURGERY					"Surgery"
+
 ///! Catagories for nanites
 #define CATEGORY_NANITES_UTILITY			"Utility Nanites"
 #define CATEGORY_NANITES_MEDICAL			"Medical Nanites"
@@ -142,6 +145,11 @@
 #define CATEGORY_FLAG_ALL					"Items"		// General items that do not have a sub_category
 #define CATEGORY_FLAG_PARTS					"Parts"		// Allows the entire category to be printed at one go, aka all the parts of a cyborg
 
+///! Helper to find all items in a category not sorted by sub category.  N
+#define CATEGORY_IGNORE_SUB_CATEGORY 		"_All"
+
+///! Helper to ignore a design so it is not inserted into categories
+#define CATEGORY_IGNORE_DESIGN 				"_IGNORE"
 
 ///! Helper to create a category list, just to make it a little cleaner
 // Just don't know why these macros are fucking up
