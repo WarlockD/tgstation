@@ -63,8 +63,8 @@ const partBuildColor = (cost, tally, material) => {
 const partCondFormat = (materials, tally, part) => {
   let format = { "textColor": COLOR_NONE };
 
-  Object.keys(part.cost).forEach(mat => {
-    format[mat] = partBuildColor(part.cost[mat], tally[mat], materials[mat]);
+  Object.keys(part.material_cost).forEach(mat => {
+    format[mat] = partBuildColor(part.material_cost[mat], tally[mat], materials[mat]);
 
     if (format[mat].color > format["textColor"]) {
       format["textColor"] = format[mat].color;
@@ -129,20 +129,23 @@ const searchFilter = (search, allparts) => {
   return searchResults;
 };
 
-const createResearchDB = (all_designs, researched_designs) => {
 
-  
-	data["researchedDesigns"] = researched_designs
-	data["allDesigns"] = SSresearch.techweb_designs_by_category
-};
+
 
 export const ProLathe = (props, context) => {
   const { act, data } = useBackend(context);
+
 
   const queue = data.queue || [];
   const materialAsObj = materialArrayToObj(data.materials || []);
   const department_tag = data.departmentTag || "BAD DEPARTMENT TAG";
   const regents = data.regents || [];
+
+
+  const {
+    researchedDesigns,
+    catagoryOrder,
+  } = data;
 
 
   const {
@@ -242,10 +245,9 @@ export const ProLathe = (props, context) => {
                 <Box
                   fillPositionedParent
                   overflowY="auto">
-          {/*
                   <PartLists
                     queueMaterials={materialTally}
-          materials={materialAsObj} /> */}
+          materials={materialAsObj} />
                 </Box>
               </Flex.Item>
               <Flex.Item
@@ -388,7 +390,7 @@ const PartSets = (props, context) => {
 
   const {
     categoryOrder,
-    buildableParts,
+    researchedDesigns
   } = data;
 
   const [
@@ -397,14 +399,14 @@ const PartSets = (props, context) => {
   ] = useSharedState(
     context,
     "part_tab",
-    getFirstValidPartSet(categoryOrder, buildableParts)
+    getFirstValidPartSet(categoryOrder, researchedDesigns)
   );
 
   return (
     <Tabs
       vertical>
       {categoryOrder.map(set => (
-        !!(buildableParts[set]) && (
+        !!(researchedDesigns[set]) && (
           <Tabs.Tab
             key={"catagory_tab_" + set}
             selected={set === selectedPartTab}
@@ -423,7 +425,7 @@ const PartLists = (props, context) => {
 
   const {
     categoryOrder,
-    buildableParts,
+    researchedDesigns,
   } = data;
 
   const {
@@ -437,19 +439,23 @@ const PartLists = (props, context) => {
   ] = useSharedState(
     context,
     "part_tab",
-    getFirstValidPartSet(categoryOrder, buildableParts)
+    getFirstValidPartSet(categoryOrder, researchedDesigns)
   );
 
   const [
     searchText,
     setSearchText,
   ] = useSharedState(context, "search_text", "");
+/*
+  const partsList = searchText && searchText != ""
+    ? searchFilter(searchText, researchedDesigns)
+    : researchedDesigns[selectedPartTab];
+*/
+  let partsList = researchedDesigns[selectedPartTab];
 
-  const partsList = searchText ? searchFilter(searchText, buildableParts) : buildableParts[selectedPartTab]
   partsList.forEach(part => {
     part["format"] = partCondFormat(materials, queueMaterials, part);
   });
-
 
 
   return (
@@ -469,7 +475,7 @@ const PartLists = (props, context) => {
           </Flex.Item>
         </Flex>
       </Section>
-      {!!searchText ? (
+      {searchText ? (
         <PartCategory
           name={"Search Results"}
           parts={partsList}
@@ -545,7 +551,7 @@ const PartItem = (props, context) => {
       </Flex>
       {(displayMatCost && (
         <Flex mb={2}>
-          {Object.keys(part.cost).map(material => (
+          {Object.keys(part.material_cost).map(material => (
             <Flex.Item
               width={"50px"}
               key={material}
@@ -556,7 +562,7 @@ const PartItem = (props, context) => {
                   transform: 'scale(0.75) translate(0%, 10%)',
                 }}
                 name={material}
-                amount={part.cost[material]} />
+                amount={part.material_cost[material]} />
             </Flex.Item>
           ))}
         </Flex>
@@ -567,7 +573,12 @@ const PartItem = (props, context) => {
 
   );
 };
-
+const toAssocList = array_list => {
+  let acc_list  = {}
+  for (const V of array_list)
+    acc_list[V] = true;
+  return acc_list;
+}
 const PartSubCategory = (props, context) => {
 
   const { act } = useBackend(context);
@@ -576,6 +587,8 @@ const PartSubCategory = (props, context) => {
     parts,
     name,
   } = props;
+  if(!parts || parts.length == 0)
+    logger.log("Damnit something is wrong with "+ name);
 
   return (
     <Section
@@ -589,7 +602,7 @@ const PartSubCategory = (props, context) => {
           onClick={() => act("add_queue_set", {
             part_list: parts.map(part => part.id),
           })} />)}>
-      {parts.map(part => (<PartItem part={part} key={"sub_cat_" + part.id} />)) }
+      {parts.map(part => (<PartItem part={part} key={name + "_sub_cat_" + part.id} />)) }
     </Section>
   );
 };
@@ -605,19 +618,29 @@ const PartCategory = (props, context) => {
   } = props;
   //  catagories
 
+  // This is the order of the sub categories we got from byond
+  const sub_category_display_order = data.subCategoryOrder[name] || [];
+  // We turn it into a look up list so we can search it faster
+  let all_sub_categories_used = toAssocList(sub_category_display_order)
 
-  const sub_category_fixed_order = data.categories[name] || [];
-
+  //  List of all the parts in the proper sub categories
   let all_sub_category = {};
+  // List of categories that were not sent to by byond (aka they were just in the design objs)
+  // to be sorted latter
+  let all_non_ordered_categories = [];
+  // Insert the part into the right sub category and mark the categories that are used
   const insert_into_subcategory = (sub_category_name, part) => {
     if (!Array.isArray(all_sub_category[sub_category_name]))
-    { all_sub_category[sub_category_name] = []; }
+      all_sub_category[sub_category_name] = [];
     all_sub_category[sub_category_name].push(part);
+    if(!all_sub_categories_used[sub_category_name]) {
+      all_sub_categories_used[sub_category_name] = true;
+      all_non_ordered_categories.push(sub_category_name)
+    }
   };
-
+  // Filter out all parts that have no subcategories defined
   const non_categorized_parts = parts.filter(part => {
-    const sub_category = part.subCategory;
-
+    const sub_category = part.sub_category;
     if (typeof(sub_category) === "string" && sub_category.length > 0) {
       insert_into_subcategory(sub_category, part);
       return false;
@@ -626,12 +649,12 @@ const PartCategory = (props, context) => {
         insert_into_subcategory(sub_category_name, part));
       return false;
     }
-    else
-    { return true; } // no sub category
+    else {
+      return true;
+    } // no sub category
   });
-  const unsorted_categorized_parts = Object.keys(all_sub_category).filter(
-    sub_category_name =>
-      !sub_category_fixed_order.find(sub_category_name)).sort();
+  const ordered_subcategories_list = sub_category_display_order.filter(
+    sub_category_name => !!all_sub_category[sub_category_name]).concat(all_non_ordered_categories.sort());
 
   /* The order of printing the sub catagories is as follows.
     1. All non categorized parts are printed FIRST
@@ -639,18 +662,17 @@ const PartCategory = (props, context) => {
     3. Other sub_catagories are printed after that
   */
   return (
-    ((!!parts.length || forceShow) && (
+    ((!!non_categorized_parts.length || forceShow) && (
       <Section title={name}>
-        {(!parts.length) && (placeholder)}
+        {(!!non_categorized_parts.length) && (placeholder)}
         {non_categorized_parts.map(part =>
           (<PartItem key={part.id} part={part} />)) }
-        {sub_category_fixed_order.map(sub_category_name =>
-          (<PartSubCategory key={sub_category_name} name={sub_category_name}
-            parts={all_sub_category[sub_category_name]} />)
-        )}
-        {unsorted_categorized_parts.map(sub_category_name =>
-          (<PartSubCategory key={sub_category_name} name={sub_category_name}
-            parts={all_sub_category[sub_category_name]} />)
+        {!!ordered_subcategories_list.length && ordered_subcategories_list.map(sub_category_name =>
+          (<PartSubCategory
+            key={name + "_" + sub_category_name}
+            name={sub_category_name}
+            parts={all_sub_category[sub_category_name]}
+          />)
         )}
       </Section>
     ))

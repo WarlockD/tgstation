@@ -178,14 +178,14 @@ SUBSYSTEM_DEF(research)
 
 	if(D.category[1] == CATEGORY_IGNORE_DESIGN)
 		return // we ignore this thing
-		
+
 	var/list/part = list(
 		"name" = D.name,
 		"desc" = D.desc,
 		"print_type" = D.construction_time,
 		"id" = D.id,
 		"category" =  D.category,
-		"sub_category" = isnull(D.sub_category) ? list(CATEGORY_FLAG_ALL) : islist(D.sub_category) ? D.sub_category : list(D.sub_category),
+		"sub_category" = D.sub_category,
 		"search_meta" = D.search_metadata
 	)
 
@@ -203,9 +203,7 @@ SUBSYSTEM_DEF(research)
 	// Lets stick them into catagories
 	var/list/L = techweb_designs_by_category
 	for(var/category_name in part["category"])
-		for(var/sub_category in part["sub_category"])
-			LAZYADDASSOC(L[category_name], sub_category, part)
-		LAZYADDASSOC(L[category_name], CATEGORY_IGNORE_SUB_CATEGORY, part)
+		L[category_name] += list(part)
 
 
 /datum/controller/subsystem/research/proc/initialize_all_techweb_designs(clearall = FALSE)

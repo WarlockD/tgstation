@@ -146,8 +146,9 @@
 			var/amount = reagents.reagent_list[R]
 
 			regent_info = list(
-				"name" = R.name,
 				"ref" = REF(R),
+				"name" = R.name,
+				"color" = R.color,
 				"amount" = amount,
 			)
 
@@ -490,19 +491,22 @@
 	for(var/i in 1 to categories.len)
 		var/cat_name = categories[i]
 		category_order += cat_name
-		var/list/researched_category = designs_by_category[cat_name][CATEGORY_IGNORE_SUB_CATEGORY]
+		var/list/researched_category = designs_by_category[cat_name]
 		for(var/list/part in researched_category)
-			var/datum/design/D = SSresearch.techweb_design_by_id(part["id"])
+			var/id = part["id"]
+			if(!stored_research.researched_designs[id])
+				continue
+			var/datum/design/D = SSresearch.techweb_design_by_id(id)
 			if(D.build_type && !(D.build_type & allowed_buildtypes))
 				continue	// machine cannot build this thing
 			if(!isnull(allowed_department_flags) && !(D.departmental_flags & allowed_department_flags))
 				continue 	// Not the right department
 
-			researched_designs += list(part)
+			researched_designs[cat_name] += list(part)
 
 	data["researchedDesigns"] = researched_designs
-	data["allDesigns"] = SSresearch.techweb_designs_by_category
 	data["categoryOrder"] = category_order
+	data["subCategoryOrder"] = categories
 	data["departmentTag"] = department_tag
 	data["timeCoeff"] = time_coeff
 	data["componentCoeff"] = component_coeff
