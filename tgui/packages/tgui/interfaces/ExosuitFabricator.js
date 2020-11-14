@@ -412,29 +412,6 @@ const PartLists = (props, context) => {
     }
   }
 
-  let partsList;
-  // Build list of sub-categories if not using a search filter.
-  if (!searchText) {
-    partsList = { "Parts": [] };
-    buildableParts[selectedPartTab].forEach(part => {
-      part["format"] = partCondFormat(materials, queueMaterials, part);
-      if (!part.subCategory) {
-        partsList["Parts"].push(part);
-        return;
-      }
-      if (!(part.subCategory in partsList)) {
-        partsList[part.subCategory] = [];
-      }
-      partsList[part.subCategory].push(part);
-    });
-  }
-  else {
-    partsList = [];
-    searchFilter(searchText, buildableParts).forEach(part => {
-      part["format"] = partCondFormat(materials, queueMaterials, part);
-      partsList.push(part);
-    });
-  }
 
 
   return (

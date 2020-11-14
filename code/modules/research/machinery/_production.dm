@@ -131,32 +131,6 @@
 
 
 /**
-  * Generates a list of regents available to this Exosuit Fab
-  *
-  * Returns null if there is no regents container available.
-  * List format is list(material_name = list(amount = ..., ref = ..., etc.))
-  */
-/obj/machinery/rnd/production/proc/output_available_reagents()
-	var/list/regent_list= list()
-
-	if(length(reagents.reagent_list))
-		for(var/regent_id in reagents.reagent_list)
-			var/datum/reagent/R = regent_id
-			var/list/regent_info = list()
-			var/amount = reagents.reagent_list[R]
-
-			regent_info = list(
-				"ref" = REF(R),
-				"name" = R.name,
-				"color" = R.color,
-				"amount" = amount,
-			)
-
-			regent_list += list(regent_info)
-
-	return regent_list
-
-/**
   * Generates a list of resources / materials available to this Exosuit Fab
   *
   * Returns null if there is no material container available.
@@ -164,28 +138,41 @@
   */
 /obj/machinery/rnd/production/proc/output_available_resources()
 	var/datum/component/material_container/materials = rmat.mat_container
+	if(!materials)
+		CRASH("Not sure how but some reason the material_container was never set up")
 
 	var/list/material_data = list()
 
-	if(materials)
-		for(var/mat_id in materials.materials)
-			var/datum/material/M = mat_id
-			var/list/material_info = list()
-			var/amount = materials.materials[mat_id]
+	for(var/mat_id in materials.materials)
+		var/datum/material/M = mat_id
+		var/list/material_info = list()
+		var/amount = materials.materials[mat_id]
 
-			material_info = list(
-				"name" = M.name,
-				"ref" = REF(M),
-				"amount" = amount,
-				"sheets" = round(amount / MINERAL_MATERIAL_AMOUNT),
-				"removable" = amount >= MINERAL_MATERIAL_AMOUNT
+		material_info = list(
+			"name" = M.name,
+			"ref" = REF(M),
+			"amount" = amount,
+			"sheets" = round(amount / MINERAL_MATERIAL_AMOUNT),
+			"removable" = amount >= MINERAL_MATERIAL_AMOUNT,
+			"isMaterial" = TRUE,
+		)
+
+		material_data += list(material_info)
+
+	if(uses_regents && length(reagents.reagent_list))
+		for(var/datum/reagent/R in reagents.reagent_list)
+			var/list/regent_info = list()
+
+			regent_info = list(
+				"ref" = REF(R),
+				"name" = R.name,
+				"color" = R.color,
+				"amount" = R.volume,
+				"isMaterial" = FALSE,
 			)
+			material_data += list(regent_info)
 
-			material_data += list(material_info)
-
-		return material_data
-
-	return null
+	return material_data
 
 /**
   * Intended to be called when an item starts printing.
@@ -486,6 +473,7 @@
 	var/list/researched_designs = list()
 	var/list/designs_by_category = SSresearch.techweb_designs_by_category
 	var/list/category_order = list() // We have to make this in case we lose order on json conversion
+
 	// changed to stop going though the catagories on EACH freaking design
 	// Use index as that will go in order
 	for(var/i in 1 to categories.len)
@@ -519,8 +507,8 @@
 	data["materials"] = output_available_resources()
 
 	if(uses_regents)
-		data["regents"] = output_available_reagents()
-		data["regents_max_volume"] = reagents.maximum_volume
+		data["reagents_max_volume"] = reagents.maximum_volume
+		data["reagents_total_volume"] = reagents.total_volume
 
 	if(being_built)
 		var/list/part = list(

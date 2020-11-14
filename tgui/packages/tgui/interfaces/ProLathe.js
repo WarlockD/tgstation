@@ -1,11 +1,12 @@
 import { classes } from 'common/react';
 import { uniqBy } from 'common/collections';
-import { useBackend, useSharedState } from '../backend';
+import { useBackend, useLocalState, useSharedState } from '../backend';
 import { formatSiUnit, formatMoney } from '../format';
-import { Flex, Section, Tabs, Box, Button, Fragment, ProgressBar, NumberInput, Icon, Input } from '../components';
+import { Flex, Section, Tabs, Box, Button, Fragment, ProgressBar, NumberInput, Icon, Input, Tooltip } from '../components';
 import { Window } from '../layouts';
 import { createSearch } from 'common/string';
 import { createLogger } from "../logging";
+import { clamp, inRange } from 'common/math';
 
 const logger = createLogger("Prolathe");
 
@@ -44,6 +45,7 @@ const materialArrayToObj = materials => {
 
 
 
+
 const partBuildColor = (cost, tally, material) => {
   if (cost > material) {
     return { color: COLOR_BAD, deficit: (cost - material) };
@@ -63,16 +65,39 @@ const partBuildColor = (cost, tally, material) => {
 const partCondFormat = (materials, tally, part) => {
   let format = { "textColor": COLOR_NONE };
 
-  Object.keys(part.material_cost).forEach(mat => {
-    format[mat] = partBuildColor(part.material_cost[mat], tally[mat], materials[mat]);
+  if (part.material_cost) {
+    Object.keys(part.material_cost).forEach(mat => {
+      format[mat] = partBuildColor(part.material_cost[mat],
+        tally[mat], materials[mat]);
 
-    if (format[mat].color > format["textColor"]) {
-      format["textColor"] = format[mat].color;
-    }
-  });
+      if (format[mat].color > format["textColor"]) {
+        format["textColor"] = format[mat].color;
+      }
+    });
+  }
+  if (part.reagent_cost) {
+    Object.keys(part.reagent_cost).forEach(mat => {
+      format[mat] = partBuildColor(part.reagent_cost[mat],
+        tally[mat], materials[mat]);
 
+      if (format[mat].color > format["textColor"]) {
+        format["textColor"] = format[mat].color;
+      }
+    });
+  }
   return format;
 };
+const createPartsIDLookup = (categories_of_parts) => {
+  let lookup_list = {};
+  Object.keys(categories_of_parts).forEach(category => {
+    const category_parts = categories_of_parts[category];
+    category_parts.forEach(part => {
+      lookup_list[part.id] = part
+    });
+  });
+  return lookup_list;
+}
+
 
 const queueCondFormat = (materials, queue) => {
   let materialTally = {};
@@ -82,12 +107,13 @@ const queueCondFormat = (materials, queue) => {
 
   queue.forEach((part, i) => {
     textColors[i] = COLOR_NONE;
-    Object.keys(part.cost).forEach(mat => {
+
+    Object.keys(part.material_cost).forEach(mat => {
       materialTally[mat] = materialTally[mat] || 0;
       missingMatTally[mat] = missingMatTally[mat] || 0;
 
       matFormat[mat] = partBuildColor(
-        part.cost[mat], materialTally[mat], materials[mat]
+        part.material_cost[mat], materialTally[mat], materials[mat]
       );
 
       if (matFormat[mat].color !== COLOR_NONE) {
@@ -96,14 +122,17 @@ const queueCondFormat = (materials, queue) => {
         }
       }
       else {
-        materialTally[mat] += part.cost[mat];
+        materialTally[mat] += part.material_cost[mat];
       }
 
       missingMatTally[mat] += matFormat[mat].deficit;
     });
+
+
   });
   return { materialTally, missingMatTally, textColors, matFormat };
 };
+
 
 const searchFilter = (search, allparts) => {
   let searchResults = [];
@@ -129,40 +158,56 @@ const searchFilter = (search, allparts) => {
   return searchResults;
 };
 
+// setup and fix the parts/queue here
+const setupLocalPartsCache = context  => {
+  const { data } = useBackend(context);
 
-
-
-export const ProLathe = (props, context) => {
-  const { act, data } = useBackend(context);
-
-
-  const queue = data.queue || [];
-  const materialAsObj = materialArrayToObj(data.materials || []);
-  const department_tag = data.departmentTag || "BAD DEPARTMENT TAG";
-  const regents = data.regents || [];
-
-
-  const {
-    researchedDesigns,
-    catagoryOrder,
-  } = data;
-
-
+  const materialObj = materialArrayToObj(data.materials || []);
+  const allParts = createPartsIDLookup(data.researchedDesigns || {})
+  // convert the queue into a queue of parts
+  const queue =  data.queue ?  data.queue.map(id => allParts[id]) : [];
+  // get the material use for the queue
   const {
     materialTally,
     missingMatTally,
     textColors,
-  } = queueCondFormat(materialAsObj, queue);
+  } = queueCondFormat(materialObj, queue);
+  // set the display settings for parts
+  Object.values(allParts).forEach(part => {
+    part["format"] = partCondFormat(materialObj, materialTally, part);
+  });
+  // return an object of all the cached local stuff
+  return {
+    queue: queue,
+    materialObj : materialObj,
+    allParts : allParts,
+    materialTally : materialTally,
+    missingMatTally : missingMatTally,
+    textColors: textColors,
+  };
 
-  const [
-    displayMatCost,
-    setDisplayMatCost,
-  ] = useSharedState(context, "display_mats", false);
+}
+
+
+export const ProLathe = (props, context) => {
+  const {  data } = useBackend(context);
+  // order matters
+  const department_tag = data.departmentTag || "BAD DEPARTMENT TAG";
 
   const [
     selectedSettings,
     setSelectedSettings,
   ] = useSharedState(context, "settings_tab", "Materials");
+
+  // Most of the setup work for the db goes setupLocalPartsCache
+  // If your changing the prolathe ui_data or ui_static data, be sure
+  // to check setupLocalPartsCache if it needs changes
+  const [
+    cache
+  ] = useSharedState(context, "local_cache", setupLocalPartsCache(context));
+
+
+  // queue converted to a object list of parts by id
 
   return (
     <Window
@@ -209,19 +254,10 @@ export const ProLathe = (props, context) => {
               mt={1}
               basis="content"
               grow={1}>
-              <Section height="100%"
-                title={selectedSettings}>
-                {selectedSettings === "Materials" ? (<Materials />)
-                  : selectedSettings === "Regents"
-                    ? regents.map(regent => (regent.name + " | " + formatSiUnit(regent.amount, 0) +"u"))
-                    : (
-                      <Button.Checkbox
-                        onClick={() => setDisplayMatCost(!displayMatCost)}
-                        checked={displayMatCost}>
-                        Display Material Costs
-                      </Button.Checkbox>
-                    )}
-              </Section>
+              {selectedSettings === "Materials" ? (<Materials />)
+                :selectedSettings === "Regents" ? (<Reagents />)
+                  :selectedSettings === "Settings" ? (<Settings />)
+                    : "ERROR IN TAB MENU"}
             </Flex.Item>
           </Flex>
           <Flex.Item
@@ -246,23 +282,56 @@ export const ProLathe = (props, context) => {
                   fillPositionedParent
                   overflowY="auto">
                   <PartLists
-                    queueMaterials={materialTally}
-          materials={materialAsObj} />
+                    availableMaterials={cache.materialTally}
+                    materials={cache.materialAsObj} />
                 </Box>
               </Flex.Item>
               <Flex.Item
                 width="420px"
                 position="relative">
                 <Queue
-                  missingMaterials={missingMatTally}
-                  queueMaterials={materialTally}
-                  textColors={textColors} />
+                  queue={cache.queue}
+                  missingMaterials={cache.missingMatTally}
+                  queueMaterials={cache.materialTally}
+                  textColors={cache.textColors} />
               </Flex.Item>
             </Flex>
           </Flex.Item>
         </Flex>
       </Window.Content>
     </Window>
+  );
+};
+
+const Materials = (props, context) => {
+  const { data } = useBackend(context);
+
+  const materials = data.materials || [];
+
+  return (
+    <Section height="100%"
+      title="Materials">
+      <Flex
+        wrap="wrap">
+        {materials.map(material => (
+          material.isMaterial && (
+          <Flex.Item
+            width="80px"
+            key={material.name}>
+            <MaterialAmount
+              name={material.name}
+              amount={material.amount}
+              formatsi />
+            <Box
+              mt={1}
+              style={{ "text-align": "center" }}>
+              <EjectMaterial
+                material={material} />
+            </Box>
+          </Flex.Item>
+        )))}
+      </Flex>
+    </Section>
   );
 };
 
@@ -313,31 +382,107 @@ const EjectMaterial = (props, context) => {
   );
 };
 
-const Materials = (props, context) => {
-  const { data } = useBackend(context);
-
-  const materials = data.materials || [];
+const Settings = (props, context) => {
+  const [
+    displayMatCost,
+    setDisplayMatCost,
+  ] = useSharedState(context, "display_mats", false);
 
   return (
-    <Flex
-      wrap="wrap">
-      {materials.map(material => (
-        <Flex.Item
-          width="80px"
-          key={material.name}>
-          <MaterialAmount
-            name={material.name}
-            amount={material.amount}
-            formatsi />
-          <Box
-            mt={1}
-            style={{ "text-align": "center" }}>
-            <EjectMaterial
-              material={material} />
+    <Section height="100%"
+      title="Settings">
+      <Button.Checkbox
+        onClick={() => setDisplayMatCost(!displayMatCost)}
+        checked={displayMatCost}>
+        Display Material Costs
+      </Button.Checkbox>
+    </Section>
+  );
+};
+
+
+
+const ReagentAmount = (props, context) => {
+  const {  data } = useBackend(context);
+
+  const {
+    name,
+    amount,
+    formatsi,
+    formatmoney,
+    beaker_color,
+    color,
+  } = props;
+
+  const regents_max_volume = data.regents_max_volume || 0;
+  const regents_total_volume = data.regents_total_volume || 0;
+//   <Tooltip content={name} position='right' data-tooltip={name}/>
+  return (
+      <Flex
+        direction="column" data-tooltip={name}
+        align="center">
+        <Flex.Item>
+          <Box textColor={color} textAlign='center'>
+              {name}
           </Box>
         </Flex.Item>
-      ))}
-    </Flex>
+        <Flex.Item>
+          <Box position='relative' height='32px' width='32px'>
+            <Box position='absolute' top='15px' left='11px' width='10px' height='6px' backgroundColor={beaker_color}/>
+            <Box position='absolute' top={0} left={0} opacity={0.5}
+              className={classes([
+                  'sheetmaterials32x32',
+                  'beaker',
+            ])}/>
+          </Box>
+        </Flex.Item>
+        <Flex.Item>
+          <Box
+            textColor={color}
+            style={{ "text-align": "center" }}>
+            {((formatsi && formatSiUnit(amount, 0))
+            || (formatmoney && formatMoney(amount))
+            || (amount)) + "u"}
+          </Box>
+        </Flex.Item>
+      </Flex>
+  );
+};
+
+const Reagents = (props, context) => {
+  const { act, data } = useBackend(context);
+
+  const regents = data.materials || [];
+  const regents_max_volume = data.regents_max_volume || 0;
+  const regents_total_volume = data.regents_total_volume || 0;
+
+  return (
+    <Section height="100%"
+      title={"Reagents " + formatSiUnit(regents_total_volume, 0) + "/" + formatSiUnit(regents_max_volume, 0) +"u"}
+      buttons={
+        (<Button
+          disabled={!regents_total_volume}
+          content="Purge All"
+          color="good"
+          onClick={() => act("purge_reagents")}
+        />)
+      }>
+      <Flex
+        wrap="wrap">
+        {regents.map(regent =>
+          (!regent.isMaterial && (
+            <Flex.Item
+              width="80px"
+              key={regent.name}>
+              <ReagentAmount
+                name={regent.name}
+                amount={regent.amount}
+                beaker_color={regent.color}
+                formatsi />
+            </Flex.Item>
+          )))}
+      </Flex>
+    </Section>
   );
 };
 
@@ -375,6 +520,8 @@ const MaterialAmount = (props, context) => {
     </Flex>
   );
 };
+
+
 const getFirstValidPartSet = (sets, valid_sets) => {
   for (const set of sets) {
     if (valid_sets[set]) {
@@ -384,14 +531,14 @@ const getFirstValidPartSet = (sets, valid_sets) => {
   return null;
 };
 
-
 const PartSets = (props, context) => {
   const { data } = useBackend(context);
 
   const {
     categoryOrder,
-    researchedDesigns
+    researchedDesigns,
   } = data;
+
 
   const [
     selectedPartTab,
@@ -422,20 +569,18 @@ const PartSets = (props, context) => {
 const PartLists = (props, context) => {
   const { data } = useBackend(context);
 
-
   const {
     categoryOrder,
     researchedDesigns,
   } = data;
 
   const {
-    queueMaterials,
+    availableMaterials,
     materials,
   } = props;
 
   const [
     selectedPartTab,
-    setSelectedPartTab,
   ] = useSharedState(
     context,
     "part_tab",
@@ -446,16 +591,10 @@ const PartLists = (props, context) => {
     searchText,
     setSearchText,
   ] = useSharedState(context, "search_text", "");
-/*
-  const partsList = searchText && searchText != ""
+
+  let partsList = searchText && searchText != ""
     ? searchFilter(searchText, researchedDesigns)
     : researchedDesigns[selectedPartTab];
-*/
-  let partsList = researchedDesigns[selectedPartTab];
-
-  partsList.forEach(part => {
-    part["format"] = partCondFormat(materials, queueMaterials, part);
-  });
 
 
   return (
@@ -573,42 +712,26 @@ const PartItem = (props, context) => {
 
   );
 };
-const toAssocList = array_list => {
-  let acc_list  = {}
-  for (const V of array_list)
-    acc_list[V] = true;
-  return acc_list;
-}
-const PartSubCategory = (props, context) => {
 
-  const { act } = useBackend(context);
 
-  const {
-    parts,
-    name,
-  } = props;
-  if(!parts || parts.length == 0)
-    logger.log("Damnit something is wrong with "+ name);
-
-  return (
-    <Section
-      title={name}
-      buttons={name === "Parts" && (
-        <Button
-          disabled={!parts.length}
-          color="good"
-          content="Queue All"
-          icon="plus-circle"
-          onClick={() => act("add_queue_set", {
-            part_list: parts.map(part => part.id),
-          })} />)}>
-      {parts.map(part => (<PartItem part={part} key={name + "_sub_cat_" + part.id} />)) }
-    </Section>
-  );
-};
+/*
+ * Display the list of parts
+ *
+ * This looks complicated because of all the sorting needed for sub catagories.
+ * 1. If an item has no subcategory it is displayed at the top, first.
+ * 2. If we are sent an an order on how we want to display subcategory's
+ * the items are placed in each named sub category and displayed next
+ * 3. If an item has a sub category, but was not mentioned in the order
+ *    list, then we display it at the end
+ *
+ * This seems like a lot (like why not force all designs to have sub catagories)
+ * but this covers allot of use cases.  I am sure, eventually, all items will
+ * be organized for the lathe.
+ *
+ */
 
 const PartCategory = (props, context) => {
-  const { data } = useBackend(context);
+  const { act, data } = useBackend(context);
 
   const {
     parts,
@@ -617,25 +740,31 @@ const PartCategory = (props, context) => {
     placeholder,
   } = props;
   //  catagories
+  const partCompare = (L, R) => L.name.localeCompare(R.name);
 
   // This is the order of the sub categories we got from byond
   const sub_category_display_order = data.subCategoryOrder[name] || [];
   // We turn it into a look up list so we can search it faster
-  let all_sub_categories_used = toAssocList(sub_category_display_order)
+  let all_sub_categories_used = {};
+  sub_category_display_order.forEach(cat => all_sub_categories_used[cat] = true);
+
 
   //  List of all the parts in the proper sub categories
   let all_sub_category = {};
-  // List of categories that were not sent to by byond (aka they were just in the design objs)
+  // List of categories that were not sent to by byond
+  // (aka they were just in the design objs)
   // to be sorted latter
+
   let all_non_ordered_categories = [];
-  // Insert the part into the right sub category and mark the categories that are used
+  // Insert the part into the right sub category and mark the categories
+  // that are used
   const insert_into_subcategory = (sub_category_name, part) => {
     if (!Array.isArray(all_sub_category[sub_category_name]))
-      all_sub_category[sub_category_name] = [];
+    { all_sub_category[sub_category_name] = []; }
     all_sub_category[sub_category_name].push(part);
-    if(!all_sub_categories_used[sub_category_name]) {
+    if (!all_sub_categories_used[sub_category_name]) {
       all_sub_categories_used[sub_category_name] = true;
-      all_non_ordered_categories.push(sub_category_name)
+      all_non_ordered_categories.push(sub_category_name);
     }
   };
   // Filter out all parts that have no subcategories defined
@@ -653,27 +782,45 @@ const PartCategory = (props, context) => {
       return true;
     } // no sub category
   });
-  const ordered_subcategories_list = sub_category_display_order.filter(
-    sub_category_name => !!all_sub_category[sub_category_name]).concat(all_non_ordered_categories.sort());
+  const ordered_subcategories_list = sub_category_display_order
+    .filter(sub_category_name => !!all_sub_category[sub_category_name])
+    .concat(all_non_ordered_categories.sort());
 
   /* The order of printing the sub catagories is as follows.
     1. All non categorized parts are printed FIRST
     2. If we have a hard set category list, then that is printed next
     3. Other sub_catagories are printed after that
   */
+
+
   return (
     ((!!non_categorized_parts.length || forceShow) && (
       <Section title={name}>
         {(!!non_categorized_parts.length) && (placeholder)}
-        {non_categorized_parts.map(part =>
-          (<PartItem key={part.id} part={part} />)) }
-        {!!ordered_subcategories_list.length && ordered_subcategories_list.map(sub_category_name =>
-          (<PartSubCategory
-            key={name + "_" + sub_category_name}
-            name={sub_category_name}
-            parts={all_sub_category[sub_category_name]}
-          />)
-        )}
+        {non_categorized_parts.sort(partCompare).map(part =>
+          (<PartItem key={part.id} part={part} />))}
+        {!!ordered_subcategories_list.length
+            && ordered_subcategories_list
+              .map(sub_category_name => (
+                <Section
+                  key={name + "_" + sub_category_name}
+                  title={sub_category_name}
+                  buttons={sub_category_name === "Parts" && (
+                    <Button
+                      color="good"
+                      content="Queue All"
+                      icon="plus-circle"
+                      onClick={() => act("add_queue_set", {
+                        part_list: all_sub_category[sub_category_name]
+                          .map(part => part.id),
+                      })} />)}>
+                  {all_sub_category[sub_category_name]
+                    .sort(partCompare).map(part =>
+                      (<PartItem part={part}
+                        key={name + "_" + sub_category_name + "_" + part.id} />)
+                    )}
+                </Section>
+              ))}
       </Section>
     ))
   );
@@ -684,9 +831,8 @@ const Queue = (props, context) => {
 
   const { isProcessingQueue } = data;
 
-  const queue = data.queue || [];
-
   const {
+    queue,
     queueMaterials,
     missingMaterials,
     textColors,
@@ -735,6 +881,7 @@ const Queue = (props, context) => {
             </Flex.Item>
             <Flex.Item>
               <QueueList
+                queue={queue}
                 textColors={textColors} />
             </Flex.Item>
           </Flex>
@@ -787,10 +934,9 @@ const QueueList = (props, context) => {
   const { act, data } = useBackend(context);
 
   const {
+    queue,
     textColors,
   } = props;
-
-  const queue = data.queue || [];
 
   if (!queue.length) {
     return (

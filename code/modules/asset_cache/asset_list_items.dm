@@ -479,6 +479,9 @@
 
 	// Special case to handle Bluespace Crystals
 	Insert("polycrystal", 'icons/obj/telescience.dmi', "polycrystal")
+
+	// Added beaker for reagents
+	Insert("beaker", 'icons/obj/chemical.dmi', "beakerlarge")
 	..()
 
 /datum/asset/spritesheet/mafia
