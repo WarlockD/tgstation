@@ -1,169 +1,180 @@
-#define _cons(X,Y) list("t_pair",X,Y)
-#define _ltrue "t"
-#define _lfalse null
-#define _car(X) X[2]
-#define _cdr(X) X[3]
-#define _atom(X) ( !islist(X) ? _ltrue : _lfalse ) // atoms are in lists but they are 1
-#define _eq(X,Y) (!islist(X) || !islist(Y) || X != Y ? _lfalse: _ltrue)
-#define _cond(X,Y)
+
+#define lisp_debug(m,e) to_chat(world,"[__FILE__]:[__LINE__]: " + (m) + ": " + print_obj(e,1))
+
+#define cons(X,Y) (list((X), (Y)))
+#define is_pair(X) (islist(X))
+#define is_atom(X) (!is_pair(X))
+
+var/ltrue = cons("quote", cons("t", null))
+var/lfalse = null
+
+#define car(X) ((X)[1])
+#define cdr(X) ((X)[2])
+#define eq(X,Y) (is_atom(X) && is_atom(Y) && (X) == (Y))
+#define _getchar(...) ((length(buffer) > idx) ? null : buffer[idx++])
+
+
+#define  is_syntaxquote(x)  ((x) == "'" || (x) == "`" || (x) == ",")
+#define  is_doublequote(x)  ((x) == "\"")
+
+#define  is_op(x) ((x) == "-" || (x) == "+" || (x) == "*" || (x) == "/"	\
+   || (x) == "=" || (x) == "%" || (x) == "^" || (x) == "&" || (x) == "|" || (x) == "!")
+
+#define is_space(x)  ((x) == " " || (x) == "\n")
+#define is_parens(x) ((x) == "(" || (x) == ")")
 
 /datum/lisp
-	var/regex/lisp_parser = new(@"^;.*$|([\(\)\'])(?=[^\s]*)|(\d+)|([^\s\(\)\']+)","gm")
-#if 0
-	']""[
+	var/list/symbols = null
+	var/look
+	var/token
+	var/buffer
+	var/idx = 0
 
-	]
+/datum/lisp/New(S)
+	buffer = S
+	idx = 1
+	look = ""
+	token = ""
 
-#endif
-	var/text
-	var/list/_assoc = list()
+/datum/lisp/proc/gettoken()
+	while(is_space(look))
+		look= _getchar()
 
-/datum/lisp/proc/f_car(list/X) return _car(X)
-/datum/lisp/proc/f_cdr(list/X) return _cdr(X)
-/datum/lisp/proc/f_atom(X) return _atom(X) ? "t" : null
-/datum/lisp/proc/f_cons(list/X) return _cdr(X)
-/datum/lisp/proc/f_eq(a, b) return _eq(a,b)
-
-/datum/lisp/proc/_reverse(list/a)
-	var/list/p = null
-	while(a != null)
-		p = _cons(_car(a), p)
-	return p
-
-/datum/lisp/proc/_append(list/a, list/b)
-	var/list/p = b
-	var/list/q = null
-	if(a != null)
-		a = _reverse(a)
-		while(a != null)
-			q = _cdr(a)
-			_cdr(a) = p
-			p = a
-			a = q
-	return p
-
-
-	if(_atom(a) && _atom(b))
-		return a[1] == b[1] ? "T" : null
-
-
-/proc/_lisp_token_builder(list/tokens)
-	to_chat(world, "DEBUG: token=[tokens.len]")
-	if(tokens.len == 0)
-		to_chat(world, "DEBUG: Unexpeted EOF of tokens")
-		throw EXCEPTION("Bad token")
-	var/token = tokens[tokens.len--]
-	to_chat(world, "DEBUG: token=[token]")
-	if(token == "(")
-		to_chat(world, "DEBUG: new (")
-		var/list/L = list()
-		while(tokens[tokens.len] != ")")
-			L[++L.len] = _lisp_token_builder(tokens)
-		tokens.len-- // pop the ")"
-		to_chat(world, "DEBUG: new )")
-		return L
-	else if(token == ")")
-		to_chat(world, "DEBUG: unexpected )")
-		throw EXCEPTION("unexpected )")
+	if(is_parens(look))
+		token = look
+		look = _getchar()
 	else
-		return token
-var/count_this = 0
+		var/list/string_builder = list()
+		while(look != null && !is_space(look) && !is_parens(look))
+			string_builder += look
+			look = _getchar()
+		token = string_builder.Join()
 
-/proc/lisp_printer(v)
-	if(v == null)
-		return "null"
+/datum/lisp/proc/getobj()
+	if (token == "(")
+		return getlist()
+	return token
 
-	if(islist(v))
-		var/list/L = v
-		if(L.len == 0)
-			return "()"
-		var/text = "("
-		for(var/i=1;i <= L.len; i++)
-			if(i > 1)
-				text += " "
-			text += lisp_printer(L[i])
-		text += ")"
-		return text
-	else
-		return "[v]"
-
-/datum/lisp/proc/_getobj(regex/lisp_parser,text)
-	if(lisp_parser.match == "(")
-		return _getlist(lisp_parser)
-	else if(lisp_parser.match == "''")
-		if(lisp_parser.Find(text) == 0)
-			to_chat(world,"LISP: SyntaxError, bad quote")
-			throw EXCEPTION("LISP: SyntaxError, bad quote")
-		return _cons("quote", _getobj(lisp_parser,text))
-	else if(lisp_parser.group[2])
-		return text2num(lisp_parser.match) // number
-	else if(lisp_parser.group[1])// ok we got an operator lets save it
-		return lisp_parser.match
-	else
-		to_chat(world,"LISP: SyntaxError[lisp_parser.index], EOF while reading!, missing )?")
-		throw EXCEPTION("LISP: SyntaxError[lisp_parser.index], EOF while reading!, missing )?")
-
-/datum/lisp/proc/_getlist(regex/lisp_parser,text)
-	if(lisp_parser.Find(text) == 0)
-		to_chat(world,"LISP: SyntaxError[lisp_parser.index], missing ending ')'")
-		throw EXCEPTION("LISP: SyntaxError[lisp_parser.index], missing ending ')'")
-	if(lisp_parser.match == ")")
+/datum/lisp/proc/getlist()
+	gettoken()
+	if (token == ")")
 		return null
-	return _cons(_getobj(lisp_parser,text), _getlist(lisp_parser,text))
+	return cons(getobj(), getlist())
 
 
-/datum/lisp/proc/_print_obj(ob, head_of_list)
-	if(!islist(ob))
-		return (ob == null) ? "null" : "[ob]"
+/datum/lisp/proc/print_obj_(list/ob, head_of_list=FALSE, list/string_builder)
+	if(is_atom(ob))
+		string_builder += isnull(ob) ? "null" : ob
 	else
-		var/text = head_of_list ? "(" : ""
-		var/list/L = ob
-		text += _print_obj(_car(L), 1)
-		if (_cdr(ob) != null)
-			text += " " + _print_obj(_cdr(L), 0)
+		if(head_of_list)
+			string_builder += "("
+
+		print_obj_(car(ob), TRUE)
+
+		if (cdr(ob) != null)
+			string_builder += " "
+			print_obj_(cdr(ob), FALSE)
 		else
-			text += ")"
-		return text
+			string_builder += ")"
+
+/datum/lisp/proc/print_obj(ob, head_of_list=FALSE)
+	var/list/string_builder = list()
+	print_obj_(ob,head_of_list,string_builder)
+	return string_builder.Join()
+
+/datum/lisp/proc/f_car(X)
+	return car(car(X))
+/datum/lisp/proc/f_cdr(X)
+	return cdr(car(X))
+/datum/lisp/proc/f_eq(X)
+	return car(X) == car(cdr(X)) ? ltrue : lfalse
+/datum/lisp/proc/f_pair(X)
+	return is_pair(car(X))     ? ltrue : lfalse
+/datum/lisp/proc/f_atom(X)
+	return is_atom(car(X))     ? ltrue : lfalse
+/datum/lisp/proc/f_null(X)
+	return car(X) == null      ? ltrue : lfalse
+/datum/lisp/proc/f_readobj(X)
+	look = _getchar()
+	gettoken()
+	return getobj()
+/datum/lisp/proc/f_writeobj(X)
+	print_obj(car(X), 1)
+	return getobj();
 
 
-/proc/parse_lisp_script(text)
+// http://cslibrary.stanford.edu/105/LinkedListProblems.pdf
 
-#if 0
-	var/list/tokens = list()
-	while(lisp_parser.Find(text) > 0)
-		if(lisp_parser.group[2])
-			tokens[++tokens.len] = text2num(lisp_parser.match) // number
-		else if(lisp_parser.group[3])
-			tokens[++tokens.len] = lisp_parser.match // symbol..no strings yet
-		else if(lisp_parser.group[1])// ok we got an operator lets save it
-			tokens[++tokens.len] = lisp_parser.match
+/datum/lisp/proc/evlist(list/V, list/ENV)
+	var/list/head = null
+	var/list/last = null
+	for(var/L=V; !isnull(L); L = cdr(L))
+		if(isnull(head))
+			head = last = cons(lisp_eval(car(L), ENV) , null)
 		else
-			to_chat(world, "DEBUG: bad tag '[lisp_parser.match]''")
+			cdr(L) = cons(lisp_eval(car(L), ENV) , null)
+			last = cdr(L)
+	return head
 
-	to_chat(world,"Ok we parsed and have [tokens.len] tokens")
-	reverseRange(tokens) // reverse it to turn it into a token stack
+/datum/lisp/proc/pair_to_list(list/V)
+	var/list/A = list()
+	for(var/list/L=V; !isnull(L); L = cdr(L))
+		A += car(L)
+	return A
 
-	var/list/sexpr = _parse_lisp_script(tokens)
-	to_chat(world,"Ok we parsed and have [sexpr.len] sexpr")
-	var/test_text = lisp_printer(sexpr)
-	to_chat(world,"Ok we parsed and have [test_text] sexpr")
-#endif
-	var/datum/lisp/L = new
+/datum/lisp/proc/apply_primitive(primfn, list/A)
+	return call(primfn)(pair_to_list(A))
 
-	var/sexpr = null
-	if(lisp_parser.Find(text) > 0)
-		sexpr = L._getobj(lisp_parser,text)
-	to_chat(world,"Ok we parsed and have [L._print_obj(sexpr)] tokens")
+/datum/lisp/proc/lisp_eval(exp, env)
+	if(is_atom(exp))
+		for(var/E = env; !isnull(E); E = cdr(E))
+			if (exp == car(car(E)))
+				return car(cdr(car(E)))
+		return
+	else if(is_atom(car(exp)))
+		switch(car(exp))
+			if("quote")
+				return car(cdr(exp))
+			if("if")
+				if (lisp_eval(car(cdr(exp)), env) != null)
+					return lisp_eval(car(cdr(cdr(exp))), env)
+				else
+					return lisp_eval(car(cdr(cdr(cdr(exp)))), env)
+			if("lambda")
+				return exp /* todo: create a closure and capture free vars */
+			if("apply")
+				var/A = evlist(cdr(cdr(exp)), env);
+				A = car(A) /* assumes one argument and that it is a list */
+				return apply_primitive( lisp_eval(car(cdr(exp)), env), A)
+			else
+				var/primop = lisp_eval (car(exp), env)
+				if (is_pair(primop))  /* user defined lambda, arg list eval happens in binding  below */
+					return lisp_eval( cons(primop, cdr(exp)), env )
+				else if (primop) /* built-in primitive */
+					return apply_primitive(primop, evlist(cdr(exp), env))
+
+	else if(car(car(exp)) == "lambda")  /* should be a lambda, bind names into env and eval body */
+		var/extenv = env
+		var/vars = cdr(exp)
+		var/list/names = car(cdr(car(exp)))
+		for(!isnull(names))
+			extenv = cons (cons(car(names),  cons(lisp_eval (car(vars), env), null)), extenv)
+			names = cdr(names)
+			vars = cdr(vars)
+		return lisp_eval (car(cdr(cdr(car(exp)))), extenv);
+
+	to_chat(world,"cannot evaluate expression")
+	return null
 
 
-/mob/verb/lisptest()
-	to_chat(world,"start sexpr")
-	var/teste_text = {"
-		(defun pair. (x y)
-  (cond ((and. (null. x) (null. y)) '())
-        ((and. (not. (atom x)) (not. (atom y)))
-         (cons (list. (car x) (car y))
-               (pair. (cdr x) (cdr y))))))
-	"}
-	parse_lisp_script(teste_text)
 
+#undef lisp_debug
+
+#undef cons
+#undef is_pair
+#undef is_atom
+
+#undef car
+#undef cdr
+#undef eq
+#undef _getchar
