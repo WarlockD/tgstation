@@ -2364,6 +2364,7 @@
 /obj/machinery/airalarm/unlocked{
 	pixel_y = 23
 	},
+/obj/machinery/computer/med_data,
 /turf/open/floor/plasteel,
 /area/hallway/primary/central)
 "yK" = (

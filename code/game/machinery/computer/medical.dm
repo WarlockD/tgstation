@@ -22,6 +22,20 @@
 /obj/machinery/computer/med_data/syndie
 	icon_keyboard = "syndie_key"
 
+
+
+/obj/machinery/computer/atmos_control/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "TN3270", name)
+		ui.open()
+
+/obj/machinery/computer/atmos_control/ui_data(mob/user)
+	var/data = list()
+
+	return data
+
+#if 0
 /obj/machinery/computer/med_data/ui_interact(mob/user)
 	. = ..()
 	if(isliving(user))
@@ -559,7 +573,7 @@
 			else if(prob(1))
 				qdel(R)
 				continue
-
+#endif
 /obj/machinery/computer/med_data/proc/canUseMedicalRecordsConsole(mob/user, message = 1, record1, record2)
 	if(user && message && authenticated)
 		if(user.canUseTopic(src, !issilicon(user)))

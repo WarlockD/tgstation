@@ -3,90 +3,91 @@ import { useBackend } from '../backend';
 import { Button, Section } from '../components';
 import { Window } from '../layouts';
 
- // all these magic numbers have to coordinate to
-  // properly scale the 3270 font
+// all these magic numbers have to coordinate to
+// properly scale the 3270 font
 
-  const magic = {
-    cxFactor: 9.65625,
-    cyFactor: 21,
-    nominalFontSize: 18,
-    paddingBottom: 8,
-    paddingLeft: 16,
-    paddingRight: 16,
-    paddingTop: 8
-  };
+const magic = {
+  cxFactor: 9.65625,
+  cyFactor: 21,
+  nominalFontSize: 18,
+  paddingBottom: 8,
+  paddingLeft: 16,
+  paddingRight: 16,
+  paddingTop: 8,
+};
 
 
 const Color = {
-  NEUTRAL   = 0x00,
-  BLUE      = 0xF1,
-  RED       = 0xF2,
-  PINK      = 0xF3,
-  GREEN     = 0xF4,
-  TURQUOISE = 0xF5,
-  YELLOW    = 0xF6,
-  WHITE     = 0xF7
+  NEUTRAL: 0x00,
+  BLUE: 0xF1,
+  RED: 0xF2,
+  PINK: 0xF3,
+  GREEN: 0xF4,
+  TURQUOISE: 0xF5,
+  YELLOW: 0xF6,
+  WHITE: 0xF7,
 };
 
 const Command = {
-  EAU = 0x6F,
-  EW  = 0xF5,
-  EWA = 0x7E,
-  W   = 0xF1,
-  WSF = 0xF3
+  EAU: 0x6F,
+  EW: 0xF5,
+  EWA: 0x7E,
+  W: 0xF1,
+  WSF: 0xF3,
 };
 
 const Highlight = {
-  BLINK      = 0xF1,
-  REVERSE    = 0xF2,
-  UNDERSCORE = 0xF4
+  BLINK: 0xF1,
+  REVERSE: 0xF2,
+  UNDERSCORE: 0xF4,
 };
 
 const Op = {
-  Q       = 0x02,
-  QL      = 0x03,
-  RB      = 0xF2,
-  RM      = 0xF6,
-  RMA     = 0x6E,
-  UNKNOWN = 0xFF
+  Q: 0x02,
+  QL: 0x03,
+  RB: 0xF2,
+  RM: 0xF6,
+  RMA: 0x6E,
+  UNKNOWN: 0xFF,
 };
 
-cosnt Order = {
-  SF  = 0x1D,
-  SFE = 0x29,
-  SBA = 0x11,
-  SA  = 0x28,
-  MF  = 0x2C,
-  IC  = 0x13,
-  PT  = 0x05,
-  RA  = 0x3C,
-  EUA = 0x12,
-  GE  = 0x08
+const Order = {
+  SF: 0x1D,
+  SFE: 0x29,
+  SBA: 0x11,
+  SA: 0x28,
+  MF: 0x2C,
+  IC: 0x13,
+  PT: 0x05,
+  RA: 0x3C,
+  EUA: 0x12,
+  GE: 0x08,
 };
 
 const QCode = {
-  ALPHANUMERIC_PARTITIONS = 0x84,
-  CHARACTER_SETS = 0x85,
-  COLOR = 0x86,
-  DDM = 0x95,
-  HIGHLIGHTING = 0x87,
-  IMPLICIT_PARTITION = 0xA6,
-  REPLY_MODES = 0x88,
-  RPQ_NAMES = 0xA1,
-  SUMMARY = 0x80,
-  USABLE_AREA = 0x81
-}
+  ALPHANUMERIC_PARTITIONS: 0x84,
+  CHARACTER_SETS: 0x85,
+  COLOR: 0x86,
+  DDM: 0x95,
+  HIGHLIGHTING: 0x87,
+  IMPLICIT_PARTITION: 0xA6,
+  REPLY_MODES: 0x88,
+  RPQ_NAMES: 0xA1,
+  SUMMARY: 0x80,
+  USABLE_AREA: 0x81,
+};
 
-const TypeCode ={
-  BASIC     = 0xC0,
-  HIGHLIGHT = 0x41,
-  COLOR     = 0x42
+const TypeCode = {
+  BASIC: 0xC0,
+  HIGHLIGHT: 0x41,
+  COLOR: 0x42,
 };
 
 const SFID = {
-  QUERY_REPLY    = 0x81,
-  READ_PARTITION = 0x01
+  QUERY_REPLY: 0x81,
+  READ_PARTITION: 0x01,
 };
+
 const host_create = {
   'color': 'var(--lu3270-color)',
   'display': 'block',
@@ -95,23 +96,23 @@ const host_create = {
   'overflow': 'auto',
 };
 
-const grid_create = (width,height, keyboardLocked=false) => {
+const grid_create = (width, height, keyboardLocked=false) => {
   width = width || 80;
   height = height || 24;
   return {
     'cursor': keyboardLocked ? 'not-allowed' : 'default',
     'align-items': 'start',
     'justify-content': 'center',
-    'display':'-ms-grid',
-    'display':'grid',
-      /* IE repeat syntax */
+    'display': '-ms-grid',
+    'display': 'grid',
+    /* IE repeat syntax */
     '-ms-grid-columns': '(20px)[' + width + ']',
     '-ms-grid-rows': '(20px)[' + height + ']',
-  /* Modern repeat syntax */
+    /* Modern repeat syntax */
     'grid-template-columns': '1fr repeat(3, 20px 1fr)',
-    'border':'solid 1px #000',
-  } ;
-}
+    'border': 'solid 1px #000',
+  };
+};
 
 class Attributes {
   constructor(protect = false,
@@ -123,16 +124,16 @@ class Attributes {
     reverse = false,
     underscore = false,
     color = Color.NEUTRAL) {
-      this.protect = protect;
-      this.numeric = numeric;
-      this. highlight = highlight;
-      this.hidden = hidden;
-      this.modified = modified;
-      this.blink = blink;
-      this.reverse = falreversese;
-      this.underscore = underscore;
-      this.color = color;
-    }
+    this.protect = protect;
+    this.numeric = numeric;
+    this.highlight = highlight;
+    this.hidden = hidden;
+    this.modified = modified;
+    this.blink = blink;
+    this.reverse = falreversese;
+    this.underscore = underscore;
+    this.color = color;
+  }
 
   /** Convert to CSS */
   modify(typeCode, another) {
@@ -159,20 +160,20 @@ class Attributes {
   toByte() {
     let byte = 0b00000000;
     if (this.protect)
-      byte &= 0b00100000;
+    { byte &= 0b00100000; }
     if (this.numeric)
-      byte &= 0b00010000;
+    { byte &= 0b00010000; }
     if (this.highlight)
-      byte &= 0b00001000;
+    { byte &= 0b00001000; }
     if (this.hidden)
-      byte &= 0b00001100;
+    { byte &= 0b00001100; }
     if (this.modified)
-      byte &= 0b00000001;
+    { byte &= 0b00000001; }
     return six2e[byte];
   }
 
   /** Convert to CSS */
-  toCSS(cell,cursorAt, focused) {
+  toCSS(cell, cursorAt, focused) {
     const style = { };
     if (cursorAt) {
       if (this.hidden) {
@@ -191,11 +192,11 @@ class Attributes {
     }
     else if (!cell.attribute) {
       if (this.highlight)
-        style.fontWeight = '900';
+      { style.fontWeight = '900'; }
       if (this.blink)
-        style.animation = 'blink 1s linear infinite';
+      { style.animation = 'blink 1s linear infinite'; }
       if (this.underscore)
-        style.textDecoration = 'underline';
+      { style.textDecoration = 'underline'; }
       switch (this.color) {
         case Color.BLUE:
           style.color = style.highlight? 'var(--mat-blue-400)' : 'var(--mat-blue-300)';
@@ -221,7 +222,7 @@ class Attributes {
           break;
         default:
           if (style.highlight)
-            style.color = 'var(--lu3270-highlight-color)';
+          { style.color = 'var(--lu3270-highlight-color)'; }
       }
       if (cell.value && this.reverse) {
         style.backgroundColor = style.color? style.color : 'var(--lu3270-color)';
@@ -229,61 +230,61 @@ class Attributes {
       }
     }
     return style;
-  };
+  }
 
   /** String dump, for testing */
   toString() {
     return `ATTR=[${this.protect? 'PROT ' : ''}${this.numeric? 'NUM ' : ''}${this.highlight? 'HILITE ' : ''}${this.hidden? 'HIDDEN ' : ''}${this.modified? 'MDT ' : ''}${this.blink? 'BLINK ' : ''}${this.reverse? 'REV ' : ''}${this.underscore? 'USCORE ' : ''}${Color[this.color]}]`;
   }
-};
+}
 /** Create from a single byte, as in SF */
 Attributes.prototype.fromByte = byte => {
   return new Attributes(((byte & 0b00100000) !== 0),
-                        ((byte & 0b00010000) !== 0),
-                        ((byte & 0b00001000) !== 0) && ((byte & 0b00000100) === 0),
-                        ((byte & 0b00001000) !== 0) && ((byte & 0b00000100) !== 0),
-                        ((byte & 0b00000001) !== 0));
+    ((byte & 0b00010000) !== 0),
+    ((byte & 0b00001000) !== 0) && ((byte & 0b00000100) === 0),
+    ((byte & 0b00001000) !== 0) && ((byte & 0b00000100) !== 0),
+    ((byte & 0b00000001) !== 0));
 };
 
 /** Create from multiple bytes, as in SFE */
 Attributes.prototype.fromBytes = bytes => {
-    let basic = 0;
-    let blink = false;
-    let reverse = false;
-    let underscore = false;
-    let color = Color.NEUTRAL;
-    for (let i = 0; i < bytes.length; i++) {
-      switch (bytes[i]) {
-        case TypeCode.BASIC:
-          basic = bytes[i + 1];
-          break;
-        case TypeCode.HIGHLIGHT:
-          switch (bytes[i + 1]) {
-            case Highlight.BLINK:
-              blink = true;
-              break;
-            case Highlight.REVERSE:
-              reverse = true;
-              break;
-            case Highlight.UNDERSCORE:
-              underscore = true;
-              break;
-          }
-          break;
-        case TypeCode.COLOR:
-          color = bytes[i + 1];
-          break;
-      }
+  let basic = 0;
+  let blink = false;
+  let reverse = false;
+  let underscore = false;
+  let color = Color.NEUTRAL;
+  for (let i = 0; i < bytes.length; i++) {
+    switch (bytes[i]) {
+      case TypeCode.BASIC:
+        basic = bytes[i + 1];
+        break;
+      case TypeCode.HIGHLIGHT:
+        switch (bytes[i + 1]) {
+          case Highlight.BLINK:
+            blink = true;
+            break;
+          case Highlight.REVERSE:
+            reverse = true;
+            break;
+          case Highlight.UNDERSCORE:
+            underscore = true;
+            break;
+        }
+        break;
+      case TypeCode.COLOR:
+        color = bytes[i + 1];
+        break;
     }
-    return new Attributes(((basic & 0b00100000) !== 0),
-                          ((basic & 0b00010000) !== 0),
-                          ((basic & 0b00001000) !== 0) && ((basic & 0b00000100) === 0),
-                          ((basic & 0b00001000) !== 0) && ((basic & 0b00000100) !== 0),
-                          ((basic & 0b00000001) !== 0),
-                          blink,
-                          reverse,
-                          underscore,
-                          color);
+  }
+  return new Attributes(((basic & 0b00100000) !== 0),
+    ((basic & 0b00010000) !== 0),
+    ((basic & 0b00001000) !== 0) && ((basic & 0b00000100) === 0),
+    ((basic & 0b00001000) !== 0) && ((basic & 0b00000100) !== 0),
+    ((basic & 0b00000001) !== 0),
+    blink,
+    reverse,
+    underscore,
+    color);
 };
 /** Create from others */
 Attributes.prototype.from = (...another) => {
@@ -302,31 +303,31 @@ class Cell {
   toCSS(cursorAt, focused) {
   // delegate to attributes
     return this.attributes.toCSS(this, cursorAt, focused);
-  };
-};
+  }
+}
 
-const
+
 const generateInitalScreen = (width, height) => {
   let allcells = [];
-  for(var i=0; i < (width*height);i++)
-    allcells.push(new Cell());
-    return allcells;
+  for (let i=0; i < (width*height); i++)
+  { allcells.push(new Cell()); }
+  return allcells;
 };
 
 const Screen = (props, context) => {
-  const grid_create = grid_create(80,24,false);
+  const grid_create = grid_create(80, 24, false);
 
   const [
     settings,
-  ] = useSharedState(context,"screen_settings", { width: 80, height: 24, color: 'green', });
+  ] = useSharedState(context, "screen_settings", { width: 80, height: 24, color: 'green' });
 
   const [
     status,
-  ] = useSharedState(context,"screen_status", { cursorAt: -1, focused: false, });
+  ] = useSharedState(context, "screen_status", { cursorAt: -1, focused: false });
 
   const [
     cells,
-  ] = useSharedState(context,"screen_chars", generateInitalScreen(settings.width,settings.height));
+  ] = useSharedState(context, "screen_chars", generateInitalScreen(settings.width, settings.height));
 
 
   /*
@@ -335,12 +336,12 @@ const Screen = (props, context) => {
   */
   return (
     <Box style={grid_create}>
-      {cells.map((cell,i) => (
+      {cells.map((cell, i) => (
         <Box
 
           key={i}
           id={'cell' + i}
-          style={cell.attributes.toCSS(cell, status.cursorAt = i,status.focused)}>
+          style={cell.attributes.toCSS(cell, status.cursorAt = i, status.focused)}>
           {cell.value}
         </Box>)
       )};
@@ -348,31 +349,7 @@ const Screen = (props, context) => {
   );
 };
 
-<div
-    [id]="'cell' + ix"
-    [ngStyle]="cell.toCSS(status.cursorAt === ix, status.focused)"
-    *ngFor="let cell of screen.cells; let ix = index">
-    {{ cell.value? cell.value : '\u00a0' }}
-  </div>
-    </Box>
 
-
-  );
-  <div
-
-  [ngStyle]="{cursor: status.keyboardLocked? 'not-allowed' : 'default'}"
-  *ngIf="status.connected; else ready"
-  class="cells">
-
-  <div
-    [id]="'cell' + ix"
-    [ngStyle]="cell.toCSS(status.cursorAt === ix, status.focused)"
-    *ngFor="let cell of screen.cells; let ix = index">
-    {{ cell.value? cell.value : '\u00a0' }}
-  </div>
-
-</div>
-};
 
 export const TN3270 = (props, context) => {
   const { act, data } = useBackend(context);

@@ -105,7 +105,7 @@ module.exports = (env = {}, argv) => {
           ],
         },
         {
-          test: /\.(png|jpg|svg)$/,
+          test: /\.(png|jpg|svg|ttf)$/,
           use: [
             {
               loader: 'url-loader',
