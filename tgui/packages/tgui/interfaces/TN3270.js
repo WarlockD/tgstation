@@ -1,6 +1,6 @@
 import { Fragment } from 'inferno';
-import { useBackend } from '../backend';
-import { Button, Section } from '../components';
+import { useBackend, useSharedState } from '../backend';
+import { Button, Section, Box,  } from '../components';
 import { Window } from '../layouts';
 
 // all these magic numbers have to coordinate to
@@ -104,7 +104,7 @@ const grid_create = (width, height, keyboardLocked=false) => {
     'align-items': 'start',
     'justify-content': 'center',
     'display': '-ms-grid',
-    'display': 'grid',
+   // 'display': 'grid',
     /* IE repeat syntax */
     '-ms-grid-columns': '(20px)[' + width + ']',
     '-ms-grid-rows': '(20px)[' + height + ']',
@@ -338,7 +338,6 @@ const Screen = (props, context) => {
     <Box style={grid_create}>
       {cells.map((cell, i) => (
         <Box
-
           key={i}
           id={'cell' + i}
           style={cell.attributes.toCSS(cell, status.cursorAt = i, status.focused)}>
@@ -354,53 +353,14 @@ const Screen = (props, context) => {
 export const TN3270 = (props, context) => {
   const { act, data } = useBackend(context);
   const {
-    minutes,
-    seconds,
-    timing,
-    loop,
+    commands,
   } = data;
   return (
     <Window
-      width={275}
-      height={115}>
+      width={800}
+      height={600}>
       <Window.Content>
-        <Section
-          title="Timing Unit"
-          buttons={(
-            <Fragment>
-              <Button
-                icon={'sync'}
-                content={loop ? 'Repeating' : 'Repeat'}
-                selected={loop}
-                onClick={() => act('repeat')} />
-              <Button
-                icon={"clock-o"}
-                content={timing ? 'Stop' : 'Start'}
-                selected={timing}
-                onClick={() => act('time')} />
-            </Fragment>
-          )}>
-          <Button
-            icon="fast-backward"
-            disabled={timing}
-            onClick={() => act('input', { adjust: -30 })} />
-          <Button
-            icon="backward"
-            disabled={timing}
-            onClick={() => act('input', { adjust: -1 })} />
-          {' '}
-          {String(minutes).padStart(2, '0')}:
-          {String(seconds).padStart(2, '0')}
-          {' '}
-          <Button
-            icon="forward"
-            disabled={timing}
-            onClick={() => act('input', { adjust: 1 })} />
-          <Button
-            icon="fast-forward"
-            disabled={timing}
-            onClick={() => act('input', { adjust: 30 })} />
-        </Section>
+        <Screen />
       </Window.Content>
     </Window>
   );
