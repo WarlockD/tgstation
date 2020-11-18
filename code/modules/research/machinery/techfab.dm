@@ -6,11 +6,11 @@
 	categories = CATEGORIES_TECHFAB
 	console_link = FALSE
 	production_animation = "protolathe_n"
-	allowed_buildtypes = PROTOLATHE | IMPRINTER
+	allowed_buildtypes = PROTOLATHE | IMPRINTER | AUTOLATHE
 	time_coeff = 1.2
 	component_coeff = 1.2
 	uses_regents = TRUE
-	
+
 /obj/machinery/rnd/production/techfab/RefreshParts()
 	var/T = 0
 	//maximum stocking amount (default 300000, 600000 at T4)

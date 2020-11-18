@@ -5,12 +5,12 @@
 	circuit = /obj/item/circuitboard/machine/protolathe
 	categories = CATEGORIES_PROTOLATHE
 	production_animation = "protolathe_n"
-	allowed_buildtypes = PROTOLATHE
+	allowed_buildtypes = PROTOLATHE| AUTOLATHE
 	uses_regents = FALSE
 	time_coeff = 1.2
 	component_coeff = 1.2
 	uses_regents = TRUE
-	
+
 /obj/machinery/rnd/production/protolathe/RefreshParts()
 	var/T = 0
 	//maximum stocking amount (default 300000, 600000 at T4)

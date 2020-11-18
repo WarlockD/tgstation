@@ -2,7 +2,7 @@ import { classes } from 'common/react';
 import { uniqBy } from 'common/collections';
 import { useBackend, useLocalState, useSharedState } from '../backend';
 import { formatSiUnit, formatMoney } from '../format';
-import { Flex, Section, Tabs, Box, Button, Fragment, ProgressBar, NumberInput, Icon, Input, Tooltip } from '../components';
+import { Flex, Section, Tabs, Box, Button, Fragment, ProgressBar, NumberInput, Icon, Input, Tooltip , Dropdown } from '../components';
 import { Window } from '../layouts';
 import { createSearch } from 'common/string';
 import { createLogger } from "../logging";
@@ -87,16 +87,6 @@ const partCondFormat = (materials, tally, part) => {
   }
   return format;
 };
-const createPartsIDLookup = (categories_of_parts) => {
-  let lookup_list = {};
-  Object.keys(categories_of_parts).forEach(category => {
-    const category_parts = categories_of_parts[category];
-    category_parts.forEach(part => {
-      lookup_list[part.id] = part
-    });
-  });
-  return lookup_list;
-}
 
 
 const queueCondFormat = (materials, queue) => {
@@ -158,15 +148,42 @@ const searchFilter = (search, allparts) => {
   return searchResults;
 };
 
-// setup and fix the parts/queue here
-const setupLocalPartsCache = context  => {
+const staticUpdate = (context, allParts) => {
+  const { data } = useBackend(context);
+  let updateCount = 0
+  Object.keys(categories_of_parts).forEach(category => {
+    const category_parts = categories_of_parts[category];
+    category_parts.forEach(part => {
+      if(allParts[part.id])
+        continue; // skip if already included
+        updateCount++;
+        allParts[part.id] = part;
+      if(part.custom_materials) {// if we got custom materials set up some defaults
+        part.default_custom_material = {}
+        Object.keys(part.custom_materials).forEach(cat => {
+          const materials = materialCategories[cat]; // random default matinal because we are dicks
+          part.selected_custom_material[cat] = materials[Math.floor(Math.random() * materials.length)];
+        });
+  }})});
+  return updateCount;
+}
+
+const normalUpdate = (context) {
+
+}
+/*  setup the initial shared cache.
+ * everything from the time parts take to make, to the materials
+ * they cost to the default materials used on custom mats
+ * This should be rerun when researchedDesigns is updated
+ */
+const setupLocalPartsCache = (context) => {
   const { data } = useBackend(context);
 
   const materialObj = materialArrayToObj(data.materials || []);
-  const allParts = createPartsIDLookup(data.researchedDesigns || {})
-  // convert the queue into a queue of parts
-  const queue =  data.queue ?  data.queue.map(id => allParts[id]) : [];
-  // get the material use for the queue
+  let allParts = {};
+  staticUpdate(context,allParts);
+
+  // get the material use for the queueGetMatieralSheetSprite
   const {
     materialTally,
     missingMatTally,
@@ -178,19 +195,19 @@ const setupLocalPartsCache = context  => {
   });
   // return an object of all the cached local stuff
   return {
-    queue: queue,
-    materialObj : materialObj,
-    allParts : allParts,
-    materialTally : materialTally,
-    missingMatTally : missingMatTally,
+    materialObj: materialObj,
+    allParts: allParts,
+    materialTally: materialTally,
+    missingMatTally: missingMatTally,
     textColors: textColors,
+    last_update: data.update_time,
   };
 
-}
+};
 
 
 export const ProLathe = (props, context) => {
-  const {  data } = useBackend(context);
+  const { data } = useBackend(context);
   // order matters
   const department_tag = data.departmentTag || "BAD DEPARTMENT TAG";
 
@@ -203,11 +220,17 @@ export const ProLathe = (props, context) => {
   // If your changing the prolathe ui_data or ui_static data, be sure
   // to check setupLocalPartsCache if it needs changes
   const [
-    cache
+    cache,
   ] = useSharedState(context, "local_cache", setupLocalPartsCache(context));
 
+  //
+  if(data.update_time != cache.update_time) {
+    logger.log("ui_static changed and/or updated");
+    staticUpdate(context,cache.allParts);
+    cache.update_time = data.udpate_time;
+  };
 
-  // queue converted to a object list of parts by id
+
 
   return (
     <Window
@@ -315,21 +338,21 @@ const Materials = (props, context) => {
         wrap="wrap">
         {materials.map(material => (
           material.isMaterial && (
-          <Flex.Item
-            width="80px"
-            key={material.name}>
-            <MaterialAmount
-              name={material.name}
-              amount={material.amount}
-              formatsi />
-            <Box
-              mt={1}
-              style={{ "text-align": "center" }}>
-              <EjectMaterial
-                material={material} />
-            </Box>
-          </Flex.Item>
-        )))}
+            <Flex.Item
+              width="80px"
+              key={material.name}>
+              <MaterialAmount
+                name={material.name}
+                amount={material.amount}
+                formatsi />
+              <Box
+                mt={1}
+                style={{ "text-align": "center" }}>
+                <EjectMaterial
+                  material={material} />
+              </Box>
+            </Flex.Item>
+          )))}
       </Flex>
     </Section>
   );
@@ -403,7 +426,7 @@ const Settings = (props, context) => {
 
 
 const ReagentAmount = (props, context) => {
-  const {  data } = useBackend(context);
+  const { data } = useBackend(context);
 
   const {
     name,
@@ -416,36 +439,36 @@ const ReagentAmount = (props, context) => {
 
   const regents_max_volume = data.regents_max_volume || 0;
   const regents_total_volume = data.regents_total_volume || 0;
-//   <Tooltip content={name} position='right' data-tooltip={name}/>
+  //   <Tooltip content={name} position='right' data-tooltip={name}/>
   return (
-      <Flex
-        direction="column" data-tooltip={name}
-        align="center">
-        <Flex.Item>
-          <Box textColor={color} textAlign='center'>
-              {name}
-          </Box>
-        </Flex.Item>
-        <Flex.Item>
-          <Box position='relative' height='32px' width='32px'>
-            <Box position='absolute' top='15px' left='11px' width='10px' height='6px' backgroundColor={beaker_color}/>
-            <Box position='absolute' top={0} left={0} opacity={0.5}
-              className={classes([
-                  'sheetmaterials32x32',
-                  'beaker',
-            ])}/>
-          </Box>
-        </Flex.Item>
-        <Flex.Item>
-          <Box
-            textColor={color}
-            style={{ "text-align": "center" }}>
-            {((formatsi && formatSiUnit(amount, 0))
+    <Flex
+      direction="column" data-tooltip={name}
+      align="center">
+      <Flex.Item>
+        <Box textColor={color} textAlign="center">
+          {name}
+        </Box>
+      </Flex.Item>
+      <Flex.Item>
+        <Box position="relative" height="32px" width="32px">
+          <Box position="absolute" top="15px" left="11px" width="10px" height="6px" backgroundColor={beaker_color} />
+          <Box position="absolute" top={0} left={0} opacity={0.5}
+            className={classes([
+              'sheetmaterials32x32',
+              'beaker',
+            ])} />
+        </Box>
+      </Flex.Item>
+      <Flex.Item>
+        <Box
+          textColor={color}
+          style={{ "text-align": "center" }}>
+          {((formatsi && formatSiUnit(amount, 0))
             || (formatmoney && formatMoney(amount))
             || (amount)) + "u"}
-          </Box>
-        </Flex.Item>
-      </Flex>
+        </Box>
+      </Flex.Item>
+    </Flex>
   );
 };
 
@@ -574,10 +597,6 @@ const PartLists = (props, context) => {
     researchedDesigns,
   } = data;
 
-  const {
-    availableMaterials,
-    materials,
-  } = props;
 
   const [
     selectedPartTab,
@@ -637,21 +656,48 @@ const PartItem = (props, context) => {
   } = props;
 
   const {
+    custom_materials,
+    material_cost,
+    reagent_cost,
+  } = part;
+
+  const {
     buildingPart,
+    materialCategories,
   } = data;
 
   const [
     displayMatCost,
   ] = useSharedState(context, "display_mats", false);
 
+  const [
+    customPartMaterial,
+    setCustomPartMaterial,
+  ] = useSharedState(context, "custom_material_selection", {});
+  const selectCustomMaterial = (cat,mat) => {
+    const DB = customPartMaterial;
+    if(!DB.hasOwnProperty(part.id))
+      DB[part.id] = {};
+    DB[part.id][cat] = mat;
+    setCustomPartMaterial(DB);
+  };
+  const getSelectCustomMaterial = (cat) => {
+    const DB = customPartMaterial;
+    if(!DB.hasOwnProperty(part.id))
+      return "None Selected"
+    if(!DB[part.id].hasOwnProperty(cat))
+      return "None Selected"
+    return DB[part.id][cat];
+  };
   return (
     <Fragment>
       <Flex
         align="center">
+
         <Flex.Item>
           <Button
             disabled={buildingPart
-          || (part.format.textColor === COLOR_BAD)}
+          || (part.format && part.format.textColor === COLOR_BAD)}
             color="good"
             height="20px"
             mr={1}
@@ -666,10 +712,11 @@ const PartItem = (props, context) => {
             icon="plus-circle"
             onClick={() => act("add_queue_part", { id: part.id })} />
         </Flex.Item>
+
         <Flex.Item>
           <Box
             inline
-            textColor={COLOR_KEYS[part.format.textColor]}>
+            textColor={part.format && part.format.textColor && COLOR_KEYS[part.format.textColor]}>
             {part.name}
           </Box>
         </Flex.Item>
@@ -688,13 +735,22 @@ const PartItem = (props, context) => {
             tooltipPosition="left" />
         </Flex.Item>
       </Flex>
+      {custom_materials && (
+        Object.keys(custom_materials).map(mat_cat => (
+          <Dropdown
+          width="200px"
+          selected={getSelectCustomMaterial(mat_cat)}
+          onSelected={M => selectCustomMaterial(mat_cat,M)}
+          options={materialCategories[mat_cat].map(M => M.name)}
+        />))
+      )}
       {(displayMatCost && (
         <Flex mb={2}>
           {Object.keys(part.material_cost).map(material => (
             <Flex.Item
               width={"50px"}
               key={material}
-              color={COLOR_KEYS[part.format[material].color]}>
+              color={part.format && COLOR_KEYS[part.format[material].color]}>
               <MaterialAmount
                 formatmoney
                 style={{
@@ -831,12 +887,19 @@ const Queue = (props, context) => {
 
   const { isProcessingQueue } = data;
 
+
+  // convert the queue into a queue of parts
+  const queue = data.queue ? data.queue.map(id => allParts[id]) : [];
+
+  const [
+    cache,
+  ] = useSharedState(context, "local_cache", setupLocalPartsCache(context));
+
   const {
-    queue,
     queueMaterials,
     missingMaterials,
     textColors,
-  } = props;
+  } = queueCondFormat(cache.materialObj, queue);
 
   return (
     <Flex

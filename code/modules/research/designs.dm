@@ -24,7 +24,7 @@ other types of metals and chemistry for reagents).
 	var/name = "Name"					//Name of the created object.
 	var/desc = "Desc"					//Description of the created object.
 	var/id = DESIGN_ID_IGNORE						//ID of the created object for easy refernece. Alphanumeric, lower-case, no symbols
-	var/build_type = null				//Flag as to what kind machine the design is built in. See defines.
+	var/build_type = NONE				//Flag as to what kind machine the design is built in. See defines.
 	var/list/materials = list()			//List of materials. Format: "id" = amount.
 	var/construction_time				//Amount of time required for building the object
 	var/build_path = null				//The file path of the object that gets created

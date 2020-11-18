@@ -191,10 +191,20 @@ SUBSYSTEM_DEF(research)
 
 	// Fill out the material and regent costs
 	if(length(D.materials))
+		var/list/custom_materials = list()
 		var/list/material_cost = list()
-		for(var/datum/material/M in D.materials)
-			material_cost[M.name] = D.materials[M]
-		part["material_cost"] = material_cost
+		var/datum/material/M
+		for(var/MAT in D.materials)
+			var/amount_needed = D.materials[MAT]
+			if(istext(MAT))	// category of custom materials
+				custom_materials[MAT] = amount_needed
+			else
+				M = MAT
+				material_cost[M.name] = amount_needed
+		if(custom_materials.len)
+			part["custom_materials"] = custom_materials
+		if(material_cost.len)
+			part["material_cost"] = material_cost
 	if(length(D.reagents_list))
 		var/list/reagents_cost = list()
 		for(var/datum/reagent/R in D.reagents_list)

@@ -14,6 +14,8 @@ SUBSYSTEM_DEF(materials)
 	var/list/materials_by_category
 	///Dictionary of category || list of material types, mostly used by rnd machines like autolathes.
 	var/list/materialtypes_by_category
+	///Dictionary of category for tgui || same as above but instead of the datum/material its list(name, ref, sheet.icon_state)
+	var/list/materialinfo_by_category
 	///A cache of all material combinations that have been used
 	var/list/list/material_combos
 	///List of stackcrafting recipes for materials using base recipes
@@ -33,6 +35,7 @@ SUBSYSTEM_DEF(materials)
 	materials = list()
 	materials_by_category = list()
 	materialtypes_by_category = list()
+	materialinfo_by_category = list()
 	material_combos = list()
 	for(var/type in subtypesof(/datum/material))
 		var/datum/material/ref = type
@@ -41,9 +44,22 @@ SUBSYSTEM_DEF(materials)
 
 		ref = new ref
 		materials[type] = ref
+		var/list/mat_info = list(
+			"name" = ref.name,
+			"ref" = REF(ref),
+			"icon_state" = 	GetMatieralSheetSprite(ref)
+		)
 		for(var/c in ref.categories)
 			materials_by_category[c] += list(ref)
 			materialtypes_by_category[c] += list(type)
+			materialinfo_by_category[c] += list(mat_info) 
+
+/// Used to get the sprite image for the the material
+/datum/controller/subsystem/materials/proc/GetMatieralSheetSprite(datum/material/M)
+	if(istype(M))
+		var/obj/item/stack/sheet/S = M.sheet_type
+		return initial(S.icon_state)
+
 
 /datum/controller/subsystem/materials/proc/GetMaterialRef(datum/material/fakemat)
 	if(!materials)

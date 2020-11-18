@@ -14,19 +14,6 @@
 	// list is the order that is displayed
 	var/list/categories = null
 
-	// Associated list of catagories that have sub catagories.  The order of
-	// the sub catagories are displayed in the listed ordered
-	var/list/sub_category_order = list(
-		CATEGORY_STOCK_PARTS = list(
-			CATEGORY_TIER_MATERIALS,
-			CATEGORY_TIER_BLUESPACE,
-			CATEGORY_TIER_SUPER,
-			CATEGORY_TIER_ADVANCED,
-			CATEGORY_TIER_BASIC,
-			CATEGORY_TIER_TELECOMS
-		),
-	)
-
 	var/allowed_department_flags = ALL
 	var/production_animation				//What's flick()'d on print.
 	var/allowed_buildtypes = NONE
@@ -482,16 +469,23 @@
 		var/list/researched_category = designs_by_category[cat_name]
 		for(var/list/part in researched_category)
 			var/id = part["id"]
-			if(!stored_research.researched_designs[id])
-				continue
-			var/datum/design/D = SSresearch.techweb_design_by_id(id)
-			if(D.build_type && !(D.build_type & allowed_buildtypes))
-				continue	// machine cannot build this thing
-			if(!isnull(allowed_department_flags) && !(D.departmental_flags & allowed_department_flags))
-				continue 	// Not the right department
+			ASSERT(!isnull((id)))
 
+			var/datum/design/D = SSresearch.techweb_design_by_id(id)
+			ASSERT(!isnull((D.build_type)))
+			if(!(D.build_type & allowed_buildtypes))
+				continue	// machine cannot build this thing
+			ASSERT(!isnull((D.departmental_flags)))
+			if(!(D.departmental_flags & allowed_department_flags))
+				continue 	// Not the right department
+			// special case.  Autolathe tech has a "initial" catagory.
+			//  If its there we can ignore if its been researched
+			// TODO: Make this a flag or something
+			if(!(CATEGORY_INITIAL in D.category) && !stored_research.researched_designs[id])
+				continue	// tech not researched
 			researched_designs[cat_name] += list(part)
 
+	data["materialCategories"] = SSmaterials.materialinfo_by_category
 	data["researchedDesigns"] = researched_designs
 	data["categoryOrder"] = category_order
 	data["subCategoryOrder"] = categories
@@ -499,6 +493,7 @@
 	data["timeCoeff"] = time_coeff
 	data["componentCoeff"] = component_coeff
 	data["latheName"] = name
+	data["update_time"] = world.time // tells ProLathe.js if we have to update the researched designs cache
 	return data
 
 /obj/machinery/rnd/production/ui_data(mob/user)

@@ -153,7 +153,8 @@
 /datum/design/cable_coil
 	name = "Cable Coil"
 	id = "cable_coil"
-	build_type = AUTOLATHE
+	build_type = AUTOLATHE | PROTOLATHE
+	sub_category = CATEGORY_INITIAL
 	materials = list(/datum/material/iron = 10, /datum/material/glass = 5)
 	build_path = /obj/item/stack/cable_coil
 	category = list(CATEGORY_INITIAL,CATEGORY_TOOLS,CATEGORY_TOOL_DESIGNS)
@@ -163,10 +164,11 @@
 /datum/design/toolbox
 	name = "Toolbox"
 	id = "tool_box"
-	build_type = AUTOLATHE
+	build_type = AUTOLATHE | PROTOLATHE
+	sub_category = CATEGORY_INITIAL
 	materials = list(MAT_CATEGORY_RIGID = 500)
 	build_path = /obj/item/storage/toolbox
-	category = list(CATEGORY_INITIAL,CATEGORY_TOOLS)
+	category = list(CATEGORY_INITIAL,CATEGORY_TOOLS,CATEGORY_TOOL_DESIGNS)
 
 /datum/design/apc_board
 	name = "APC Module"
