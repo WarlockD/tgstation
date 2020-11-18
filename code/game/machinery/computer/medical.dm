@@ -24,16 +24,22 @@
 
 
 
-/obj/machinery/computer/atmos_control/ui_interact(mob/user, datum/tgui/ui)
+/obj/machinery/computer/med_data/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
 		ui = new(user, src, "TN3270", name)
 		ui.open()
 
-/obj/machinery/computer/atmos_control/ui_data(mob/user)
+/obj/machinery/computer/med_data/ui_data(mob/user)
 	var/data = list()
 
 	return data
+/obj/machinery/computer/med_data/ui_act(action, params)
+	. = ..()
+	if(.)
+		return
+
+	//switch(action)
 
 #if 0
 /obj/machinery/computer/med_data/ui_interact(mob/user)

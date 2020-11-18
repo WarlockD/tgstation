@@ -1,7 +1,10 @@
 import { Fragment } from 'inferno';
 import { useBackend, useSharedState } from '../backend';
-import { Button, Section, Box,  } from '../components';
+import { Button, Section, Box, Flex } from '../components';
 import { Window } from '../layouts';
+import { createLogger } from '../logging';
+
+const logger = createLogger('TN3720');
 
 // all these magic numbers have to coordinate to
 // properly scale the 3270 font
@@ -96,23 +99,7 @@ const host_create = {
   'overflow': 'auto',
 };
 
-const grid_create = (width, height, keyboardLocked=false) => {
-  width = width || 80;
-  height = height || 24;
-  return {
-    'cursor': keyboardLocked ? 'not-allowed' : 'default',
-    'align-items': 'start',
-    'justify-content': 'center',
-    'display': '-ms-grid',
-   // 'display': 'grid',
-    /* IE repeat syntax */
-    '-ms-grid-columns': '(20px)[' + width + ']',
-    '-ms-grid-rows': '(20px)[' + height + ']',
-    /* Modern repeat syntax */
-    'grid-template-columns': '1fr repeat(3, 20px 1fr)',
-    'border': 'solid 1px #000',
-  };
-};
+
 
 class Attributes {
   constructor(protect = false,
@@ -123,14 +110,14 @@ class Attributes {
     blink = false,
     reverse = false,
     underscore = false,
-    color = Color.NEUTRAL) {
+    color = Color.WHITE) {
     this.protect = protect;
     this.numeric = numeric;
     this.highlight = highlight;
     this.hidden = hidden;
     this.modified = modified;
     this.blink = blink;
-    this.reverse = falreversese;
+    this.reverse = reverse;
     this.underscore = underscore;
     this.color = color;
   }
@@ -169,12 +156,15 @@ class Attributes {
     { byte &= 0b00001100; }
     if (this.modified)
     { byte &= 0b00000001; }
-    return six2e[byte];
+    return byte;
   }
 
   /** Convert to CSS */
   toCSS(cell, cursorAt, focused) {
     const style = { };
+    // because microsoft is a dick
+    //style["-ms-grid-column"] = this.index % 80 + 1;
+   // style["-ms-grid-row"] = this.index / 80 + 1;
     if (cursorAt) {
       if (this.hidden) {
         style.backgroundColor = 'var(--lu3270-color)';
@@ -309,13 +299,31 @@ class Cell {
 
 const generateInitalScreen = (width, height) => {
   let allcells = [];
-  for (let i=0; i < (width*height); i++)
-  { allcells.push(new Cell()); }
+  for (let i=0; i < (width*height); i++) {
+    let cell = new Cell("01234567890 "[i%10]);
+    cell.index = i;
+    allcells.push(cell);
+  }
   return allcells;
 };
 
+const test_cells_style = {
+  'align-items': 'start',
+  'justify-content': 'center',
+  'display': '-ms-grid',
+  'height': '100%',
+  //'display': 'grid',
+  /* IE repeat syntax     */
+  '-ms-grid-columns': '1fr (20px 1fr)[80]',
+  '-ms-grid-rows': '1fr (20px 1fr)[24]',
+  'grid-template-columns': '1fr repeat(80, 20px 1fr)',
+
+  /* Modern repeat syntax */
+  'border': 'solid 1px #0000',
+};
+
 const Screen = (props, context) => {
-  const grid_create = grid_create(80, 24, false);
+  const { act, data } = useBackend(context);
 
   const [
     settings,
@@ -323,27 +331,35 @@ const Screen = (props, context) => {
 
   const [
     status,
-  ] = useSharedState(context, "screen_status", { cursorAt: -1, focused: false });
-
+  ] = useSharedState(context, "screen_status", { cursorAt: 70, focused: true });
+  /*
   const [
     cells,
-  ] = useSharedState(context, "screen_chars", generateInitalScreen(settings.width, settings.height));
-
-
+  ] = useSharedState(context, "screen_chars",
+  generateInitalScreen(settings.width, settings.height));
+*/
+  const cells = generateInitalScreen(settings.width, settings.height);
   /*
     (click)="cursorAt($event.srcElement?.id)"
     (window:keydown)="keystroke($event)"
   */
+  // logger.log("ping, pong");
+
+  logger.log("Update! " + cells.length);
   return (
-    <Box style={grid_create}>
-      {cells.map((cell, i) => (
-        <Box
-          key={i}
-          id={'cell' + i}
-          style={cell.attributes.toCSS(cell, status.cursorAt = i, status.focused)}>
-          {cell.value}
-        </Box>)
-      )};
+    <Box className="tn3270" backgroundColor="black" >
+      <Box className="cells">
+        {cells.map((cell, index) => (
+          <Box
+            className={"cell:nth-child(" + index + ")"}
+            key={index}
+            id={'cell' + index}
+            style={cell.attributes.toCSS(cell,
+              false, true)}>
+            {cell.value}
+          </Box>
+        )) }
+      </Box>
     </Box>
   );
 };
@@ -360,7 +376,14 @@ export const TN3270 = (props, context) => {
       width={800}
       height={600}>
       <Window.Content>
-        <Screen />
+        <Flex direction="column" height="100%" width="100%">
+          <Flex.Item grow={1}>
+            <Screen />
+          </Flex.Item>
+          <Flex.Item shrink={0}>
+            Ugh
+          </Flex.Item>
+        </Flex>
       </Window.Content>
     </Window>
   );

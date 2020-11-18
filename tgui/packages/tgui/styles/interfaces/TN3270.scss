@@ -8,6 +8,27 @@
   src: url('../assets/3270Medium.ttf') format("truetype");
 }
 
+@mixin ie-grid-items($start: 1, $items: 1920) {
+  $row: 1;
+  $column: 0;
+  @for $i from $start through $items {
+  // 20% 30px 20% 30px 20% 30px 20% = column layout for IE
+  $column: $column + 1;
+    // skip columns for space between (30px columns)
+    &:nth-child(#{$i}) {
+      position: absolute;
+      top: $row * 20;
+      left: $column* 20;
+    }
+    // Every fourth item we reset the columns and increment the row.
+    @if $i % 80 == 0 {
+      $column: 0;
+      $row: $row + 1;
+    }
+   // @debug "column: #{$column}";
+  }
+}
+
 .tn3270 {
   --mat-blue-400  : #42a5f5;
   --mat-blue-300  : #64b5f6;
@@ -39,7 +60,25 @@
   }
   --lu3270-cols: 80;
   --lu3270-rows: 12;
+
+  .cells {
+    align-items: start;
+    justify-content: center;
+    display: -ms-grid;
+    //'display': 'grid',
+    /* IE repeat syntax     */
+    -ms-grid-columns: (20px)[80];
+    -ms-grid-rows:  (20px)[24];
+
+    /* Modern repeat syntax */
+   // border: 'solid 1px #0000';
+  }
+  .cell {
+    @include ie-grid-items($items: 1920);
+  }
 }
+
+
 
 
 @keyframes blink {

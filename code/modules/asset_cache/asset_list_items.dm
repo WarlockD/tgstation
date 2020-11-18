@@ -4,6 +4,8 @@
 	keep_local_name = TRUE
 	assets = list(
 		"tgui-common.chunk.js" = 'tgui/public/tgui-common.chunk.js',
+		// hack for now just so the file gets moved over
+		"3270Medium.ttf"   	  = 'tgui/packages/tgui/assets/3270Medium.ttf'
 	)
 
 /datum/asset/simple/tgui
@@ -162,7 +164,8 @@
 		"fa-regular-400.woff" = 'html/font-awesome/webfonts/fa-regular-400.woff',
 		"fa-solid-900.eot"    = 'html/font-awesome/webfonts/fa-solid-900.eot',
 		"fa-solid-900.woff"   = 'html/font-awesome/webfonts/fa-solid-900.woff',
-		"v4shim.css"          = 'html/font-awesome/css/v4-shims.min.css'
+		"v4shim.css"          = 'html/font-awesome/css/v4-shims.min.css',
+
 	)
 	parents = list("font-awesome.css" = 'html/font-awesome/css/all.min.css')
 
