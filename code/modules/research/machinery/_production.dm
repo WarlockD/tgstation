@@ -1,7 +1,14 @@
 #define NO_CATEGORY_SET "none"
-#define LATHE_IDLE "state_idle"
-#define LATHE_BUILDING  "state_building"
-#
+// Seems no reason to put states, but got annoyed that I kept forgetting
+// where we were on the building process
+
+#define STATE_LATHE_IDLE "state_idle"
+#define STATE_LATHE_START "state_start_building"		// remove the materials and make sure we can continue
+#define STATE_LATHE_BUILDING  "state_building"			// builds the item and wait
+#define STATE_LATHE_CANCEL "state_cancel"			// cancels building and puts the materials back
+#define STATE_LATHE_DEPOSIT "state_deposit"			// dispence and queue the next
+#define STATE_LATHE_FINISHING "state_finishing_building"		// Nothing left, finish the animation, clean up
+
 /obj/machinery/rnd/production
 	name = "technology fabricator"
 	desc = "Makes researched and prototype items with materials and energy."
@@ -29,9 +36,9 @@
 	/// The current design datum that the machine is building.
 	var/datum/design/being_built
 	/// World time when the build will finish.
-	var/build_finish = 0
-	/// World time when the build started.
 	var/build_start = 0
+	/// world time for duration
+	var/build_duration = 0
 	/// Reference to all materials used in the creation of the item being_built.
 	var/list/build_materials
 	/// References to all regents used in the creation of the item being_built
@@ -62,7 +69,9 @@
 	/// If we use regents in building stuff
 	var/uses_regents = FALSE	// Make a bitflag, like lathe_settings?
 	/// Fuck the snoclakes, lets state this bitch
-	var/list/state_Stack = list(LATHE_IDLE)
+	var/state = START_LATHE_IDLE
+	// called on error on on last state
+	var/final_message  = ""
 
 /obj/machinery/rnd/production/Initialize(mapload)
 	rmat = AddComponent(/datum/component/remote_materials, "lathe", mapload && link_on_init, breakdown_flags=BREAKDOWN_FLAGS_LATHE) // _after_insert = CALLBACK(.proc/AfterMaterialInsert))
@@ -172,9 +181,10 @@
   * Adds the overlay to show the fab working and sets active power usage settings.
   */
 /obj/machinery/rnd/production/proc/on_start_printing()
-	if(production_animation)
-		add_overlay(production_animation)
-	use_power = ACTIVE_POWER_USE
+	// Lets do some basic checks and start it up
+	if(!being_built || !queue.len)
+		testing("on_start_printing: Called without build being setup")
+
 
 /**
   * Intended to be called when the exofab has stopped working and is no longer printing items.
@@ -232,23 +242,6 @@
 		return TRUE
 	return FALSE
 
-/**
-  * Attempts to build the next item in the build queue.
-  *
-  * Returns FALSE if either there are no more parts to build or the next part is not buildable.
-  * Returns TRUE if the next part has started building.
-  */
-/obj/machinery/rnd/production/proc/build_next_in_queue()
-	if(!length(queue))
-		return FALSE
-
-	var/datum/design/D = queue[1]
-	testing("build_next_in_queue: [D.name]")
-	if(build_part(D))
-		remove_from_queue(1)
-		return TRUE
-
-	return FALSE
 
 /**
   * Starts the build process for a given design datum.
@@ -286,13 +279,92 @@
 	build_finish = world.time + get_construction_time_w_coeff(initial(D.construction_time))
 	build_start = world.time
 
-	desc = "It's building \a [D.name]."
-	rmat.silo_log(src, "built", -1, "[D.name]", build_materials)
 
-	testing("build_part: [desc] [build_start]->[build_finish]")
 	return TRUE
 
+
 /obj/machinery/rnd/production/process()
+	switch(state)
+		if(STATE_LATHE_IDLE)
+			final_message = null // keep the final_message null
+			if(built_item)
+				state = STATE_LATHE_START
+			else
+				return PROCESS_KILL  // shouldn't get here but lets stile make a  rule for it
+		if(STATE_LATHE_START)
+			if(!built_item) // some reason we don't have something to build?  Go to finished
+				if(!process_queue)
+					final_message = "Build Complete!"
+				state = STATE_LATHE_FINISHED // queue is reloaded in this state
+				return
+			ASSET(istype(D))
+			build_materials = get_resources_w_coeff(D)
+			if(!materials.has_materials(build_materials))
+				final_message = "Not enough materials to build [D.name]"
+				state = STATE_LATHE_FINISHED
+				return
+			if(uses_regents && length(D.regent_list))
+				if(build_regents.len > 0)
+					for(var/R in build_regents)
+						if(!reagents.has_reagent(R, build_regents[R]))
+							final_message = "Not enough reagents to build [D.name]"
+							state = STATE_LATHE_FINISHED
+							return
+			// At this point we have a built_item, the materials are ready to go
+			// So lets set the time and get a going
+			build_duration = get_construction_time_w_coeff(initial(D.construction_time))
+			build_start = world.time
+			// ok we are building so start up the animation and change the state
+			if(use_power != ACTIVE_POWER_USE && production_animation)
+				add_overlay(production_animation)
+			use_power = ACTIVE_POWER_USE
+			// Lets log it to the silo
+			desc = "It's building \a [D.name]."
+			rmat.silo_log(src, "built", -1, "[D.name]", build_materials)
+			testing("build_part: [desc] [build_start]->[build_duration]")
+			state = STATE_LATHE_BUILDING
+			// We are ready and start building up on the next tick
+		if(STATE_LATHE_BUILDING)
+			if((world.time - build_start) >= build_duration)
+				state = STATE_LATHE_FINISHED // ok finished a part
+			return
+		if(STATE_LATHE_CANCEL)
+			// hard cancel
+			process_queue = FALSE
+			built_item = null
+			final_message = "Building Canceled!"
+			state = STATE_LATHE_FINISHED
+		if(STATE_LATHE_FINISHED)
+			:finished_block
+				if(final_message) // if we have a final message, we got an error, so display and stop
+					say(final_message)
+					final_message = null
+					break // break out of the labeled block to clean up
+				ASSET(!built_item) // this should still exist
+				if(!dispense_built_part()) // if we couldn't dispense, it was clogged
+					continue	// restart block and exit out to message and exit cleanly
+				// alright check if we have a queue
+				if(process_queue && !length(queue))
+					final_message = "Queue building is complete!"
+					continue	// restart block and exit out to message and exit cleanly
+				// ok we got another item, remove it from the queue
+				build_item = queue[1]
+				remove_from_queue(1)
+				state = STATE_LATHE_START
+				return
+			// we clean up eveything ro the next time
+			if(use_power != IDLE_POWER_USE && production_animation)
+				cut_overlay(production_animation)
+			use_power = IDLE_POWER_USE
+			build_item = null // should be null but lets make 100% sure
+			build_time = 0
+			build_duration = 0
+			build_materials = null
+			build_regents = null
+			state = STATE_LATHE_IDLE
+			return PROCESS_KILL
+
+
 	if(stored_part)
 		var/turf/exit = dispense_direction ? get_step(src, dispense_direction) : get_turf(src)
 		if(dispense_direction && exit.density)
@@ -328,26 +400,32 @@
   * Return TRUE if the part was successfully dispensed.
   */
 /obj/machinery/rnd/production/proc/dispense_built_part()
-	var/obj/I = new being_built.build_path(src)
+	var/datum/design/D = being_built
+	// Check regents first in case the idiot pressed the purge button
+	if(uses_regents && length(D.regent_list))
+		if(build_regents.len > 0)
+			for(var/R in build_regents)
+				if(!reagents.use_reagent(R, build_regents[R]))
+					final_message = "Not enough reagents to build [D.name]"
+					return FALSE
+	if(!materials.use_materials(build_materials))
+		final_message = "Not enough materials to build [D.name]"
+		return FALSE
 
-	var/backup_material_flags = I.material_flags
-	I.material_flags |= MATERIAL_NO_EFFECTS		// prevents discoloration
-	I.set_custom_materials(build_materials)		// side note...ugh fine I will fix it
-	I.material_flags = backup_material_flags
+	var/obj/I = new being_built.build_path(src)
+	I.set_custom_materials(build_materials)
 
 	being_built = null
-	build_materials = list()
-	build_regents = list()
+	build_materials = null
+	build_regents = null
 
 	var/turf/exit = dispense_direction ? get_step(src, dispense_direction) : get_turf(src)
 	if(dispense_direction && exit.density)
-		say("Error! Part outlet is obstructed.")
+		final_message = "Error! Part outlet is obstructed."
 		desc = "It's trying to dispense \a [I.name], but the part outlet is obstructed."
 		stored_part = I
 		return FALSE
 
-	if(!process_queue)
-		say("\The [I] is complete.")
 	I.forceMove(exit)
 	return TRUE
 
@@ -459,6 +537,40 @@
 		ui = new(user, src, "ProLathe")
 		ui.open()
 
+/**
+  * Verifies if we can build this in the lathe
+  *
+  * Does ALL the mandatory checks that this machine
+  * can build the item.  This needs to be run in
+  * ui_static_data to show the user AND run AFTER
+  * the user selects it.  This seems redudent but
+  * I can see some fucker injecting the id into
+  * the queue of non researched items or worst yet
+  * some admin item
+  *
+  * id = can be the design or the id of the design
+  * return - Returns true if eveything is good
+**/
+/obj/machinery/rnd/production/proc/verify_design(id)
+	var/datum/design/D = id
+	if(!type(D))
+		D = SSresearch.techweb_design_by_id(id)
+		if(!istype(D))
+			return FALSE // id is not a design OR an id
+	else
+		id = D.id
+	// special case.  Autolathe tech has a "initial" catagory.
+	//  If its there we can ignore if its been researched
+	if(!(CATEGORY_INITIAL in D.category) && !stored_research.researched_designs[id])
+		return FALSE	// tech not researched
+	ASSERT(!isnull((D.build_type)))
+	if(!(D.build_type & allowed_buildtypes))
+		return FALSE	// machine cannot build this thing
+	ASSERT(!isnull((D.departmental_flags)))
+	if(!(D.departmental_flags & allowed_department_flags))
+		return FALSE 	// Not the right department
+
+	return TRUE
 /obj/machinery/rnd/production/ui_static_data(mob/user)
 	var/list/data = list()
 
@@ -531,6 +643,7 @@
 
 	return data
 
+
 /obj/machinery/rnd/production/ui_act(action, list/params)
 	. = ..()
 	if(.)
@@ -573,9 +686,11 @@
 
 		if("build_queue")
 			// Build everything in queue
-			if(!process_queue)
+			if(!process_queue && length(queue))
 				process_queue = TRUE
 				if(!being_built)
+					built_item = queue[1]
+					remove_from_queue(1)
 					begin_processing()
 
 		if("stop_queue")
