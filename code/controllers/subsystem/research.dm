@@ -163,8 +163,15 @@ SUBSYSTEM_DEF(research)
 		CRASH("Invalid techweb nodes detected")
 
 
-/*
- * Creates a list based off a design to be used for any of the lathes tgui interfaces
+/datum/controller/subsystem/research/proc/_create_customer_material_list(list/materials)
+	for(var/mat in materials)
+		var/datum/material/M = materials[cat]
+		var/list/L = list(
+			"name" = M.name,
+			"ref" = REFT(ref),
+			"mount" = M.amount,
+		)
+/* Creates a list based off a design to be used for any of the lathes tgui interfaces
  * Still on the fence on doing a raw data dump of everything but it helps server
  * load when it comes to rebuilding this list every time someone spams the RD button.
 */
@@ -178,7 +185,7 @@ SUBSYSTEM_DEF(research)
 
 	if(D.category[1] == CATEGORY_IGNORE_DESIGN)
 		return // we ignore this thing
-
+	var/obj/sjeet/S = D.su
 	var/list/part = list(
 		"name" = D.name,
 		"desc" = D.desc,

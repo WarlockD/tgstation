@@ -1,6 +1,7 @@
 #define NO_CATEGORY_SET "none"
-
-
+#define LATHE_IDLE "state_idle"
+#define LATHE_BUILDING  "state_building"
+#
 /obj/machinery/rnd/production
 	name = "technology fabricator"
 	desc = "Makes researched and prototype items with materials and energy."
@@ -60,6 +61,8 @@
 	)
 	/// If we use regents in building stuff
 	var/uses_regents = FALSE	// Make a bitflag, like lathe_settings?
+	/// Fuck the snoclakes, lets state this bitch
+	var/list/state_Stack = list(LATHE_IDLE)
 
 /obj/machinery/rnd/production/Initialize(mapload)
 	rmat = AddComponent(/datum/component/remote_materials, "lathe", mapload && link_on_init, breakdown_flags=BREAKDOWN_FLAGS_LATHE) // _after_insert = CALLBACK(.proc/AfterMaterialInsert))
@@ -132,30 +135,32 @@
 
 	for(var/mat_id in materials.materials)
 		var/datum/material/M = mat_id
-		var/list/material_info = list()
 		var/amount = materials.materials[mat_id]
-
-		material_info = list(
+		var/obj/item/stack/sheet/S = initial(M.icon_state)
+		var/list/material_info  = list(
 			"name" = M.name,
 			"ref" = REF(M),
 			"amount" = amount,
 			"sheets" = round(amount / MINERAL_MATERIAL_AMOUNT),
 			"removable" = amount >= MINERAL_MATERIAL_AMOUNT,
+			"icon_state" = S.icon_state,
 			"isMaterial" = TRUE,
 		)
-
 		material_data += list(material_info)
 
+	return material_data
+
+/obj/machinery/rnd/production/proc/output_available_regents()
+	var/list/material_data = list()
 	if(uses_regents && length(reagents.reagent_list))
 		for(var/datum/reagent/R in reagents.reagent_list)
-			var/list/regent_info = list()
-
-			regent_info = list(
-				"ref" = REF(R),
+			var/list/regent_info  = list(
 				"name" = R.name,
-				"color" = R.color,
+				"ref" = REF(R),
 				"amount" = R.volume,
 				"isMaterial" = FALSE,
+				"color" = R.color,
+				"icon_state" = "beaker".
 			)
 			material_data += list(regent_info)
 
@@ -309,7 +314,7 @@
 		on_start_printing()
 
 	// If there's an item being built, check if it is complete.
-	if(being_built && (build_finish < world.time))
+	else if(being_built && (build_finish < world.time))
 		// Then attempt to dispense it and if appropriate build the next item.
 		dispense_built_part()
 		if(process_queue && dispense_built_part())
