@@ -16,6 +16,12 @@ const sprite_size = {
 };
 
 /*
+.odometer.odometer-auto-theme, .odometer#{"." + $themeName}
+    font-family: "Helvetica Neue", sans-serif
+    line-height: 1.1em
+
+    .odometer-value
+        text-align: center
 .slot_machine32x64{display:inline-block;width:32px;
   height:64px;background:url
   ('asset.8aeb7e34cdc050c977c264d38ba9ecf2.png') no-repeat;}
