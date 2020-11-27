@@ -9,6 +9,41 @@ const logger = createLogger('SlotMachine');
 
 const FPS = 20;
 const Q = 0.5;
+const  DIGIT_FORMAT = '(,ddd).dd'
+
+const  FORMAT_PARSER = /^\(?([^)]*)\)?(?:(.)(d+))?$/
+
+// What is our target framerate?
+const  FRAMERATE = 30;
+
+// How long will the animation last?
+const  DURATION = 2000;
+
+// What is the fastest we should update values when we are
+// counting up (not using the wheel animation).
+const  COUNT_FRAMERATE = 20;
+
+// What is the minimum number of frames for each value on the wheel?
+// We won't render more values than could be reasonably seen
+const  FRAMES_PER_VALUE = 2;
+
+// If more than one digit is hitting the frame limit, they would all get
+// capped at that limit and appear to be moving at the same rate.  This
+// factor adds a boost to subsequent digits to make them appear faster.
+const  DIGIT_SPEEDBOOST = .5
+
+const  MS_PER_FRAME = 1000 / FRAMERATE;
+const  COUNT_MS_PER_FRAME = 1000 / COUNT_FRAMERATE;
+
+const  TRANSITION_END_EVENTS = 'transitionend webkitTransitionEnd oTransitionEnd otransitionend MSTransitionEnd'
+
+const  transitionCheckStyles = document.createElement('div').style;
+const  TRANSITION_SUPPORT = transitionCheckStyles?.transition || transitionCheckStyles?.mozTransition || transitionCheckStyles?.oTransition;
+
+const requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+const MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
 
 const sprite_size = {
   width : 32,
