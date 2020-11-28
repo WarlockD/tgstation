@@ -2,29 +2,23 @@
 @use '../colors.scss';
 
 .SlotMachine {
-  font-family: monospace;
-  font-size: 32px;
+  font-family: sans-serif;
   text-align: center;
 }
 
 
 // $unit-of-speed: 50ms; // crazy fast
 $unit-of-speed: 100ms; // normal
-$slot-symbol-count: 7;
-$slot-symbol-height: 32px;
-$slot-symbol-width: 32px;
-$slot-colum-count: 5;
-$slot-colum-height: $slot-symbol-height * $slot-colum-count;
 // $unit-of-speed: 1000ms; // boring
 
 @mixin odometer-styling () {
-  font-family: monospace;
-  font-size: slot-symbol-height;
+  text-shadow: 0 -1px rgba(0, 0, 0, 0.9);
+  color: rgba(255, 255, 255, 0.9);
   //margin: 5px auto;
   display: inline-block;
-  background: #0000;
-
-
+  background: #222;
+  border-radius: 2px;
+  transform: scale(3); //scale(3);
   //box-shadow: inset 0 2px 8px -2px #000;
 }
 
@@ -59,24 +53,24 @@ $slot-colum-height: $slot-symbol-height * $slot-colum-count;
 
 .digit {
   display: inline-block;
-  height: $slot-colum-height;
-  width: $slot-symbol-width;
-  padding: 0;
-  margin: 0;
-
+  height: 96px;
+  width: 32px;
   overflow: hidden;
+  text-align: center;
   :first-child {
+    box-shadow: inset .05em 0 .1em rgba(0, 0, 0, 0.5), 0 0 0 .03em #fff, 0 0 0 .05em rgba(0, 0, 0, 0.2);
     margin-top: 0;
   }
   :last-child {
+    box-shadow: inset -.05em 0 .1em rgba(0, 0, 0, 0.5), 0 0 0 .03em #fff, 0 0 0 .05em rgba(0, 0, 0, 0.2);
     margin-bottom: 0;
   }
   @include digit-styling();
 }
 
 .digit-container {
+  padding: 1em 0;
   overflow-y: hidden;
-
   @include animation(slide infinite linear);
 }
 
@@ -101,7 +95,7 @@ $slot-colum-height: $slot-symbol-height * $slot-colum-count;
 
 @-webkit-keyframes slide {
   from {
-    -webkit-transform: translateY(-32px*$slot-symbol-count);
+    -webkit-transform: translateY(-32px*10);
   }
 
   to {
@@ -110,7 +104,7 @@ $slot-colum-height: $slot-symbol-height * $slot-colum-count;
 }
 @keyframes slide {
   from {
-    transform: translateY(-32px*$slot-symbol-count);
+    transform: translateY(-32px*10);
   }
 
   to {
