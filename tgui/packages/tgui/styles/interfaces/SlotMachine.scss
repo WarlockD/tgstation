@@ -2,163 +2,119 @@
 @use '../colors.scss';
 
 .SlotMachine {
-  font-family: sans-serif;
+  font-family: monospace;
+  font-size: 32px;
   text-align: center;
 }
 
-.SlotMachine__slot {
-  position: relative;
+
+// $unit-of-speed: 50ms; // crazy fast
+$unit-of-speed: 100ms; // normal
+$slot-symbol-count: 7;
+$slot-symbol-height: 32px;
+$slot-symbol-width: 32px;
+$slot-colum-count: 5;
+$slot-colum-height: $slot-symbol-height * $slot-colum-count;
+// $unit-of-speed: 1000ms; // boring
+
+@mixin odometer-styling () {
+  font-family: monospace;
+  font-size: slot-symbol-height;
+  //margin: 5px auto;
   display: inline-block;
-  height: 100px;
-  width: 80px;
+  background: #0000;
+
+
+  //box-shadow: inset 0 2px 8px -2px #000;
 }
 
-.SlotMachine__section {
-  position: absolute;
-  border-radius: 15px !important;
-  border: 3px solid black !important;
-  width: 70px;
-  height: 70px;
+@mixin digit-styling() {
+  border-right: 1px solid rgba(0, 0, 0, 0.5);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0;
+
+  &:first-child {
+    border-left: none;
+  }
+}
+
+@mixin animation($single-animation) {
+  -webkit-animation: $single-animation;
+  animation: $single-animation;
+}
+
+@mixin animation-duration($duration) {
+  -webkit-animation-duration: $duration;
+  animation-duration: $duration;
+}
+
+.odometer {
+
+
+  background: #333;
+  text-align: center;
+
+  @include odometer-styling();
+}
+
+.digit {
+  display: inline-block;
+  height: $slot-colum-height;
+  width: $slot-symbol-width;
+  padding: 0;
+  margin: 0;
+
   overflow: hidden;
-  background-color: grey;
-  border-radius: 2px;
-  border: 1px solid lightgrey;
-  color: white;
-  font-family: sans-serif;
-  text-align: center;
-  font-size: 25px;
-  line-height: 60px;
-  cursor: default;
+  :first-child {
+    margin-top: 0;
+  }
+  :last-child {
+    margin-bottom: 0;
+  }
+  @include digit-styling();
 }
 
-.SlotMachine__container {
-  position: absolute;
-  top: 2px;
-  width: 100%;
-  transition: top ease-in-out 0.5s;
-  text-align: center;
+.digit-container {
+  overflow-y: hidden;
+
+  @include animation(slide infinite linear);
 }
 
-.SlotMachine__roll {
-  width: 215px;
-  cursor: pointer;
-  background-color: yellow;
-  padding: 10px;
-  text-align: center;
-  font-size: 20px;
-  border-radius: 20px;
-  border: 3px solid black;
+.slot-1 {
+  @include animation-duration(10 * $unit-of-speed);
 }
 
-@keyframes SlotMachine__blinkingText   {
-  0% {
-    color: #000;
+.slot-2 {
+  @include animation-duration(20 * $unit-of-speed);
+}
+
+.slot-3 {
+  @include animation-duration(30 * $unit-of-speed);
+}
+.slot-4 {
+  @include animation-duration(40 * $unit-of-speed);
+}
+.slot-5 {
+  @include animation-duration(50 * $unit-of-speed);
+}
+
+
+@-webkit-keyframes slide {
+  from {
+    -webkit-transform: translateY(-32px*$slot-symbol-count);
   }
-  49% {
-    color: #000;
-  }
-  60% {
-    color: transparent;
-  }
-  99% {
-    color: transparent;
-  }
-  100% {
-    color: #000;
+
+  to {
+    -webkit-transform: translateY(0);
   }
 }
-@keyframes SlotMachine_movingAnimation {
+@keyframes slide {
+  from {
+    transform: translateY(-32px*$slot-symbol-count);
+  }
 
-}
-
-.SlotMachine__rolling  {
-
-  -webkit-animation-name: SlotMachine__slideanimation;
-  animation-name: SlotMachine__slideanimation;
-  -webkit-animation-duration: 5s;
-  animation-duration: 5s;
-}
-
-
-.odometer-digit {
-    display: inline-block;
-    position: relative;
-
-  .odometer-digit-spacer {
-      display: inline-block;
-      visibility: hidden;
-    }
-    .odometer-digit-inner {
-        text-align: left;
-        display: block;
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        overflow: hidden;
-    }
-    .odometer-ribbon {
-        display: block;
-    }
-    .odometer-ribbon-inner {
-        display: block;
-        -webkit-backface-visibility: hidden;
-        -ms-backface-visibility: hidden;
-        backface-visibility: hidden;
-    }
-    .odometer-value {
-        display: block;
-        -ms-transform: translateZ(0);
-        transform: translateZ(0);
-
-        odometer-value:last-child {
-            position: absolute;
-        }
-    }
-}
-
-.odometer-animating-up {
-    .odometer-ribbon-inner {
-        -webkit-transition: -webkit-transform 2s;
-        -moz-transition: -moz-transform 2s;
-        -ms-transition: -ms-transform 2s;
-        -o-transition: -o-transform 2s;
-        transition: transform 2s;
-    }
-    .odometer-animating .odometer-ribbon-inner {
-        -webkit-transform: translateY(-100%);
-        -moz-transform: translateY(-100%);
-        -ms-transform: translateY(-100%);
-        -o-transform: translateY(-100%);
-        transform: translateY(-100%);
+  to {
+    transform: translateY(0);
   }
 }
 
-.odometer-animating-down {
-    .odometer-ribbon-inner {
-        -webkit-transform: translateY(-100%);
-        -moz-transform: translateY(-100%);
-        -ms-transform: translateY(-100%);
-        -o-transform: translateY(-100%);
-        transform: translateY(-100%);
-    }
-    .odometer-animating .odometer-ribbon-inner {
-        -webkit-transition: -webkit-transform 2s;
-        -moz-transition: -moz-transform 2s;
-        -ms-transition: -ms-transform 2s;
-        -o-transition: -o-transform 2s;
-        transition: transform 2s;
-
-        -webkit-transform: translateY(0);
-        -moz-transform: translateY(0);
-        -ms-transform: translateY(0);
-        -o-transform: translateY(0);
-        transform: translateY(0);
-    }
-}
-
-@keyframes SlotMachine__slideanimation {
-  0%    { top: 0; }
-  100%  { top: -200%; }
-}
