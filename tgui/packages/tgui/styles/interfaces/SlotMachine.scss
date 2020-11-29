@@ -67,9 +67,45 @@ $unit-of-speed: 100ms; // normal
   }
   @include digit-styling();
 }
+.slot-section {
+  position: absolute;
+  border-radius: 15px !important;
+  border: 3px solid black !important;
+  width: 70px;
+  height: 70px;
+  overflow: hidden;
+  background-color: grey;
+  border-radius: 2px;
+  border: 1px solid lightgrey;
+  color: white;
+  font-family: sans-serif;
+  text-align: center;
+  font-size: 25px;
+  line-height: 60px;
+  cursor: default;
+}
+
+.slot {
+  position: relative;
+  display: inline-block;
+  height: 100px;
+  width: 80px;
+}
+
+.slot-container {
+  border: 1px solid lightgrey;
+  height: 160px;
+  max-height: 160px;
+  display: inline-block;
+  overflow: hidden;
+  position: relative;
+  width: 32px;
+}
+
+
 
 .digit-container {
-  padding: 1em 0;
+  padding: 16px 0;
   overflow-y: hidden;
   @include animation(slide infinite linear);
 }
@@ -92,6 +128,20 @@ $unit-of-speed: 100ms; // normal
   @include animation-duration(50 * $unit-of-speed);
 }
 
+.slot-mover {
+  //position: absolute;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  -webkit-animation-duration: 1s;
+  animation-duration: 1s;
+  // '-webkit-animation': animation_text,
+  animation-iteration-count: infinite;
+  //'animation': animation_text;
+  animation-name : slot-frame-test;
+  animation-fill-mode :forwards;
+  animation-timing-function: linear;
+  }
 
 @-webkit-keyframes slide {
   from {
@@ -102,13 +152,12 @@ $unit-of-speed: 100ms; // normal
     -webkit-transform: translateY(0);
   }
 }
-@keyframes slide {
+@keyframes slot-frame-test {
   from {
-    transform: translateY(-32px*10);
+      transform: translateY(-32px);
   }
 
   to {
-    transform: translateY(0);
+    transform: translateY(500px);
   }
 }
-
