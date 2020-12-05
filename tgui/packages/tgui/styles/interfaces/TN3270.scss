@@ -58,9 +58,28 @@ $lu3270-highlight-color: $mat-green-400;
     flex-wrap: wrap;
     text-align: center;
     justify-content: center;
+
+    input[type=search]::-ms-clear {  display: none; width : 0; height: 0; }
+    input[type=search]::-ms-reveal {  display: none; width : 0; height: 0; }
   }
 
 };
+.lu3270-input {
+  color: $lu3270-color;
+  background-color:$lu3270-background-color;
+  font-family: '3270 Font';
+  font-size: 18px;
+  text-shadow: none;
+  border: none;
+  margin: 0px;
+  padding: 0px;
+  overflow:none;
+}
+.lu3270-input::-ms-clear {  display: none; width : 0; height: 0; }
+.lu3270-input::-ms-reveal {  display: none; width : 0; height: 0; }
+
+
+
 
 .lu3270-status-bar {
 // border-top: 1px  solid yellow;

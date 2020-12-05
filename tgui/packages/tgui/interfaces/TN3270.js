@@ -187,7 +187,7 @@ const CELL_COLOR_MASK = (7 << 5);
 
 
 const createStyleFromByte = (attribute, cursorAt, focused) => {
-  const style = { color: lu3270_color, 'background-color': lu3270_background , 'filter':'Alpha(opacity=0)'  };
+  const style = { color: lu3270_color, 'background-color': lu3270_background  };
   if (cursorAt) {
     if (attribute & CELL_HIDDEN) {
       style['background-color']  = lu3270_color;
@@ -234,11 +234,11 @@ const createStyleFromByte = (attribute, cursorAt, focused) => {
     }
     if(attribute & CELL_REVERSE) {
       const temp = style.color;
-      style.color = style.backgroundColor;
-      style.backgroundColor = temp;
+      style.color = style['background-color'];
+      style['background-color'] = temp;
     }
   }
-  style["text-color"] = style.color;
+  style['text-color'] = style.color;
   return style;
 };
 class Cell {
@@ -296,24 +296,21 @@ if (!Math.trunc) {
     return v < 0 ? Math.ceil(v) : Math.floor(v);
   };
 }
-const Fill = (props, context) => {
+const CellFill = (props, context) => {
   const {
     pos, // starting position, used for selecting
-    length,
+    fill_length,
     attribute,
     ...rest
   } = props;
 
-  const [
-    cursorAt,
-    setCursorAt
-  ] = useSharedState(context,"status", { cursorAt: -1 });
+  const text = "\xA0".repeat(fill_length);
+  logger.log("CellFill("+  pos + ") fill_length=" + fill_length +" attribute=" + attribute);
+  const style = createStyleFromByte(attribute, false, false);
+  return (<span style={style}  {...rest}>{text}</span>);
+};
 
-  const text = "\xA0".fill(length);
-  const style = createStyleFromByte(attribute, cursorAt===pos, false);
-  return <span {...rest}>{text}</span>
-}
-const Label = (props, context) => {
+const CellLabel = (props, context) => {
   const {
     pos, // starting position, used for selecting
     value,
@@ -321,19 +318,18 @@ const Label = (props, context) => {
     ...rest
   } = props;
 
-  const [
-    cursorAt,
-    setCursorAt
-  ] = useSharedState(context,"status", { cursorAt: -1 });
-
-  const style = createStyleFromByte(attribute, cursorAt===pos, false);
-  return <span {...rest}>{value || "\xA0"}</span>
+  logger.log("CellLabel("+  pos + ") value=" + value +" attribute=" + attribute);
+  const style = createStyleFromByte(attribute, false, false);
+  return (<span style={style} {...rest}>{value || "\xA0"}</span>);
 };
-const Field = (props, context) => {
+
+const CellField = (props, context) => {
   const {
+    pos,
     name,
     value,
-    length,
+    field_length,
+    attribute,
     ...rest
   } = props;
   const [
@@ -342,374 +338,178 @@ const Field = (props, context) => {
   ] = useSharedState(context, "field_cache", { });
   // kind of hacky, but these magic numbers DO work
 
-  const style = createStyleFromByte(attribute, cursorAt===pos, false);
-  return <input stype={style} onchange={ e=> setFields({ name: e.target.value })} {...rest}>{fields[name]}</input>
+  logger.log("CellField("+  pos + ") name=" + name +" field_length=" + field_length);
+  let style = createStyleFromByte(attribute, false, false);
+
+
+  return ( <input class="lu3270-input" id="name" type="text" size={field_length}  maxlength={field_length} style={style} onchange={ e=> setFields({ name: e.target.value })} {...rest}>{fields[name]}</input>);
 };
 
 const CellDom = (props, context) => {
   const {
     pos,
     value,
-    attribute,
-    type = "text",
+    field_length,
     onClick = e => { logger.log("Clicky " + pos + "color=" + style.color ); setCursorAt(pos); },
-
-    const [
-      perfs,
-    ] = useSharedState(context,"perfs", { numCols: 80, numRows: 24});
-
+  } = props;
     const [
       cursorAt,
       setCursorAt
     ] = useSharedState(context,"status", { cursorAt: -1 });
 
-    const style = { flex: 'none', width: ((length**Constants.magic.cxFactor) + 'px') };
-
+    //const style = { 'flex' : '1 1 ' + field_length + 'em'};
+    const style = { 'flex' : 'none' };
   return (
-    <div id={'cell'+pos } style="{style}" onClick={e=> onClick(e)}>
+    <div id={'cell'+value.pos } style="{style}" onClick={e=> onClick(e)}>
       {
         value.type === "text" ?
-          (<Label pos={pos} value={value.text} attribute={value.attribute} />) :
+          (<CellLabel pos={pos} value={value.text} attribute={value.attribute || 0}  />) :
           value.type == "field" ?
-          (<Field pos={pos} name={value.name}  attribute={value.attribute} length={value.length}/>) :
-          (<Fill pos={pos} length={length} attribute={0} />)
+          (<CellField pos={pos} name={value.name}  attribute={value.attribute || 0} field_length={value.field_length}/>) :
+          (<CellFill pos={pos} fill_length={value.fill_length} attribute={value.attribute || 0}  />)
       }
     </div>
   );
 };
+const makeBlankCell = (pos,field_length) => {
+  return  { pos: pos, type: "fill", fill_length: field_length };
+};
 
-
-// Making a full component.  To many states and want to get somewhat
-// better performance
-class BlockTerminal extends Component {
-  constructor(props, context) {
-    super(props, context);
-
-    const config_perfs = UpdateTerminalPerfs(1); // make this configurable some day
-    // really not sure about this bit. 1920 refs?  Sure I just
-    // need to change some styles but ugh
-
-
-    // state configures.  Basicity commands used to update the screen
-    // we can async a bunch of these if need be
-
-const processCells = (cells, payload_list) => {
-  logger.log("thie fuck " + payload_list);
-
-  const propagateUnprotected = () => {
-    let attributes = null;
-    cells.forEach(cell => {
-      if (cell.attribute)
-      { attributes = cell.protect ? 0  : cell.attributes; }
-      else if (!cell.value && attributes)
-      { cell.attributes = attributes; }
-    });
-  };
-  const clearCellValue = payload => {
-    const cell = cells[payload.cellAt];
-    if (cell.protect) {
-      Object.assign(payload.state, { update : false, alarm: true, keyboardLocked: true, error: true, message: "PROT" });
-    } else {
-      cell.modified = false;
-      cell.set_value(null);
-      payload.updated = true;
-    }
-  };
-  const eraseUnprotected =  payload => {
-    cells.filter(cell => cell && !cell.protect)
-      .filter((cell, i) => (i >= payload.from) && (i < payload.to))
-      .forEach(cell => {
-        cell.modified = false;
-        cell.set_value(null);
-        payload.updated = true;
-      });
-  };
-  const eraseUnprotectedScreen =  payload => {
-    cells
-      .filter(cell => cell && !cell.protect)
-      .forEach(cell => {
-        cell.modified = false;
-        cell.set_value(value);
-        payload.updated = true;
-      });
-  };
-  const replaceScreen =  payload => {
-    payload.cells.forEach((cell, ix) => {
-      cells[ix] = cell;
-    });
-    propagateUnprotected();
-    payload.updated = true;
-  };
-  const resetMDT = payload => {
-    cells.forEach(cell => {
-      cell.modified = false;
-    });
-    payload.updated = true;
-  };
-
-  const updateCellAttribute =  payload=> {
-    const cell = cells[payload.cellAt];
-    cell.set_attribute(payload.attribute);
-    payload.updated = true;
-  };
-
-  const updateCellValue = payload=> {
-    const cell = cells[payload.cellAt];
-    if (cell.protect) {
-      Object.assign(payload.state, { alarm: true, keyboardLocked: true,
-        error: true, message: "PROT" });
-    } else {
-      cell.modified = true;
-      cell.set_value(payload.value);
-      payload.updated = true;
-      Object.assign(payload.state, { cursorAt: payload.cellAt + 1 });
-    }
-  };
-  const updateScreen = payload => {
-    payload.cells.forEach((cell, ix) => {
-      if (cell)
-      { cells[ix] = cell; }
-    });
-    propagateUnprotected();
-    payload.updated = true;
-  };
-  const processes = {
-    'updateScreen' : updateScreen,
-    'updateCellValue': updateCellValue,
-    'updateCellAttribute:': updateCellAttribute,
-    'resetMDT': resetMDT,
-    'replaceScreen': replaceScreen,
-    'eraseUnprotectedScreen': eraseUnprotectedScreen,
-    'eraseUnprotected': eraseUnprotected,
-    'clearCellValue':clearCellValue,
-
-  };
-  let return_state = { updated: false , state : {} };
-  payload_list.forEach(p => {
-    switch(p.command) {
+const createScreen = ( data, cols, rows) => {
+  let last_pos = 0;
+  let pos = 0;
+  let fill_length = 0;
+  let ret = [];
+  let data_pos = 0;
+  let cells = [];
+  data.sort((l,r) => l.pos - r.pos); // make sure we are sorted
+  // no know, there is no easy way to just "add" x amount of objects at the end of an array
+  // without just recreating it.  silly really
+  const pushMany = (o, count=1) => {
+    for(let i=0;i < count; i++)
+      cells.push(o);
+  }
+  const pushCellCache = cell => {
+    switch(cell.type){
       case "text":
-        return_state.cellAt= p.cursorAt;
-        return_state.attribute = CELL_YELLOW;
-        for (var i = 0; i <  p.value.length; i++) {
-          return_state.value = p.value[i];
-          updateCellValue(return_state);
-          updateCellAttribute(return_state);
-          return_state.cellAt = return_state.state.cursorAt;
+        ret.push({ pos: cell.pos, field_length:cell.text.length, cell: cell });
+        pushMany({ protect: true, cell: cell },cell.text.length);
+        return cell.text.length;
+      case "field":
+        ret.push({ pos: cell.pos, field_length:cell.field_length, cell: cell });
+        pushMany({ protect: false, cell: cell},cell.field_length);
+        return cell.field_length;
+      case "fill":
+        ret.push({ pos: cell.pos, field_length:cell.fill_length, cell: cell });
+        pushMany({ protect: true, cell: cell },cell.fill_length);
+        return cell.fill_length;
+      default:
+        logger.log("pushCellchash error");
+        return 0;
+    }
+  };
+
+  for(let r=0; r < rows; r++) {
+    pos = r * cols; // force start of line
+    last_pos = pos
+    fill_length = 0;
+    let c = 0;
+    while(c < cols && data_pos < data.length) {
+      const cell = data[data_pos];
+      if(cell.pos === pos) {
+        if(fill_length > 0) {
+          pushCellCache(makeBlankCell(last_pos,fill_length));
+          fill_length = 0;
         }
-    }
-  })
-  return_state.cells  = cells;
-  return return_state;
-}
-
-
-this.processCells =processCells;
-    const generateInitalScreen = (width, height) => {
-      let all_cells = [];
-      for (let i=0; i < (width*height); i++) {
-        let cell = new Cell();
-        if (i<config_perfs.numCols)
-        { cell.value = "0123456789"[i%10]; }
-        else
-        { cell.value = i % 10 ? null: "|"; }
-        all_cells.push(cell);
+        const field_length = pushCellCache(cell);
+        c+=field_length;
+        pos+=field_length;
+        last_pos = pos;
+        data_pos++;
+      } else {
+        c++;
+        pos++;
+        fill_length++;
       }
-      return all_cells;
-    };
-    this.screen_ref = createRef();
-    this.state = {
-      fields: [],
-      cells: generateInitalScreen(80, 24),
-      alarm: false,
-      connected: false,
-      cursorAt: 0,
-      error: false,
-      focused: false,
-      keyboardLocked: false,
-      message: '',
-      waiting: false,
-      default_color: lu3270_color,
-      default_highlight_color: lu3270_highlight_color,
-      default_background_color: lu3270_background,
-      style_cache: {},
-      status: {
-        alarm: false,
-        connected: false,
-        cursorAt: 0,
-        error: false,
-        focused: false,
-        keyboardLocked: false,
-        message: '',
-        waiting: false,
-      },
-      perfs: config_perfs,
-    };
-  }
-  /** Position the cursor based on a mouse click */
-  cursorAt(cursorAt) {
-    setState({ cursorAt: cursorAt });
-  }
-  createField(cells, address, name, attribute, length) {
-    for(let i=address; i < (address+length); i++) {
-      cells[i].set_value(null);
-      cells[i].set_attribute(attribute);
-      cells[i].protect = false;
+    }
+    if(c < cols) { // end of line
+      pushCellCache(makeBlankCell(pos,cols-c));
+    } else if(fill_length > 0) {
+      pushCellCache(makeBlankCell(last_pos,fill_length));
     }
   }
-  clearScreen(cells) {
-    cells.forEach(cell => { cell.set_value(null); cell.set_attribute(0); cell.protect = true; })
-  }
-  componentDidMount() {
+  return { cells: cells, doms: ret };
+};
 
-    const new_state = this.processCells(this.state.cells,
-      [
-        { "command": "text", "cursorAt": 80, "value": "Fuck me I am asian!" },
-        { "command": "text", "cursorAt": 334, "value": "Fuck me I am asian!" },
-        { "command": "text", "cursorAt": 1000, "value": "Fuck me I am asian!" },
-      ]);
-
-    if(new_state.updated)
-      this.setState( new_state.state);
-
-  }
-  cursorTo(cursorAt, cursorOp) {
-    // cursorAt: number,
-    // cursorOp: 'down' | 'left' | 'right' | 'up'): number {
-    const max = this.state.perfs.numCols * this.state.perfs.numRows;
-    let cursorTo;
-    switch (cursorOp) {
-      case 'down':
-        cursorTo = cursorAt + this.state.perfs.numCols;
-        if (cursorTo >= max)
-        { cursorTo = cursorAt % this.state.perfs.numCols; }
-        break;
-      case 'left':
-        cursorTo = cursorAt - 1;
-        if (cursorTo < 0)
-        { cursorTo = max - 1; }
-        break;
-      case 'right':
-        cursorTo = cursorAt + 1;
-        if (cursorTo >= max)
-        { cursorTo = 0; }
-        break;
-      case 'up':
-        cursorTo = cursorAt - this.state.perfs.numCols;
-        if (cursorTo < 0)
-        { cursorTo = (cursorAt % this.state.perfs.numCols)
-           + max - this.state.perfs.numCols; }
-        break;
-    }
-    this.setState({ cursorTo: cursorTo });
-    return cursorTo;
-  }
-
-  /** Reposition cursor, relative to its current position */
-  tabTo(cursorAt, cells, tabOp) {
-  //  cursorAt: number,
-  //  cells: Cell[],
-    // tabOp: 'bwd' | 'fwd'): void {
-    const max = this.state.perfs.numCols * this.state.perfs.numRows;
-    let dir = 1, tabTo = cursorAt;
-    // if we're going backwards, and we're at the beginning of a field
-    // we'll skip this field
-    if (tabOp === 'bwd') {
-      dir = -1;
-      if ((cursorAt > 0) && cells[cursorAt - 1].attribute)
-      { tabTo -= 1; }
-    }
-    // now look for the first unprotected field
-    while (true) {
-      tabTo += dir;
-      if (tabTo === cursorAt)
-      { break; }
-      if (tabTo < 0)
-      { tabTo = max - 1; }
-      if (tabTo >= max)
-      { tabTo = 1; }
-      const cell = cells[tabTo - 1];
-      if (cell && cell.attribute && !cell.attributes.protect)
-      { break; }
-    }
-    if (tabTo !== cursorAt) {
-      this.setState({ cursorTo: tabTo });
-    }
-  }
-  onKeyPress(e) {
-    logger.log("onKeyPress " + e.key);
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  }
-  onKeyUp(e) {
-    logger.log("onKeyUp " + e.key);
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  }
-  onKeyDown(e) {
-    logger.log("onKeyDown " + e.key);
-    e.preventDefault();
-    e.stopPropagation();
-    const { cells, cursorAt } = this.state;
-    const key = e.keyCode > 32 ? String.fromCharCode(e.keyCode) : null;
-    const cell = cells[cursorAt];
-    if(cell.protect) {
-      this.setState({ alarm: true, keyboardLocked: true,
-        error: true, message: "PROT" });
-    } else {
-      cell.set_value(key);
-      this.setState({ cells: cells, cursorAt: cursorAt +1 });
-    }
-    return false;
-  }
-  onLoseFocus(e) {
-    this.setState({ focused: false });
-  }
-  onFocus(e) {
-    this.setState({ focused: true });
-  }
-  render() {
-    const { status, cells, perfs } = this.state;
-    //        cursor: status.keyboardLocked ? 'not-allowed' : 'default',
-    /** Compute colimn from cursor */
-    return (
-      <Flex direction="column" height="100%" className="lu360_root">
-        <Flex.Item grow={1}>
-          <div class="lu3270"
-          style={{
-            width:((perfs.numCols+1)*Constants.magic.cxFactor) + 'px',
-
-          }} >
-            <div class="cells"
+const RealTerminal = (props,context) => {
+  const {
+    numRows=24,
+    numCols=80,
+    focused=true,
+    data = []
+  } = props;
+/*
               onkeypress={this.onKeyPress.bind(this)}
               onkeydown={this.onKeyUp.bind(this)}
               onkeyup={this.onKeyDown.bind(this)}
               onblur={this.onLoseFocus.bind(this)}
               onfocus={this.onFocus.bind(this)}
-              >
-              {
-              cells.map((cell, i) => <CellDom key={"cell_" + i} pos={i} attribute={cell.attribute} value={cell.value} />)
-              }
-            </div>
-          </div>
-        </Flex.Item>
-        <Flex.Item shrink={0}>
-          <TN3270_Status cells={cells} perfs={perfs} cursorAt={this.state.cursorAt} status={status} connected={true}/>
-        </Flex.Item>
+              */
+  const field_col = 80+10;
+  const test_data = [
+    { type: "text", pos: 80, text: "Fuck Me I am asian!", attribute: CELL_YELLOW },
+    { type: "text", pos: 334, text: "Fuck Me I am asian!", attribute: CELL_YELLOW },
+    { type: "text", pos: 1000, text: "Fuck Me I am asian!", attribute: CELL_YELLOW | CELL_REVERSE },
+    { type: "text", pos: field_col+10, text: "[", attribute: CELL_WHITE },
+    { type: "field", pos: field_col+11, name: "test_field2", attribute: CELL_WHITE, field_length: 10 },
+    { type: "text", pos: field_col+10+21, text: "]", attribute: CELL_WHITE },
+    { type: "text", pos: 1000, text: "Fuck Me I am asian!", attribute: CELL_YELLOW | CELL_REVERSE }
+  ];
 
-      </Flex>
+
+  const screen = createScreen(test_data, numCols, numRows );
+  const [
+    cursorAt,
+    setCursorAt,
+  ] = useSharedState(context,"status", { cursorAt: -1 });
+
+  return (
+    <Box fillPositionedParent>
+      <Flex direction="column" height="100%" className="lu360_root">
+            <Flex.Item grow={1}>
+              <div class="lu3270"
+              style={{ width:((numCols+1)*Constants.magic.cxFactor) + 'px', height:((numRows+1)*Constants.magic.cyFactor) + 'px'}}>
+                <div class="cells">
+                  {
+                    screen.doms.map((info, i) => <CellDom key={"cell_" + i} value={info.cell} pos={info.pos} field_length={info.field_length} />)
+                  }
+                </div>
+              </div>
+            </Flex.Item>
+            <Flex.Item shrink={0}>
+              <TN3270_Status cells={screen.cells} perfs={UpdateTerminalPerfs(1)} />
+            </Flex.Item>
+          </Flex>
+        </Box>
     );
-  }
-}
+
+};
+
 const TN3270_Status = (props, context) => {
 //       rotation={iconRotation}
 // spin={iconSpin} />
+  const {
+    cells,
+  } = props;
+
   const [
     cursorAt,
   ] = useSharedState(context,"status", { cursorAt: -1 });
+  const [
+    perfs,
+  ] = useSharedState(context,"perfs", UpdateTerminalPerfs(1));
 
-  const { status, cells, perfs ,connected } = props;
+  const connected = true;
   const current_cell = cells[cursorAt] || null;
   return (
     <Flex width="100%" inline={1} direction="row" className="lu3270-status-bar" >
@@ -755,7 +555,7 @@ export const TN3270 = (props, context) => {
       width={800}
       height={700}>
       <Window.Content>
-          <BlockTerminal />
+          <RealTerminal numRows={24}  numCols={80} focused={true} data = {[]}/>
       </Window.Content>
     </Window>
   );
