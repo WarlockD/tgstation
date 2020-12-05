@@ -296,12 +296,29 @@ if (!Math.trunc) {
     return v < 0 ? Math.ceil(v) : Math.floor(v);
   };
 }
-const CellDom = (props, context) => {
+const Fill = (props, context) => {
   const {
-    pos,
+    pos, // starting position, used for selecting
+    length,
+    attribute,
+    ...rest
+  } = props;
+
+  const [
+    cursorAt,
+    setCursorAt
+  ] = useSharedState(context,"status", { cursorAt: -1 });
+
+  const text = "\xA0".fill(length);
+  const style = createStyleFromByte(attribute, cursorAt===pos, false);
+  return <span {...rest}>{text}</span>
+}
+const Label = (props, context) => {
+  const {
+    pos, // starting position, used for selecting
     value,
     attribute,
-    onClick = e => { logger.log("Clicky " + pos + "color=" + style.color ); setCursorAt(pos); },
+    ...rest
   } = props;
 
   const [
@@ -310,10 +327,53 @@ const CellDom = (props, context) => {
   ] = useSharedState(context,"status", { cursorAt: -1 });
 
   const style = createStyleFromByte(attribute, cursorAt===pos, false);
+  return <span {...rest}>{value || "\xA0"}</span>
+};
+const Field = (props, context) => {
+  const {
+    name,
+    value,
+    length,
+    ...rest
+  } = props;
+  const [
+    fields,
+    setFields
+  ] = useSharedState(context, "field_cache", { });
+  // kind of hacky, but these magic numbers DO work
+
+  const style = createStyleFromByte(attribute, cursorAt===pos, false);
+  return <input stype={style} onchange={ e=> setFields({ name: e.target.value })} {...rest}>{fields[name]}</input>
+};
+
+const CellDom = (props, context) => {
+  const {
+    pos,
+    value,
+    attribute,
+    type = "text",
+    onClick = e => { logger.log("Clicky " + pos + "color=" + style.color ); setCursorAt(pos); },
+
+    const [
+      perfs,
+    ] = useSharedState(context,"perfs", { numCols: 80, numRows: 24});
+
+    const [
+      cursorAt,
+      setCursorAt
+    ] = useSharedState(context,"status", { cursorAt: -1 });
+
+    const style = { flex: 'none', width: ((length**Constants.magic.cxFactor) + 'px') };
 
   return (
-    <div id={'cell'+pos } style="flex:none;" onClick={e=> onClick(e)}>
-      <span style={style}> {value || "\xA0"}</span>
+    <div id={'cell'+pos } style="{style}" onClick={e=> onClick(e)}>
+      {
+        value.type === "text" ?
+          (<Label pos={pos} value={value.text} attribute={value.attribute} />) :
+          value.type == "field" ?
+          (<Field pos={pos} name={value.name}  attribute={value.attribute} length={value.length}/>) :
+          (<Fill pos={pos} length={length} attribute={0} />)
+      }
     </div>
   );
 };
