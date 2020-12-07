@@ -59,12 +59,28 @@ $lu3270-highlight-color: $mat-green-400;
     text-align: center;
     justify-content: center;
 
-    input[type=search]::-ms-clear {  display: none; width : 0; height: 0; }
-    input[type=search]::-ms-reveal {  display: none; width : 0; height: 0; }
+   // input[type=search]::-ms-clear {  display: none; width : 0; height: 0; }
+   // input[type=search]::-ms-reveal {  display: none; width : 0; height: 0; }
+
   }
 
 };
-.lu3270-input {
+.caret {
+  border: 0;
+  padding: 0;
+  outline: none;
+  background-color: #0F0;
+  display: inline-block;
+  font-family: monospace;
+}
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+
+.lu3270_input {
   color: $lu3270-color;
   background-color:$lu3270-background-color;
   font-family: '3270 Font';
@@ -74,11 +90,44 @@ $lu3270-highlight-color: $mat-green-400;
   margin: 0px;
   padding: 0px;
   overflow:none;
+  display: absolute;
+  top:0;
+  left:0;
+  word-break: break-all;
+  visibility: visible;
+  outline: none;
+  background-color: transparent;
+
 }
-.lu3270-input::-ms-clear {  display: none; width : 0; height: 0; }
-.lu3270-input::-ms-reveal {  display: none; width : 0; height: 0; }
-
-
+.lu3270_input_baseline {
+  display: inline-block;
+  color: transparent;
+}
+.lu3270_input_input {
+  display: block;
+  position: absolute;
+  border: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border: 0;
+  outline: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow:none;
+  background-color: transparent;
+  font-family: '3270 Font';
+  font-size: 18px;
+  outline: none;
+  cursor:none;
+}
+// deal with microsoft input's x bullshit on the input
+.lu3270_input_input::-ms-clear {  display: none; width : 0; height: 0; }
+.lu3270_input_input::-ms-reveal {  display: none; width : 0; height: 0; }
+.lu3270_input::-ms-clear {  display: none; width : 0; height: 0; }
+.lu3270_input::-ms-reveal {  display: none; width : 0; height: 0; }
 
 
 .lu3270-status-bar {

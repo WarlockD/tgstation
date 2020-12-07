@@ -4,6 +4,7 @@ import { useBackend, useSharedState, useLocalState, backendSetSharedState } from
 import { Button, Section, Box, Flex, Icon } from '../components';
 import { Window } from '../layouts';
 import { createLogger, logger } from '../logging';
+// tslint:disable-next-line:max-line-length
 
 // all these magic numbers have to coordinate to
 // properly scale the 3270 font
@@ -18,86 +19,8 @@ const magic = {
   paddingTop: 8,
 };
 
+const ENABLE_FIELD_LOGGING = false;
 
-const Color = {
-  NEUTRAL: 0x00,
-  BLUE: 0xF1,
-  RED: 0xF2,
-  PINK: 0xF3,
-  GREEN: 0xF4,
-  TURQUOISE: 0xF5,
-  YELLOW: 0xF6,
-  WHITE: 0xF7,
-};
-
-const Command = {
-  EAU: 0x6F,
-  EW: 0xF5,
-  EWA: 0x7E,
-  W: 0xF1,
-  WSF: 0xF3,
-};
-
-const Highlight = {
-  BLINK: 0xF1,
-  REVERSE: 0xF2,
-  UNDERSCORE: 0xF4,
-};
-
-const Op = {
-  Q: 0x02,
-  QL: 0x03,
-  RB: 0xF2,
-  RM: 0xF6,
-  RMA: 0x6E,
-  UNKNOWN: 0xFF,
-};
-
-const Order = {
-  SF: 0x1D,
-  SFE: 0x29,
-  SBA: 0x11,
-  SA: 0x28,
-  MF: 0x2C,
-  IC: 0x13,
-  PT: 0x05,
-  RA: 0x3C,
-  EUA: 0x12,
-  GE: 0x08,
-};
-
-const QCode = {
-  ALPHANUMERIC_PARTITIONS: 0x84,
-  CHARACTER_SETS: 0x85,
-  COLOR: 0x86,
-  DDM: 0x95,
-  HIGHLIGHTING: 0x87,
-  IMPLICIT_PARTITION: 0xA6,
-  REPLY_MODES: 0x88,
-  RPQ_NAMES: 0xA1,
-  SUMMARY: 0x80,
-  USABLE_AREA: 0x81,
-};
-
-const TypeCode = {
-  BASIC: 0xC0,
-  HIGHLIGHT: 0x41,
-  COLOR: 0x42,
-};
-
-const SFID = {
-  QUERY_REPLY: 0x81,
-  READ_PARTITION: 0x01,
-};
-
-const host_create = {
-  'color': 'var(--lu3270-color)',
-  'display': 'block',
-  'font-family': '3270 Font',
-  'font-size': '18px',
-  'overflow': 'auto',
-  'opacity': 1.0,
-};
 
 
 const DefaultTerminalStatus = {
@@ -202,9 +125,9 @@ const createStyleFromByte = (attribute, cursorAt, focused) => {
   }
   else if(attribute) {
     const highlight  = attribute & CELL_HIGHLIGHT;
-    if (highlight)  { style.fontWeight = '900'; }
+    if (highlight)  { style['font-weight'] = '900'; }
     if (attribute & CELL_BLINK)  { style.animation = 'blink 1s linear infinite'; }
-    if (attribute & CELL_UNDERLINE)  { style.textDecoration = 'underline'; }
+
     switch (attribute & CELL_COLOR_MASK) {
       case CELL_BLUE:
         style.color = highlight? mat_blue_400 : mat_blue_300;
@@ -236,6 +159,9 @@ const createStyleFromByte = (attribute, cursorAt, focused) => {
       const temp = style.color;
       style.color = style['background-color'];
       style['background-color'] = temp;
+    }
+    if (attribute & CELL_UNDERLINE)  {
+      style['border-bottom'] = '1px solid '+ style.color;
     }
   }
   style['text-color'] = style.color;
@@ -305,7 +231,8 @@ const CellFill = (props, context) => {
   } = props;
 
   const text = "\xA0".repeat(fill_length);
-  logger.log("CellFill("+  pos + ") fill_length=" + fill_length +" attribute=" + attribute);
+  if(ENABLE_FIELD_LOGGING)
+    logger.log("CellFill("+  pos + ") fill_length=" + fill_length +" attribute=" + attribute);
   const style = createStyleFromByte(attribute, false, false);
   return (<span style={style}  {...rest}>{text}</span>);
 };
@@ -317,10 +244,11 @@ const CellLabel = (props, context) => {
     attribute,
     ...rest
   } = props;
-
-  logger.log("CellLabel("+  pos + ") value=" + value +" attribute=" + attribute);
+  const text = value && value.replace(" ", "\xA0");
+  if(ENABLE_FIELD_LOGGING)
+    logger.log("CellLabel("+  pos + ") value=" + value +" attribute=" + attribute);
   const style = createStyleFromByte(attribute, false, false);
-  return (<span style={style} {...rest}>{value || "\xA0"}</span>);
+  return (<span style={style} {...rest}>{text || "\xA0"}</span>);
 };
 
 const CellField = (props, context) => {
@@ -337,12 +265,17 @@ const CellField = (props, context) => {
     setFields
   ] = useSharedState(context, "field_cache", { });
   // kind of hacky, but these magic numbers DO work
+  if(ENABLE_FIELD_LOGGING)
+    logger.log("CellField("+  pos + ") name=" + name +" field_length=" + field_length);
+  const field_size = field_length * magic.cxFactor + "px";
+  let style = createStyleFromByte(attribute | CELL_UNDERLINE, false, false);
 
-  logger.log("CellField("+  pos + ") name=" + name +" field_length=" + field_length);
-  let style = createStyleFromByte(attribute, false, false);
-
-
-  return ( <input class="lu3270-input" id="name" type="text" size={field_length}  maxlength={field_length} style={style} onchange={ e=> setFields({ name: e.target.value })} {...rest}>{fields[name]}</input>);
+  return (
+    <input type="lu3270_input" size={field_length}
+    maxlength={field_length} style={style}
+    onchange={ e=> setFields({ name: e.target.value })} >
+    {fields[name]}
+  </input>
 };
 
 const CellDom = (props, context) => {
@@ -357,17 +290,23 @@ const CellDom = (props, context) => {
       setCursorAt
     ] = useSharedState(context,"status", { cursorAt: -1 });
 
-    //const style = { 'flex' : '1 1 ' + field_length + 'em'};
-    const style = { 'flex' : 'none' };
+    const style = { 'flex' : '1 1 ' + (field_length*magic.cxFactor) + 'px' };
+  //  const style = { 'flex' : 'none' };
+    const color_style = createStyleFromByte(value.attribute, false, false);
   return (
-    <div id={'cell'+value.pos } style="{style}" onClick={e=> onClick(e)}>
+    <div id={'cell'+value.pos } style="{style}" >
+      <span style={color_style}>
       {
         value.type === "text" ?
-          (<CellLabel pos={pos} value={value.text} attribute={value.attribute || 0}  />) :
-          value.type == "field" ?
+          value.text:
+        value.type === "fill" ?
+          "\xA0".repeat(field_length) :
+        value.type == "field" ?
           (<CellField pos={pos} name={value.name}  attribute={value.attribute || 0} field_length={value.field_length}/>) :
-          (<CellFill pos={pos} fill_length={value.fill_length} attribute={value.attribute || 0}  />)
+          null
       }
+      </span>
+
     </div>
   );
 };
@@ -457,13 +396,12 @@ const RealTerminal = (props,context) => {
               */
   const field_col = 80+10;
   const test_data = [
-    { type: "text", pos: 80, text: "Fuck Me I am asian!", attribute: CELL_YELLOW },
-    { type: "text", pos: 334, text: "Fuck Me I am asian!", attribute: CELL_YELLOW },
+    { type: "text", pos: 80, text: "Fuck Me I am asian!", attribute: CELL_YELLOW  | CELL_UNDERLINE},
+    { type: "text", pos: 334, text: "Fuck Me I am asian!", attribute: CELL_BLUE | CELL_UNDERLINE },
     { type: "text", pos: 1000, text: "Fuck Me I am asian!", attribute: CELL_YELLOW | CELL_REVERSE },
     { type: "text", pos: field_col+10, text: "[", attribute: CELL_WHITE },
-    { type: "field", pos: field_col+11, name: "test_field2", attribute: CELL_WHITE, field_length: 10 },
+    { type: "field", pos: field_col+11, name: "test_field2", attribute: CELL_RED | CELL_UNDERLINE, field_length: 10 },
     { type: "text", pos: field_col+10+21, text: "]", attribute: CELL_WHITE },
-    { type: "text", pos: 1000, text: "Fuck Me I am asian!", attribute: CELL_YELLOW | CELL_REVERSE }
   ];
 
 
@@ -472,14 +410,46 @@ const RealTerminal = (props,context) => {
     cursorAt,
     setCursorAt,
   ] = useSharedState(context,"status", { cursorAt: -1 });
+  const getPosition = el => {
+    var xPosition = 0;
+    var yPosition = 0;
 
+    while (el) {
+      if (el.tagName == "BODY") {
+        // deal with browser quirks with body/window/document and page scroll
+        var xScrollPos = el.scrollLeft || document.documentElement.scrollLeft;
+        var yScrollPos = el.scrollTop || document.documentElement.scrollTop;
+
+        xPosition += (el.offsetLeft - xScrollPos + el.clientLeft);
+        yPosition += (el.offsetTop - yScrollPos + el.clientTop);
+      } else {
+        xPosition += (el.offsetLeft - el.scrollLeft + el.clientLeft);
+        yPosition += (el.offsetTop - el.scrollTop + el.clientTop);
+      }
+
+      el = el.offsetParent;
+    }
+    return {
+      x: xPosition,
+      y: yPosition
+    };
+  }
+  const onMouseClick = e => {
+    const pos = getPosition(e);
+    const address = e.y * numCols + e.x;
+    logger.log("x=" + e.x + " y=" + e.y + " address=" + address);
+    return false;
+  }
   return (
-    <Box fillPositionedParent>
+    <Box fillPositionedParent onClick={e=> onMouseClick(e)}>
+      <button class="caret" for="input">&nbsp;</button>
       <Flex direction="column" height="100%" className="lu360_root">
             <Flex.Item grow={1}>
+
               <div class="lu3270"
               style={{ width:((numCols+1)*Constants.magic.cxFactor) + 'px', height:((numRows+1)*Constants.magic.cyFactor) + 'px'}}>
                 <div class="cells">
+
                   {
                     screen.doms.map((info, i) => <CellDom key={"cell_" + i} value={info.cell} pos={info.pos} field_length={info.field_length} />)
                   }

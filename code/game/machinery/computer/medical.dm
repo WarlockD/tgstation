@@ -30,6 +30,18 @@
 		ui = new(user, src, "TN3270", name)
 		ui.open()
 
+
+/obj/machinery/computer/med_data/ui_static_data(mob/user)
+	var/data = list()
+	data["screen"] = list(
+		list(5,10,0,"text","This is a test"),
+		list(6,10,0,"text","\["),
+		list(6,11,0,"field", "name", 20, ""),
+		list(6,22,0,"text", "\]")
+	)
+	data["menu_mode"] = "login"
+	return data
+
 /obj/machinery/computer/med_data/ui_data(mob/user)
 	var/data = list()
 
