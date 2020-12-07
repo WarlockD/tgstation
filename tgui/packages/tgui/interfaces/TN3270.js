@@ -275,7 +275,7 @@ const CellField = (props, context) => {
     maxlength={field_length} style={style}
     onchange={ e=> setFields({ name: e.target.value })} >
     {fields[name]}
-  </input>
+  </input>);
 };
 
 const CellDom = (props, context) => {
@@ -283,12 +283,47 @@ const CellDom = (props, context) => {
     pos,
     value,
     field_length,
-    onClick = e => { logger.log("Clicky " + pos + "color=" + style.color ); setCursorAt(pos); },
+    onClick = e => {
+      logger.log("Clicky " + pos + "offset = " +
+      getSelectionOffsetRelativeTo( document.getElementById('cell'+value.pos)));
+      //setCursorAt(pos);
+    },
   } = props;
     const [
       cursorAt,
       setCursorAt
     ] = useSharedState(context,"status", { cursorAt: -1 });
+    const getSelectionOffsetRelativeTo = (parentElement, currentNode) =>{
+
+      let currentSelection, currentRange,
+          offset = 0,
+          prevSibling,
+          nodeContent;
+
+      if (!currentNode){
+        currentSelection = window.getSelection();
+        currentRange = currentSelection.getRangeAt(0);
+        currentNode = currentRange.startContainer;
+        offset += currentRange.startOffset;
+      }
+
+      if (currentNode === parentElement){
+        return offset;
+      }
+
+      if (!parentElement.contains(currentNode)){
+        return -1;
+      }
+
+      while ( prevSibling = (prevSibling  || currentNode).previousSibling ){
+        nodeContent = prevSibling.innerText || prevSibling.nodeValue || "";
+        offset += nodeContent.length;
+      }
+
+      return offset + getSelectionOffsetRelativeTo( parentElement, currentNode.parentNode );
+
+    }
+    // (<CellField pos={pos} name={value.name}  attribute={value.attribute || 0} field_length={value.field_length}/>) :
 
     const style = { 'flex' : '1 1 ' + (field_length*magic.cxFactor) + 'px' };
   //  const style = { 'flex' : 'none' };
@@ -302,7 +337,7 @@ const CellDom = (props, context) => {
         value.type === "fill" ?
           "\xA0".repeat(field_length) :
         value.type == "field" ?
-          (<CellField pos={pos} name={value.name}  attribute={value.attribute || 0} field_length={value.field_length}/>) :
+        "\xA0".repeat(field_length) :
           null
       }
       </span>
@@ -442,7 +477,6 @@ const RealTerminal = (props,context) => {
   }
   return (
     <Box fillPositionedParent onClick={e=> onMouseClick(e)}>
-      <button class="caret" for="input">&nbsp;</button>
       <Flex direction="column" height="100%" className="lu360_root">
             <Flex.Item grow={1}>
 
@@ -455,6 +489,7 @@ const RealTerminal = (props,context) => {
                   }
                 </div>
               </div>
+              <button class={classes(["caret", cursorAt < 0 && "noCaret"])}>&nbsp;</button>
             </Flex.Item>
             <Flex.Item shrink={0}>
               <TN3270_Status cells={screen.cells} perfs={UpdateTerminalPerfs(1)} />

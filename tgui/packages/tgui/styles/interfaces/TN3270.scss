@@ -96,8 +96,10 @@ $lu3270-highlight-color: $mat-green-400;
   word-break: break-all;
   visibility: visible;
   outline: none;
-  background-color: transparent;
-
+}
+.lu3270_input:-ms-input-placeholder {
+  background-color: inherit;
+  color: inherit;
 }
 .lu3270_input_baseline {
   display: inline-block;
@@ -122,6 +124,52 @@ $lu3270-highlight-color: $mat-green-400;
   font-size: 18px;
   outline: none;
   cursor:none;
+}
+
+.lu3270_input_input:-ms-input-placeholder {
+  background-color: inherit;
+  color: inherit;
+}
+.input_test {
+  display: inline;
+  outline: none;
+  visibility: visible;
+}
+
+/*
+  If you press the Insert key, the vertical line caret will automatically
+  be replaced by a one-character selection.
+*/
+.input_test::selection {
+  color: #000;
+  background: #0F0;
+}
+
+.input_test:empty::before {
+  content: ' ';
+}
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+.input_test:focus + .caret {
+  animation: blink 1s steps(5, start) infinite;
+}
+
+
+.caret {
+  border: 0;
+  padding: 0;
+  outline: none;
+  background-color: #0F0;
+  display: inline-block;
+  font-family: inherit;
+  .noCaret {
+    visibility: hidden;
+  }
 }
 // deal with microsoft input's x bullshit on the input
 .lu3270_input_input::-ms-clear {  display: none; width : 0; height: 0; }
