@@ -109,8 +109,8 @@ const CELL_WHITE      = (7 << 5);
 const CELL_COLOR_MASK = (7 << 5);
 
 
-const createStyleFromByte = (attribute, cursorAt, focused) => {
-  const style = { color: lu3270_color, 'background-color': lu3270_background  };
+const createStyleFromByte = (attribute, length, cursorAt, focused) => {
+  const style = { color: lu3270_color, 'background-color': lu3270_background , 'width': (magic.cxFactor*length) + 'px' , 'height': (magic.cyFactor) + 'px' };
   if (cursorAt) {
     if (attribute & CELL_HIDDEN) {
       style['background-color']  = lu3270_color;
@@ -161,7 +161,8 @@ const createStyleFromByte = (attribute, cursorAt, focused) => {
       style['background-color'] = temp;
     }
     if (attribute & CELL_UNDERLINE)  {
-      style['border-bottom'] = '1px solid '+ style.color;
+
+      style['text-decoration'] = 'underline';
     }
   }
   style['text-color'] = style.color;
@@ -230,7 +231,7 @@ const CellFill = (props, context) => {
     ...rest
   } = props;
 
-  const text = "\xA0".repeat(fill_length);
+  const text = " ".repeat(fill_length);
   if(ENABLE_FIELD_LOGGING)
     logger.log("CellFill("+  pos + ") fill_length=" + fill_length +" attribute=" + attribute);
   const style = createStyleFromByte(attribute, false, false);
@@ -268,11 +269,11 @@ const CellField = (props, context) => {
   if(ENABLE_FIELD_LOGGING)
     logger.log("CellField("+  pos + ") name=" + name +" field_length=" + field_length);
   const field_size = field_length * magic.cxFactor + "px";
-  let style = createStyleFromByte(attribute | CELL_UNDERLINE, false, false);
-
+  let style = createStyleFromByte(attribute & CELL_UNDERLINE, false, false);
+  style['outline-bottom'] = '1px solid '+ style.color;
   return (
     <input type="lu3270_input" size={field_length}
-    maxlength={field_length} style={style}
+    maxlength={field_length}
     onchange={ e=> setFields({ name: e.target.value })} >
     {fields[name]}
   </input>);
@@ -325,9 +326,9 @@ const CellDom = (props, context) => {
     }
     // (<CellField pos={pos} name={value.name}  attribute={value.attribute || 0} field_length={value.field_length}/>) :
 
-    const style = { 'flex' : '1 1 ' + (field_length*magic.cxFactor) + 'px' };
+    const style = { 'flex' : 'none' };
   //  const style = { 'flex' : 'none' };
-    const color_style = createStyleFromByte(value.attribute, false, false);
+
   return (
     <div id={'cell'+value.pos } style="{style}" >
       <span style={color_style}>
@@ -346,7 +347,7 @@ const CellDom = (props, context) => {
   );
 };
 const makeBlankCell = (pos,field_length) => {
-  return  { pos: pos, type: "fill", fill_length: field_length };
+  return  { pos: pos, type: "fill", fill_length: field_length, attribute:0 };
 };
 
 const createScreen = ( data, cols, rows) => {
@@ -366,15 +367,15 @@ const createScreen = ( data, cols, rows) => {
   const pushCellCache = cell => {
     switch(cell.type){
       case "text":
-        ret.push({ pos: cell.pos, field_length:cell.text.length, cell: cell });
+        ret.push({ pos: cell.pos, field_length:cell.text.length, cell: cell, style: createStyleFromByte(cell.attribute, cell.text.length, false, false), text:cell.text });
         pushMany({ protect: true, cell: cell },cell.text.length);
         return cell.text.length;
       case "field":
-        ret.push({ pos: cell.pos, field_length:cell.field_length, cell: cell });
+        ret.push({ pos: cell.pos, field_length:cell.field_length, cell: cell, style: createStyleFromByte(cell.attribute, cell.field_length, false, false),  text:" ".repeat(cell.fill_length) });
         pushMany({ protect: false, cell: cell},cell.field_length);
         return cell.field_length;
       case "fill":
-        ret.push({ pos: cell.pos, field_length:cell.fill_length, cell: cell });
+        ret.push({ pos: cell.pos, field_length:cell.fill_length, cell: cell, style: createStyleFromByte(cell.attribute, cell.fill_length, false, false),  text:" ".repeat(cell.fill_length) });
         pushMany({ protect: true, cell: cell },cell.fill_length);
         return cell.fill_length;
       default:
@@ -429,69 +430,114 @@ const RealTerminal = (props,context) => {
               onblur={this.onLoseFocus.bind(this)}
               onfocus={this.onFocus.bind(this)}
               */
-  const field_col = 80+10;
+  const field_col = 80;
+  const gotoXY = (x,y) => { return (y * numCols) + x; }
   const test_data = [
-    { type: "text", pos: 80, text: "Fuck Me I am asian!", attribute: CELL_YELLOW  | CELL_UNDERLINE},
-    { type: "text", pos: 334, text: "Fuck Me I am asian!", attribute: CELL_BLUE | CELL_UNDERLINE },
-    { type: "text", pos: 1000, text: "Fuck Me I am asian!", attribute: CELL_YELLOW | CELL_REVERSE },
-    { type: "text", pos: field_col+10, text: "[", attribute: CELL_WHITE },
-    { type: "field", pos: field_col+11, name: "test_field2", attribute: CELL_RED | CELL_UNDERLINE, field_length: 10 },
-    { type: "text", pos: field_col+10+21, text: "]", attribute: CELL_WHITE },
+    { type: "text", pos: gotoXY(10,5), text: "Acct:", attribute: CELL_GREEN },
+    { type: "text", pos: gotoXY(10,6), text: "Name:", attribute: CELL_GREEN },
+    { type: "text", pos: gotoXY(10,7), text: "Age:", attribute: CELL_GREEN },
+    { type: "text", pos: gotoXY(10,8), text: "Race:", attribute: CELL_GREEN },
+    { type: "text", pos: gotoXY(10,9), text: "Age:", attribute: CELL_GREEN },
+    { type: "text", pos: gotoXY(10,10), text: "Medical", attribute: CELL_BLUE | CELL_HIGHLIGHT },
+    { type: "text", pos: gotoXY(10,11), text: "BloodType:", attribute: CELL_BLUE },
+    { type: "text", pos: gotoXY(10,12), text: "Status:", attribute: CELL_BLUE },
+    { type: "field", pos: gotoXY(20,5), name: "ssn", attribute: CELL_YELLOW , field_length: 12, text : "1232311"},
+    { type: "field", pos: gotoXY(20,6), name: "name", attribute: CELL_YELLOW , field_length: 30, text :"Bob Marly" },
+    { type: "field", pos: gotoXY(20,7), name: "age", attribute: CELL_YELLOW , field_length: 10 , text :"45" },
+    { type: "field", pos: gotoXY(20,8), name: "race", attribute: CELL_YELLOW , field_length: 10 , text :"LIZARD" },
+    { type: "field", pos: gotoXY(20,11), name: "blood_type", attribute: CELL_YELLOW , field_length: 10 , text :"L" },
+    { type: "field", pos: gotoXY(10,12), name: "status", attribute: CELL_YELLOW,  field_length: 10 , text :"Dead" },
   ];
 
 
+
+
+/*
+
+  for(var/datum/data/record/R in sortRecord(GLOB.data_core.general, sortBy, order))
+  var/blood_type = ""
+  var/b_dna = ""
+  for(var/datum/data/record/E in GLOB.data_core.medical)
+    if((E.fields["name"] == R.fields["name"] && E.fields["id"] == R.fields["id"]))
+      blood_type = E.fields["blood_type"]
+      b_dna = E.fields["b_dna"]
+  var/background
+
+  if(R.fields["m_stat"] == "*Insane*" || R.fields["p_stat"] == "*Deceased*")
+    background = "'background-color:#990000;'"
+  else if(R.fields["p_stat"] == "*Unconscious*" || R.fields["m_stat"] == "*Unstable*")
+    background = "'background-color:#CD6500;'"
+  else if(R.fields["p_stat"] == "Physically Unfit" || R.fields["m_stat"] == "*Watch*")
+    background = "'background-color:#3BB9FF;'"
+  else
+    background = "'background-color:#4F7529;'"
+
+  dat += text("<tr style=[]><td><A href='?src=[REF(src)];d_rec=[]'>[]</a></td>", background, R.fields["id"], R.fields["name"])
+  dat += text("<td>[]</td>", R.fields["id"])
+  dat += text("<td><b>F:</b> []<BR><b>D:</b> []</td>", R.fields["fingerprint"], b_dna)
+  dat += text("<td>[]</td>", blood_type)
+  dat += text("<td>[]</td>", R.fields["p_stat"])
+  dat += text("<td>[]</td></tr>", R.fields["m_stat"])
+*/
   const screen = createScreen(test_data, numCols, numRows );
   const [
-    cursorAt,
-    setCursorAt,
+    status,
+    setStatus,
   ] = useSharedState(context,"status", { cursorAt: -1 });
-  const getPosition = el => {
-    var xPosition = 0;
-    var yPosition = 0;
 
-    while (el) {
-      if (el.tagName == "BODY") {
-        // deal with browser quirks with body/window/document and page scroll
-        var xScrollPos = el.scrollLeft || document.documentElement.scrollLeft;
-        var yScrollPos = el.scrollTop || document.documentElement.scrollTop;
-
-        xPosition += (el.offsetLeft - xScrollPos + el.clientLeft);
-        yPosition += (el.offsetTop - yScrollPos + el.clientTop);
-      } else {
-        xPosition += (el.offsetLeft - el.scrollLeft + el.clientLeft);
-        yPosition += (el.offsetTop - el.scrollTop + el.clientTop);
-      }
-
-      el = el.offsetParent;
-    }
-    return {
-      x: xPosition,
-      y: yPosition
-    };
+  const getCoordsRelativeToElement = (event, element) =>{
+    const rect = element.getBoundingClientRect();
+    return [event.clientX - rect.left, event.clientY - rect.top];
   }
+  const printRect = rect => {
+    return "rect(" + Math.round(rect.left) + "," + Math.round(rect.top) + "," + Math.round(rect.right) + "," + Math.round(rect.bottom)+ ")";
+  }
+  const printCords = cords => {
+    return "(" + Math.round(cords[0]) + "," + Math.round(cords[1]) + ")";
+  }
+
+
   const onMouseClick = e => {
-    const pos = getPosition(e);
-    const address = e.y * numCols + e.x;
-    logger.log("x=" + e.x + " y=" + e.y + " address=" + address);
+
+    const target = e.target;
+    const coords = getCoordsRelativeToElement(e, e.currentTarget);
+
+    const cell = [
+      Math.trunc(coords[0] /magic.cxFactor),
+      Math.trunc(coords[1] / magic.cyFactor)
+    ];
+    const address = cell[1] * numCols + cell[0];
+
+    logger.log("target = " + target + "address= " + address + " cell=" + printCords(cell));
+    //+ " x=" + pos.x - rect.left + " y=" +  pos.y - rect.top + " address=" + address);
+    setStatus({ cursorAt: address});
+
     return false;
   }
+
+  const returnFiled = (info) => { // {fields[name]}
+  //const field_size = * magic.cxFactor + "px";
+    return info.cell.type == "field" ?
+      (<input  class="lu3270_input" size={info.field_length} maxlength={info.field_length} style={{ 'border-bottom': '1px solid ' + info.style.color}} value={info.cell.text}/>) : (<span style={info.style}>{info.text}</span>);
+  };
+
+
   return (
-    <Box fillPositionedParent onClick={e=> onMouseClick(e)}>
-      <Flex direction="column" height="100%" className="lu360_root">
-            <Flex.Item grow={1}>
-
-              <div class="lu3270"
-              style={{ width:((numCols+1)*Constants.magic.cxFactor) + 'px', height:((numRows+1)*Constants.magic.cyFactor) + 'px'}}>
-                <div class="cells">
-
+    <Box fillPositionedParent >
+      <Flex direction="column" height="100%" className="lu360_root" onClick={e=> onMouseClick(e)}>
+            <Flex.Item grow={0}  >
+              <div class="lu3270" style={{ width:((numCols+1)*Constants.magic.cxFactor) + 'px', height:((numRows+1)*Constants.magic.cyFactor) + 'px'}}>
+                  <div class="cells">
                   {
-                    screen.doms.map((info, i) => <CellDom key={"cell_" + i} value={info.cell} pos={info.pos} field_length={info.field_length} />)
+                    screen.doms.map((info, i) =>
+                    (<div key={"cell_" + i} class="cell" style={info.style}>
+                        {returnFiled(info)}
+                    </div>))
                   }
+                  </div>
                 </div>
-              </div>
-              <button class={classes(["caret", cursorAt < 0 && "noCaret"])}>&nbsp;</button>
             </Flex.Item>
-            <Flex.Item shrink={0}>
+            <Flex.Item shrink={1}>
               <TN3270_Status cells={screen.cells} perfs={UpdateTerminalPerfs(1)} />
             </Flex.Item>
           </Flex>
@@ -508,14 +554,14 @@ const TN3270_Status = (props, context) => {
   } = props;
 
   const [
-    cursorAt,
+    status,
   ] = useSharedState(context,"status", { cursorAt: -1 });
   const [
     perfs,
   ] = useSharedState(context,"perfs", UpdateTerminalPerfs(1));
 
   const connected = true;
-  const current_cell = cells[cursorAt] || null;
+  const current_cell = cells[status.cursorAt] || null;
   return (
     <Flex width="100%" inline={1} direction="row" className="lu3270-status-bar" >
       <Flex.Item grow={1}>
@@ -544,7 +590,7 @@ const TN3270_Status = (props, context) => {
         PROT
       </Flex.Item>
       <Flex.Item grow={1} style={{ visibility: (connected && (status.cursorAt >= 0))? 'visible' : 'hidden' }}>
-        {(Math.trunc(cursorAt / perfs.numCols) + 1) +"/" + ((cursorAt % perfs.numCols) + 1)}
+        {(Math.trunc(status.cursorAt / perfs.numCols) + 1) +"/" + ((status.cursorAt % perfs.numCols) + 1)}
       </Flex.Item>
     </Flex>
   );

@@ -36,6 +36,17 @@ $l_background-color: $mat-grey-900;
 $lu3270-color: $mat-green-300;
 $lu3270-background-color: 'black';
 $lu3270-highlight-color: $mat-green-400;
+
+// all these magic numbers have to coordinate to
+// properly scale the 3270 font
+$el370-magic-cxFactor: 9.65625px;
+$el370-magic-cyFactor: 21px;
+$el370-magic-nominalFontSize: 18px;
+$el370-magic-paddingBottom: 8;
+$el370-magic-paddingLeft: 16;
+$el370-magic-paddingRight: 16;
+$el370-magic-paddingTop: 8;
+
 .lu360_root {
   background-color:$lu3270-background-color;
 }
@@ -45,8 +56,9 @@ $lu3270-highlight-color: $mat-green-400;
   display: block;
   font-family: '3270 Font';
   font-size: 18px;
-  overflow: auto;
-
+  overflow:none;
+  padding: none;
+  margin: none;
   .highlight {
     color: $lu3270-highlight-color;
     font-weight: 900;
@@ -57,8 +69,16 @@ $lu3270-highlight-color: $mat-green-400;
     display: flex;
     flex-wrap: wrap;
     text-align: center;
-    justify-content: center;
-
+    justify-content: left;
+    padding: none;
+    margin: none;
+    .cell {
+      flex:auto;
+      padding: none;
+      overflow: none;
+      padding: none;
+      margin: none;
+    }
    // input[type=search]::-ms-clear {  display: none; width : 0; height: 0; }
    // input[type=search]::-ms-reveal {  display: none; width : 0; height: 0; }
 
@@ -81,8 +101,8 @@ $lu3270-highlight-color: $mat-green-400;
 
 
 .lu3270_input {
-  color: $lu3270-color;
-  background-color:$lu3270-background-color;
+  color: inherit;
+  background-color:transparent;
   font-family: '3270 Font';
   font-size: 18px;
   text-shadow: none;
@@ -93,47 +113,15 @@ $lu3270-highlight-color: $mat-green-400;
   display: absolute;
   top:0;
   left:0;
+  width:100%  ;
   word-break: break-all;
   visibility: visible;
-  outline: none;
+
 }
+
 .lu3270_input:-ms-input-placeholder {
   background-color: inherit;
   color: inherit;
-}
-.lu3270_input_baseline {
-  display: inline-block;
-  color: transparent;
-}
-.lu3270_input_input {
-  display: block;
-  position: absolute;
-  border: 0;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  border: 0;
-  outline: 0;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow:none;
-  background-color: transparent;
-  font-family: '3270 Font';
-  font-size: 18px;
-  outline: none;
-  cursor:none;
-}
-
-.lu3270_input_input:-ms-input-placeholder {
-  background-color: inherit;
-  color: inherit;
-}
-.input_test {
-  display: inline;
-  outline: none;
-  visibility: visible;
 }
 
 /*
@@ -183,7 +171,7 @@ $lu3270-highlight-color: $mat-green-400;
   align-content: center;
   border-top: 1px solid $lu3270-color;
   color: $lu3270-color;
-  background-color:$lu3270-background-color;
+  background-color:'black';
   font-family: '3270 Font';
   font-size: 18px;
   padding: 8px 16px;
