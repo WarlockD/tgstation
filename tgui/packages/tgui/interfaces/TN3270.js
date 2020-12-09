@@ -168,8 +168,11 @@ const createStyleFromByte = (attribute, length, cursorAt, focused) => {
   style['text-color'] = style.color;
   return style;
 };
+
+
 class Cell {
-  constructor(value, attribute) {
+  constructor(code, attribute) {
+    this.code = code[0];      // first letter T/F  text or field
     this.value = '\u00a0';
     this.attribute = 0;
     this.style = { flex: 'none', color: lu3270_color, backgroundColor: lu3270_background};
@@ -223,129 +226,7 @@ if (!Math.trunc) {
     return v < 0 ? Math.ceil(v) : Math.floor(v);
   };
 }
-const CellFill = (props, context) => {
-  const {
-    pos, // starting position, used for selecting
-    fill_length,
-    attribute,
-    ...rest
-  } = props;
 
-  const text = " ".repeat(fill_length);
-  if(ENABLE_FIELD_LOGGING)
-    logger.log("CellFill("+  pos + ") fill_length=" + fill_length +" attribute=" + attribute);
-  const style = createStyleFromByte(attribute, false, false);
-  return (<span style={style}  {...rest}>{text}</span>);
-};
-
-const CellLabel = (props, context) => {
-  const {
-    pos, // starting position, used for selecting
-    value,
-    attribute,
-    ...rest
-  } = props;
-  const text = value && value.replace(" ", "\xA0");
-  if(ENABLE_FIELD_LOGGING)
-    logger.log("CellLabel("+  pos + ") value=" + value +" attribute=" + attribute);
-  const style = createStyleFromByte(attribute, false, false);
-  return (<span style={style} {...rest}>{text || "\xA0"}</span>);
-};
-
-const CellField = (props, context) => {
-  const {
-    pos,
-    name,
-    value,
-    field_length,
-    attribute,
-    ...rest
-  } = props;
-  const [
-    fields,
-    setFields
-  ] = useSharedState(context, "field_cache", { });
-  // kind of hacky, but these magic numbers DO work
-  if(ENABLE_FIELD_LOGGING)
-    logger.log("CellField("+  pos + ") name=" + name +" field_length=" + field_length);
-  const field_size = field_length * magic.cxFactor + "px";
-  let style = createStyleFromByte(attribute & CELL_UNDERLINE, false, false);
-  style['outline-bottom'] = '1px solid '+ style.color;
-  return (
-    <input type="lu3270_input" size={field_length}
-    maxlength={field_length}
-    onchange={ e=> setFields({ name: e.target.value })} >
-    {fields[name]}
-  </input>);
-};
-
-const CellDom = (props, context) => {
-  const {
-    pos,
-    value,
-    field_length,
-    onClick = e => {
-      logger.log("Clicky " + pos + "offset = " +
-      getSelectionOffsetRelativeTo( document.getElementById('cell'+value.pos)));
-      //setCursorAt(pos);
-    },
-  } = props;
-    const [
-      cursorAt,
-      setCursorAt
-    ] = useSharedState(context,"status", { cursorAt: -1 });
-    const getSelectionOffsetRelativeTo = (parentElement, currentNode) =>{
-
-      let currentSelection, currentRange,
-          offset = 0,
-          prevSibling,
-          nodeContent;
-
-      if (!currentNode){
-        currentSelection = window.getSelection();
-        currentRange = currentSelection.getRangeAt(0);
-        currentNode = currentRange.startContainer;
-        offset += currentRange.startOffset;
-      }
-
-      if (currentNode === parentElement){
-        return offset;
-      }
-
-      if (!parentElement.contains(currentNode)){
-        return -1;
-      }
-
-      while ( prevSibling = (prevSibling  || currentNode).previousSibling ){
-        nodeContent = prevSibling.innerText || prevSibling.nodeValue || "";
-        offset += nodeContent.length;
-      }
-
-      return offset + getSelectionOffsetRelativeTo( parentElement, currentNode.parentNode );
-
-    }
-    // (<CellField pos={pos} name={value.name}  attribute={value.attribute || 0} field_length={value.field_length}/>) :
-
-    const style = { 'flex' : 'none' };
-  //  const style = { 'flex' : 'none' };
-
-  return (
-    <div id={'cell'+value.pos } style="{style}" >
-      <span style={color_style}>
-      {
-        value.type === "text" ?
-          value.text:
-        value.type === "fill" ?
-          "\xA0".repeat(field_length) :
-        value.type == "field" ?
-        "\xA0".repeat(field_length) :
-          null
-      }
-      </span>
-
-    </div>
-  );
-};
 const makeBlankCell = (pos,field_length) => {
   return  { pos: pos, type: "fill", fill_length: field_length, attribute:0 };
 };

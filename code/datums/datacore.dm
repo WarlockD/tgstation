@@ -1,4 +1,5 @@
 //TODO: someone please get rid of this shit
+// Your  wish is my command
 /datum/datacore
 	var/list/medical = list()
 	var/medicalPrintCount = 0
@@ -11,6 +12,41 @@
 
 /datum/data
 	var/name = "data"
+
+/*
+	So quick primer on how a Unix 7 disk system works.
+	The first block of a disk has all the constants.
+	How many blocks exist?
+	How many inodes do we have?
+	How many inodes are in use?
+	How many blcoks are in use?
+	... etc
+	What is an inode?  Its a pointer to data.  It contains
+	the permission, what type of data it is, if its locked
+	and the block location as well as the link to the next
+	inode if the data needs to be more than one block.
+	This all might be wrong because its been a few years
+	since I messed with this
+
+	So thats just the terminology.  In game a inode is just
+	a list entry that has the file list index and how many
+	blocks it takes.  That file can be a file or a directory.
+	Why is it like this?  softlinks baby.  Without indirect
+	links, we cannot link a file to a different directory's.
+	also this way we can "delete" a file but it still exist
+	letting a hacker restore it.
+*/
+/datum/disk
+	var/block_size = 512 // mainly for show
+	var/inodes_max = 4096 // more or less the size of the drive
+	var/list/inodes
+	var/list/files
+	var/inodes_free = 4096
+
+/datum/file
+	var/datum/disk/disk // disk frefrech
+	var/name = "" // technicaly, files don't know their own name, but this is convenance
+	var/list/inodes = list() // list of inodes this "file" uses
 
 /datum/data/record
 	name = "record"
