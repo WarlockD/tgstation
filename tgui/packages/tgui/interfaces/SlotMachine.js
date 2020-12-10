@@ -211,7 +211,7 @@ const create_animation_name = (duration) => {
 };
 const create_slot = i => {
   return {
-    class: classes([symbols[i].sheet,symbols[i].sprite,"slot-mover"]),
+    class: classes([symbols[i].sheet,symbols[i].sprite],"slot-mover"),
     index: i,
     top: (i % 7) * 32 - 32, // raw starting position
     style: create_animation_name(900),
@@ -239,7 +239,8 @@ class Slot extends Component {
   tick() {
     // this is the new one
     const pos = (this.state.pos -1) < 0 ? symbols.length-1 : (this.state.pos -1);
-    let slots = this.state.slots.slice(-1); // last one falls off
+    let slots = this.state.slots;
+    slots.pop();
     slots.unshift(create_slot(pos));
     this.setState({ pos:pos, slots: slots});
     /*
@@ -252,7 +253,11 @@ class Slot extends Component {
     this.timer = setInterval(this.tick.bind(this), 1000);
    // logger.log("Do we have animate? " + this.slot_ref.current + " animate=" + this.slot_ref.current.hasOwnProperty('animate'));
   }
-
+/*
+ <div key={i} class="slot-container-item" ref={el.style}>
+                  <div key={i}  class={el.class}  width="32px" height="32px" />
+              </div>
+              */
   componentWillUnmount() {
     clearTimeout(this.timer);
   }
@@ -261,15 +266,19 @@ class Slot extends Component {
     const slot_length = this.state.slots.length;
     const slots = this.state.slots;
     return (
-      <div class="slot-container">
+      <Box width={32+"px"} height={(32*5)+"px"}>
+
+
+      <Flex direction="column" width="32px" height={(32*7)+"px"} overflow="hidden">
         {slots.map((el, i) => {
             return  (
-              <div key={i} class="slot-container-item" ref={el.style}>
-                  <div class={el.class}  width="32px" height="32px" />
-              </div>
+              <Flex.Item shrink={0} height="32px" width="32px">
+                 <div key={i}  class={el.class}  width="32px" height="32px" />
+              </Flex.Item>
             )
             })}
-    </div>
+      </Flex>
+      </Box>
     );
   }
 }
@@ -301,7 +310,7 @@ export class SlotMachine extends Component {
     this.setState({selected : nidx});
   }
   componentDidMount() {
-    this.timer = setInterval(this.tick.bind(this), 400);
+  //  this.timer = setInterval(this.tick.bind(this), 400);
    // logger.log("Do we have animate? " + this.slot_ref.current + " animate=" + this.slot_ref.current.hasOwnProperty('animate'));
   }
 
@@ -315,11 +324,13 @@ export class SlotMachine extends Component {
         width={320}
         height={320}>
         <Window.Content center>
-          <Slot />
-          <Slot />
-          <Slot />
-          <Slot />
-          <Slot />
+        <Flex height={160+"px"}>
+        <Flex.Item ><Slot /></Flex.Item>
+        <Flex.Item><Slot /></Flex.Item>
+        <Flex.Item><Slot /></Flex.Item>
+        <Flex.Item><Slot /></Flex.Item>
+        <Flex.Item><Slot /></Flex.Item>
+          </Flex>
         </Window.Content>
       </Window>
     );

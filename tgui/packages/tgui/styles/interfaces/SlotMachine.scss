@@ -103,6 +103,14 @@ $unit-of-speed: 100ms; // normal
 }
 
 
+.slot-container-item {
+  border: 1px solid red;
+  height: 32px;
+  max-height: 32px;
+  display: inline-block;
+  position: relative;
+  width: 32px;
+}
 
 .digit-container {
   padding: 16px 0;
