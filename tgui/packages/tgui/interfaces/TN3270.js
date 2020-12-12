@@ -107,10 +107,12 @@ const CELL_TURQUOISE  = (5 << 5);
 const CELL_YELLOW     = (6 << 5);
 const CELL_WHITE      = (7 << 5);
 const CELL_COLOR_MASK = (7 << 5);
-
+const CELL_UPDATE_ON_ENTER = (1<<9);
+const CELL_UPDATE_ON_LOST_FOCUS = (1<<10); // like on tab, we send an act
+const CELL_UPDATE_ALWAYS = (1<<11); // this cell is always sent on any act update
 
 const createStyleFromByte = (attribute, length, cursorAt, focused) => {
-  const style = { color: lu3270_color, 'background-color': lu3270_background , 'width': (magic.cxFactor*length) + 'px' , 'height': (magic.cyFactor) + 'px' };
+  const style = {'white-space': 'pre-wrap', color: lu3270_color, 'background-color': lu3270_background , 'width': (magic.cxFactor*length) + 'px' , 'height': (magic.cyFactor) + 'px' };
   if (cursorAt) {
     if (attribute & CELL_HIDDEN) {
       style['background-color']  = lu3270_color;
@@ -227,75 +229,7 @@ if (!Math.trunc) {
   };
 }
 
-const makeBlankCell = (pos,field_length) => {
-  return  { pos: pos, type: "fill", fill_length: field_length, attribute:0 };
-};
 
-const createScreen = ( data, cols, rows) => {
-  let last_pos = 0;
-  let pos = 0;
-  let fill_length = 0;
-  let ret = [];
-  let data_pos = 0;
-  let cells = [];
-  data.sort((l,r) => l.pos - r.pos); // make sure we are sorted
-  // no know, there is no easy way to just "add" x amount of objects at the end of an array
-  // without just recreating it.  silly really
-  const pushMany = (o, count=1) => {
-    for(let i=0;i < count; i++)
-      cells.push(o);
-  }
-  const pushCellCache = cell => {
-    switch(cell.type){
-      case "text":
-        ret.push({ pos: cell.pos, field_length:cell.text.length, cell: cell, style: createStyleFromByte(cell.attribute, cell.text.length, false, false), text:cell.text });
-        pushMany({ protect: true, cell: cell },cell.text.length);
-        return cell.text.length;
-      case "field":
-        ret.push({ pos: cell.pos, field_length:cell.field_length, cell: cell, style: createStyleFromByte(cell.attribute, cell.field_length, false, false),  text:" ".repeat(cell.fill_length) });
-        pushMany({ protect: false, cell: cell},cell.field_length);
-        return cell.field_length;
-      case "fill":
-        ret.push({ pos: cell.pos, field_length:cell.fill_length, cell: cell, style: createStyleFromByte(cell.attribute, cell.fill_length, false, false),  text:" ".repeat(cell.fill_length) });
-        pushMany({ protect: true, cell: cell },cell.fill_length);
-        return cell.fill_length;
-      default:
-        logger.log("pushCellchash error");
-        return 0;
-    }
-  };
-
-  for(let r=0; r < rows; r++) {
-    pos = r * cols; // force start of line
-    last_pos = pos
-    fill_length = 0;
-    let c = 0;
-    while(c < cols && data_pos < data.length) {
-      const cell = data[data_pos];
-      if(cell.pos === pos) {
-        if(fill_length > 0) {
-          pushCellCache(makeBlankCell(last_pos,fill_length));
-          fill_length = 0;
-        }
-        const field_length = pushCellCache(cell);
-        c+=field_length;
-        pos+=field_length;
-        last_pos = pos;
-        data_pos++;
-      } else {
-        c++;
-        pos++;
-        fill_length++;
-      }
-    }
-    if(c < cols) { // end of line
-      pushCellCache(makeBlankCell(pos,cols-c));
-    } else if(fill_length > 0) {
-      pushCellCache(makeBlankCell(last_pos,fill_length));
-    }
-  }
-  return { cells: cells, doms: ret };
-};
 
 const RealTerminal = (props,context) => {
   const {
@@ -311,28 +245,151 @@ const RealTerminal = (props,context) => {
               onblur={this.onLoseFocus.bind(this)}
               onfocus={this.onFocus.bind(this)}
               */
-  const field_col = 80;
-  const gotoXY = (x,y) => { return (y * numCols) + x; }
+
+const ESC = '\u001B';
+
+const makeBlankCell = (x,y, field_length) => {
+  return  { x:x, y:y,  type: "fill",
+    field_length: field_length,
+    style: createStyleFromByte(0, field_length, false, false),
+    attribute:0,
+    text:" ".repeat(field_length) };
+};
+  const parse_screen_code = commands => {
+
+    // () is must [] is optional
+    // attibute is a number of a bunch of bit flags, can be up to 16bit NOT hex
+    // ESC[attribute] (".*) = text at the current position.  We will ignore an ending " but its not necessary
+    // ESCG(y)[,x] // goto cursor
+    // ESCF(attribute),(field_name),(field_length)[,tab_pos] // its a field, going to be updated after ui_update as we use ui_static_update to make the screen
+    // ESCM(attribute),(menu_name)("+*) // menu field, by default on clickable
+    let x = 0;
+    let y = 0;
+    let rows = new Array(numRows);
+    for(let i=0;i < rows.length; i++) {
+      rows[i] = [];
+    }
+    let field_length = 0;
+    let last_field_attribute = 0;
+    let last_menu_attribute = 0;
+    let value = 0;
+    let pos = 0;
+    let last_tab = 0;
+    let last_text_attribute = 0;
+    const move_cursor = l => {
+      x+=l;
+      while(y < numCols && x > numRows) {
+        y++;
+        x-=numRows;
+      }
+    }
+
+    for(let i = 0; i < commands.length; i++) {
+      const current = commands[i];
+      const cmd = current[0];
+      let args = current.slice(1);
+      let parsed_cmd = null;
+      field_length = 0;
+      switch(cmd) {
+        case "goto":
+          if(!args || args.length!=2)
+            logger.log("screen("+ i +"): goto has no args");
+          else if((args[0] < 0 ||  args[0] > numCols) || (args[1] < 0 || args[1] > numRows))
+           logger.log("screen("+ i +"): goto args out of range");
+          else {
+            x = args[0];
+            y = args[1];
+          }
+          break;
+        case "text":
+          if(!args)
+            break; // no text
+          else if(args.length == 2) {
+            // we have an attribute number
+            last_text_attribute = args[0];
+            args.shift();
+          }
+          field_length = args[0].length
+          parsed_cmd = { type: "text", x:x, y:y , text: args[0], attribute: last_text_attribute };
+          break;
+        case "field":
+          if(!args || args.length < 2)
+            logger.log("screen("+ i +"): field need at least name and its length");
+          else {
+            if(Number.isInteger(args[0])) {
+              last_field_attribute = args[0];
+              args.shift();
+            }
+            field_length = args[1];
+            parsed_cmd = { type: "field", x:x, y:y , name: args[0], attribute: last_field_attribute, tab: last_tab++ };
+          }
+          break; // no text
+        case "menu": // menu button
+        if(!args || args.length < 2)
+          logger.log("screen("+ i +"): field need at least name and its length");
+        else {
+          if(Number.isInteger(args[0])) {
+            last_menu_attribute = args[0];
+            args.shift();
+          }
+          field_length = args[1];
+          parsed_cmd = { type: "menu", x:x, y:y , name: args[0], attribute: last_menu_attribute, tab: last_tab++ };
+        }
+        break; // no text
+        default:
+          logger.log("screen("+ i +"): unkonwn command");
+        break;
+      }
+      if(field_length>0) {
+        parsed_cmd.field_length = field_length;
+        logger.log("type:" + parsed_cmd.type + " pos:" + parsed_cmd.pos);
+        parsed_cmd.style = createStyleFromByte(parsed_cmd.attribute, field_length, false, false),
+        rows[y].push(parsed_cmd);
+        move_cursor(field_length);
+      }
+    }
+    for(let i=0; y < rows.length; y++) {
+        let row = rows[y];
+        if(row.length == 0)
+          row.push(makeBlankCell(0,y, numCols));
+        else {
+          let new_row = [];
+          let x = 0;
+          while(row.length > 0) {
+            const cell = row[0];
+            row.shift();
+            if(x != cell.x) {
+              new_row.push(makeBlankCell(x,y, cell.x-x));
+              x = cell.x;
+            }
+            new_row.push(cell);
+            x += cell.field_length;
+            if(x > numCols) {
+              logger.log("length of line " + y + " to long, trunked");
+              break;
+            }
+          }
+          if(x < numCols) {
+            new_row.push(makeBlankCell(x,y, numCols-x));
+          }
+          rows[y] = new_row;
+        }
+    }
+    return rows;
+  }
   const test_data = [
-    { type: "text", pos: gotoXY(10,5), text: "Acct:", attribute: CELL_GREEN },
-    { type: "text", pos: gotoXY(10,6), text: "Name:", attribute: CELL_GREEN },
-    { type: "text", pos: gotoXY(10,7), text: "Age:", attribute: CELL_GREEN },
-    { type: "text", pos: gotoXY(10,8), text: "Race:", attribute: CELL_GREEN },
-    { type: "text", pos: gotoXY(10,9), text: "Age:", attribute: CELL_GREEN },
-    { type: "text", pos: gotoXY(10,10), text: "Medical", attribute: CELL_BLUE | CELL_HIGHLIGHT },
-    { type: "text", pos: gotoXY(10,11), text: "BloodType:", attribute: CELL_BLUE },
-    { type: "text", pos: gotoXY(10,12), text: "Status:", attribute: CELL_BLUE },
-    { type: "field", pos: gotoXY(20,5), name: "ssn", attribute: CELL_YELLOW , field_length: 12, text : "1232311"},
-    { type: "field", pos: gotoXY(20,6), name: "name", attribute: CELL_YELLOW , field_length: 30, text :"Bob Marly" },
-    { type: "field", pos: gotoXY(20,7), name: "age", attribute: CELL_YELLOW , field_length: 10 , text :"45" },
-    { type: "field", pos: gotoXY(20,8), name: "race", attribute: CELL_YELLOW , field_length: 10 , text :"LIZARD" },
-    { type: "field", pos: gotoXY(20,11), name: "blood_type", attribute: CELL_YELLOW , field_length: 10 , text :"L" },
-    { type: "field", pos: gotoXY(10,12), name: "status", attribute: CELL_YELLOW,  field_length: 10 , text :"Dead" },
+    [ "goto", 10, 10 ],
+    [ "text", CELL_YELLOW, "Name:      "],
+    [ "text", "[" ],
+    [ "field", "field_name", 20 ],
+    [ "text", "]" ],
+    [ "goto", 10, 11 ],
+    [ "text", CELL_YELLOW, "Race:      "],
+    [ "text", "[" ],
+    [ "field", "race_name", 20 ],
+    [ "text", "]" ],
   ];
-
-
-
-
+  const test_screen = parse_screen_code(test_data);
 /*
 
   for(var/datum/data/record/R in sortRecord(GLOB.data_core.general, sortBy, order))
@@ -360,7 +417,6 @@ const RealTerminal = (props,context) => {
   dat += text("<td>[]</td>", R.fields["p_stat"])
   dat += text("<td>[]</td></tr>", R.fields["m_stat"])
 */
-  const screen = createScreen(test_data, numCols, numRows );
   const [
     status,
     setStatus,
@@ -396,30 +452,32 @@ const RealTerminal = (props,context) => {
     return false;
   }
 
-  const returnFiled = (info) => { // {fields[name]}
+  const returnFiled = cell => { // {fields[name]}
   //const field_size = * magic.cxFactor + "px";
-    return info.cell.type == "field" ?
-      (<input  class="lu3270_input" size={info.field_length} maxlength={info.field_length} style={{ 'border-bottom': '1px solid ' + info.style.color}} value={info.cell.text}/>) : (<span style={info.style}>{info.text}</span>);
+    return cell.type == "field" ?
+      (<input  class="lu3270_input" size={cell.field_length} maxlength={cell.field_length} length={cell.field_length}  style={{ 'border-bottom': '1px solid ' + cell.style.color}} />) : (<span style={cell.style}>{cell.text}</span>);
   };
 
 
   return (
     <Box fillPositionedParent >
       <Flex direction="column" height="100%" className="lu360_root" onClick={e=> onMouseClick(e)}>
-            <Flex.Item grow={0}  >
+            <Flex.Item grow={1} shrink={1}>
               <div class="lu3270" style={{ width:((numCols+1)*Constants.magic.cxFactor) + 'px', height:((numRows+1)*Constants.magic.cyFactor) + 'px'}}>
-                  <div class="cells">
-                  {
-                    screen.doms.map((info, i) =>
-                    (<div key={"cell_" + i} class="cell" style={info.style}>
-                        {returnFiled(info)}
-                    </div>))
-                  }
-                  </div>
+                  <Flex>
+                    {
+                    test_screen.map((row, y) =>
+                    (<Flex.Item grow={1} key={"row_" + y}>
+                      {
+                      row.map((cell,x) =>
+                      (<Box inline={1} key={"cell("+ x + "," + y + ")"} width={cell.field_length + "rem"}>
+                          {returnFiled(cell)}
+                      </Box>))
+                    }
+                    </Flex.Item>))
+                    }
+                  </Flex>
                 </div>
-            </Flex.Item>
-            <Flex.Item shrink={1}>
-              <TN3270_Status cells={screen.cells} perfs={UpdateTerminalPerfs(1)} />
             </Flex.Item>
           </Flex>
         </Box>
