@@ -31,21 +31,47 @@
 		ui.open()
 
 
+#define CELL_NORMAL       (0)
+#define  CELL_BLINK       (1 << 0)
+#define  CELL_HIDDEN      (1 << 1)
+#define  CELL_HIGHLIGHT   (1 << 2)
+#define  CELL_UNDERLINE   (1 << 3)
+#define  CELL_REVERSE     (1 << 4)
+#define  CELL_NEUTRAL     (0 << 5)
+#define  CELL_BLUE        (1 << 5)
+#define  CELL_RED         (2 << 5)
+#define  CELL_PINK        (3 << 5)
+#define  CELL_GREEN       (4 << 5)
+#define  CELL_TURQUOISE   (5 << 5)
+#define  CELL_YELLOW      (6 << 5)
+#define  CELL_WHITE       (7 << 5)
+#define  CELL_COLOR_MASK  (7 << 5)
+#define  CELL_UPDATE_ON_ENTER  (1<<9)
+#define  CELL_UPDATE_ON_LOST_FOCUS  (1<<10) // like on tab, we send an act
+#define  CELL_UPDATE_ALWAYS (1<<11) // this cell is always sent on any act update
 /obj/machinery/computer/med_data/ui_static_data(mob/user)
 	var/data = list()
-	data["screen"] = list(
-		list(5,10,0,"text","This is a test"),
-		list(6,10,0,"text","\["),
-		list(6,11,0,"field", "name", 20, ""),
-		list(6,22,0,"text", "\]")
-	)
-	data["menu_mode"] = "login"
 	return data
 
 /obj/machinery/computer/med_data/ui_data(mob/user)
 	var/data = list()
-
+	var/static/time_count = 1;
+	data["screen"] = list(
+		list( "goto", 10, 10 ),
+		list( "text", CELL_YELLOW, "Name:      "),
+		list( "text", "\[" ),
+		list( "field", "field_name", 20 ),
+		list("text", "\]" ),
+		list("goto", 10, 11 ),
+		list( "text", CELL_YELLOW, "Race:      "),
+		list("text", "\[" ),
+		list( "field", "race_name", 20 ),
+		list( "text", "\]" ),
+	)
+	data["menu_mode"] = "login"
+	data["update_time"] = time_count++;
 	return data
+
 /obj/machinery/computer/med_data/ui_act(action, params)
 	. = ..()
 	if(.)

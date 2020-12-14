@@ -50,7 +50,7 @@ $el370-magic-paddingTop: 8;
 .lu360_root {
   background-color:$lu3270-background-color;
 }
-.lu3270 {
+.lu3270-test {
   color: $lu3270-color;
   background-color:$lu3270-background-color;
   display: block;
@@ -93,13 +93,133 @@ $el370-magic-paddingTop: 8;
   display: inline-block;
   font-family: monospace;
 }
-@keyframes blink {
+@keyframes blink_term {
   to {
     visibility: hidden;
   }
 }
-
-
+.lu3270 {
+  color: $lu3270-color;
+  background-color:$lu3270-background-color;
+  display: block;
+  font-family: '3270 Font';
+  font-size: 18px;
+  overflow:none;
+  padding: none;
+  margin: none;
+.grid_row {
+  font-family: monospace;
+ // font-family: '3270 Font';
+  font-size: 18px;
+  border: 0;
+  padding: 0;
+  overflow:none;
+  display: flex;
+  justify-content:flex-start;
+  .cell {
+      flex: 1 1 100%;
+      height: 1rem;
+      font-family: inherit;
+      font-size: inherit;
+      color: $lu3270-color;
+      background-color:$lu3270-background-color;
+      .fg-red {
+        color: $mat_red_400;
+      }
+      .fg-red-highlight {
+        color: $mat_red_500;
+        font-weight: 900;
+      }
+      .fg-blue {
+        color: $mat_blue_300;
+      }
+      .fg-blue-highlight {
+        color: $mat_blue_400;
+        font-weight: 900;
+      }
+      .fg-pink {
+        color: $mat_pink_300;
+      }
+      .fg-pink-highlight {
+        color: $mat_pink_400;
+        font-weight: 900;
+      }
+      .fg-green {
+        color: $mat_green_300;
+      }
+      .fg-green-highlight {
+        color: $mat_green_400;
+        font-weight: 900;
+      }
+      .fg-turquoise {
+        color: $mat_cyan_300;
+      }
+      .fg-turquoise-highlight {
+        color: $mat_cyan_400;
+        font-weight: 900;
+      }
+      .fg-yellow {
+        color: $mat-yellow-300;
+      }
+      .fg-yellow-highlight {
+        color: $mat_yellow_400;
+        font-weight: 900;
+      }
+      .fg-white {
+        color: 'white';
+      }
+      .fg-white-highlight {
+        color: 'white';
+        font-weight: 900;
+      }
+      .fg-default {
+        color: 'white';
+      }
+      .fg-default-highlight {
+        color: var(--lu3270_highlight_color);
+        font-weight: 900;
+      }
+      .underline {
+        text-decoration: underline;
+      }
+      .blink {
+        animation: blink_term 1s linear infinite;
+      }
+      .field {
+        border: 0;
+        padding: 0;
+        margin:0;
+        &::-ms-clear {  display: none; width : 0; height: 0; }
+        &::-ms-reveal {  display: none; width : 0; height: 0; }
+        background-color:transparent;
+        color:inherit;
+        height:100%;
+        width:100%;
+        font-size:inherit;
+        border-bottom : 1px solid red;
+      }
+      input {
+        border: 0;
+        padding: 0;
+        margin:0;
+        overflow:none;
+        &::-ms-clear {  display: none; width : 0; height: 0; }
+        &::-ms-reveal {  display: none; width : 0; height: 0; }
+        background-color:inherit;
+        color:inherit;
+        height:100%;
+        width:100%;
+        font-size:inherit;
+        border-bottom : 1px solid red;
+      }
+    .blank_line {
+      flex: 1 1 100%;
+      width: 100%;
+      height: 20px;
+    }
+  }
+}
+}
 .lu3270_input {
   color: inherit;
   background-color:transparent;
@@ -110,10 +230,8 @@ $el370-magic-paddingTop: 8;
   margin: 0px;
   padding: 0px;
   overflow:none;
-  display: absolute;
-  top:0;
-  left:0;
-  width:100%  ;
+  display: inline-block;
+
   word-break: break-all;
   visibility: visible;
 
