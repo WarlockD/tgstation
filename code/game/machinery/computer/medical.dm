@@ -17,6 +17,20 @@
 	//Sorting Variables
 	var/sortBy = "name"
 	var/order = 1 // -1 = Descending - 1 = Ascending
+	var/list/fields = list()
+	var/force_update_fields = FALSE // this needs to be a signal from record
+
+/obj/machinery/computer/med_data/Initialize(mapload)
+	. = ..()
+	fields["id"]			= 3432-12
+	fields["name"]		= "Hank Chowder"
+	fields["rank"]		= "Lawman"
+	fields["age"]			= 35
+	fields["species"]	= "MOTHMAN"
+	fields["fingerprint"]	= md5("JUSTAHACKMAN")
+	fields["p_stat"]		= "Active"
+	fields["m_stat"]		= "Stable"
+	fields["gender"]			= "Male"
 
 
 /obj/machinery/computer/med_data/syndie
@@ -25,6 +39,7 @@
 
 
 /obj/machinery/computer/med_data/ui_interact(mob/user, datum/tgui/ui)
+	force_update_fields = TRUE // force a data update
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
 		ui = new(user, src, "TN3270", name)
@@ -49,33 +64,44 @@
 #define  CELL_UPDATE_ON_ENTER  (1<<9)
 #define  CELL_UPDATE_ON_LOST_FOCUS  (1<<10) // like on tab, we send an act
 #define  CELL_UPDATE_ALWAYS (1<<11) // this cell is always sent on any act update
+#define  CELL_READONLY 		(1<<12) // this cell is always sent on any act update
+
 /obj/machinery/computer/med_data/ui_static_data(mob/user)
-	var/data = list()
+	var/list/data = list()
+	data["screen"] = "medical"
+	data["menu_mode"] = "login"
+	if(force_update_fields)
+		var/list/F = list();
+		for(var/name in fields)
+			F[name] = fields[name]
+		data["fields"] = F
+		force_update_fields = FALSE
+	var/static/time_count = 1;
+	data["update_time"] = time_count++;
 	return data
 
 /obj/machinery/computer/med_data/ui_data(mob/user)
 	var/data = list()
-	var/static/time_count = 1;
-	data["screen"] = list(
-		list( "goto", 10, 10 ),
-		list( "text", CELL_YELLOW, "Name:      "),
-		list( "text", "\[" ),
-		list( "field", "field_name", 20 ),
-		list("text", "\]" ),
-		list("goto", 10, 11 ),
-		list( "text", CELL_YELLOW, "Race:      "),
-		list("text", "\[" ),
-		list( "field", "race_name", 20 ),
-		list( "text", "\]" ),
-	)
-	data["menu_mode"] = "login"
-	data["update_time"] = time_count++;
+
 	return data
+
 
 /obj/machinery/computer/med_data/ui_act(action, params)
 	. = ..()
 	if(.)
 		return
+	switch(action)
+		if("update")
+			var/field = params["field_name"]
+			var/value = params["field_value"]
+			fields[field] = value;
+			return TRUE;
+		if("update_all")
+			var/list/changed_fields = params["fields"]
+			for(var/name in changed_fields)
+				fields[name] = changed_fields[name]
+			force_update_fields = FALSE
+			return TRUE;
 
 	//switch(action)
 
