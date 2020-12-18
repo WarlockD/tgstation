@@ -6,6 +6,8 @@ import { Flex, Section, Tabs, Box, Button, Fragment, ProgressBar, NumberInput, I
 import { Window } from '../layouts';
 import { createSearch } from 'common/string';
 import { createLogger } from "../logging";
+import { storage } from 'common/storage';
+
 import { clamp, inRange } from 'common/math';
 
 const logger = createLogger("Prolathe");
@@ -33,7 +35,22 @@ const COLOR_KEYS = {
   [COLOR_AVERAGE]: "average",
   [COLOR_BAD]: "bad",
 };
+/* Ok so, we only use designs ONCE since they are compiled into
+ * the game.  So to prevent every protolathe reloading the entire
+ * list, we check if its in the local windows store the first time
+ * a lathe is opened and never need to be updated for that round
+ * again!
+ */
 
+ const retreaveDesigns = context => {
+  if (!window.localStorage) {
+    return (
+      <NoticeBox>
+        Local storage is not available.
+      </NoticeBox>
+  }
+  
+ }
 const materialArrayToObj = materials => {
   let materialObj = {};
 

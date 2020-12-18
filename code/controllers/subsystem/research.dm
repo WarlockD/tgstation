@@ -171,7 +171,8 @@ SUBSYSTEM_DEF(research)
 			"ref" = REFT(ref),
 			"mount" = M.amount,
 		)
-/* Creates a list based off a design to be used for any of the lathes tgui interfaces
+/*
+ * Creates a list based off a design to be used for any of the lathes tgui interfaces
  * Still on the fence on doing a raw data dump of everything but it helps server
  * load when it comes to rebuilding this list every time someone spams the RD button.
 */
@@ -217,10 +218,12 @@ SUBSYSTEM_DEF(research)
 		for(var/datum/reagent/R in D.reagents_list)
 			reagents_cost[R.name] = D.reagents_list[R]
 		part["reagent_cost"] = reagents_cost
-	// Lets stick them into catagories
+	// Lets stick them into catagories so the protolathe doesn't have to work so hard
 	var/list/L = techweb_designs_by_category
 	for(var/category_name in part["category"])
 		L[category_name] += list(part)
+	return part
+
 
 
 /datum/controller/subsystem/research/proc/initialize_all_techweb_designs(clearall = FALSE)
@@ -228,6 +231,7 @@ SUBSYSTEM_DEF(research)
 		QDEL_LIST(techweb_designs)
 		techweb_designs_by_category.Cut() // Just contains strings and numbers and other lists
 	var/list/returned = list()
+	var/list/json_cache = list()
 	for(var/path in subtypesof(/datum/design))
 		var/datum/design/DN = path
 		if(isnull(initial(DN.id)))
@@ -242,10 +246,14 @@ SUBSYSTEM_DEF(research)
 			continue
 		DN.InitializeMaterials() //Initialize the materials in the design
 		returned[initial(DN.id)] = DN
-		_create_protolathe_record(DN)
-
+		json_cache[initial(DN.id)] = _create_protolathe_record(DN)
 	techweb_designs = returned
 	verify_techweb_designs()
+	// Ok, now lets make a file so /datum/assets can send to the client
+
+	var/json_file = file("protolathe_designs.json")
+	fdel(json_file)
+	WRITE_FILE(json_file, json_encode(json_cache))
 
 
 /datum/controller/subsystem/research/proc/verify_techweb_nodes()

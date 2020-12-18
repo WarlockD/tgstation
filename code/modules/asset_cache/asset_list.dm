@@ -25,6 +25,25 @@ GLOBAL_LIST_EMPTY(asset_datums)
 /datum/asset/proc/send(client)
 	return
 
+/// If your trying to send a list as a jason, once to your window/windows
+/datum/asset/json
+	_abstract = /datum/asset/json
+	/// Raw list associated with this datum
+	var/list/data = list()
+	/// name of the js object that will be created on the other side
+	var/name = null
+
+/datum/asset/json/register()
+	for(var/asset_name in assets)
+		var/datum/asset_cache_item/ACI = SSassets.transport.register_asset(asset_name, assets[asset_name])
+		if (!ACI)
+			log_asset("ERROR: Invalid asset: [type]:[asset_name]:[ACI]")
+			continue
+		if (legacy)
+			ACI.legacy = legacy
+		if (keep_local_name)
+			ACI.keep_local_name = keep_local_name
+		assets[asset_name] = ACI
 
 /// If you don't need anything complicated.
 /datum/asset/simple
