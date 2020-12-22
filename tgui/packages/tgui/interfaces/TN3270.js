@@ -251,32 +251,6 @@ const createStyleFromByte = (attribute, x, y, length,  text) => {
 };
 
 
-class Cell {
-  constructor(code, attribute) {
-    this.code = code[0];      // first letter T/F  text or field
-    this.value = '\u00a0';
-    this.attribute = 0;
-    this.style = { flex: 'none', color: lu3270_color, backgroundColor: lu3270_background};
-    this.modified = false;
-    this.protect = false;
-    this.numeric = false;
-  }
-  set_value(value) {
-      if(value == " ")
-        value = '\u00a0';
-      if(this.value != value) {
-        this.value = value || '\u00a0';
-      }
-  }
-  set_attribute(attribute) {
-    if(this.attribute != attribute) {
-      this.attribute = attribute;
-    }
-  }
-};
-
-
-
 
 const Constants = {
 

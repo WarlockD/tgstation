@@ -1,68 +1,366 @@
 //TODO: someone please get rid of this shit
 // Your  wish is my command
+#define DATACORE_FILENAME 'datacore.db'
+
 /datum/datacore
-	var/list/medical = list()
-	var/medicalPrintCount = 0
-	var/list/general = list()
-	var/list/security = list()
-	var/securityPrintCount = 0
-	var/securityCrimeCounter = 0
-	///This list tracks characters spawned in the world and cannot be modified in-game. Currently referenced by respawn_character().
-	var/list/locked = list()
+	var/locked = FALSE // used to stop race conditions?
+	var/list/record_log = list()
 
-/datum/data
-	var/name = "data"
+/datum/datacore/proc/CreateRecord(mob/user, record_name, list/row)
+/datum/datacore/proc/UpdateRecord(mob/user, record_name, rec_id, list/row)
+/datum/datacore/proc/DeleteRecord(mob/user, record_name, rec_id, mob/user)
+/datum/datacore/proc/FindRecord(mob/user, record_name, find_list_or_id)
 
-/*
-	So quick primer on how a Unix 7 disk system works.
-	The first block of a disk has all the constants.
-	How many blocks exist?
-	How many inodes do we have?
-	How many inodes are in use?
-	How many blcoks are in use?
-	... etc
-	What is an inode?  Its a pointer to data.  It contains
-	the permission, what type of data it is, if its locked
-	and the block location as well as the link to the next
-	inode if the data needs to be more than one block.
-	This all might be wrong because its been a few years
-	since I messed with this
 
-	So thats just the terminology.  In game a inode is just
-	a list entry that has the file list index and how many
-	blocks it takes.  That file can be a file or a directory.
-	Why is it like this?  softlinks baby.  Without indirect
-	links, we cannot link a file to a different directory's.
-	also this way we can "delete" a file but it still exist
-	letting a hacker restore it.
-*/
-/datum/disk
-	var/block_size = 512 // mainly for show
-	var/inodes_max = 4096 // more or less the size of the drive
-	var/list/inodes
-	var/list/files
-	var/inodes_free = 4096
+/datum/datacore/table
+	var/list/VDB = null // virtual DB, in case we don't want to use DB
+	var/list/record_cache = null
 
-/datum/file
-	var/datum/disk/disk // disk frefrech
-	var/name = "" // technicaly, files don't know their own name, but this is convenance
-	var/list/inodes = list() // list of inodes this "file" uses
+/datum/datacore/table/New()
+	record_cache = list()
+	VDB = list()
+	var/list/L
+	for(var/datum/record/R in typesof(datum/record/R))
+		var/table_name = initial(R.table_name)
+		var/auto_increment = initial(R.auto_increment)
+		record_cache[table_name] = R
+		L = list()
+		VDB[table_name] = L
+		if(isnum(auto_increment))
+			L["@auto_increment"] = auto_increment // special var to keep track of the number
+		VDB[initial(R.table_name)] = L
 
-/datum/data/record
-	name = "record"
-	var/list/fields = list()
 
-/datum/data/record/Destroy()
-	if(src in GLOB.data_core.medical)
-		GLOB.data_core.medical -= src
-	if(src in GLOB.data_core.security)
-		GLOB.data_core.security -= src
-	if(src in GLOB.data_core.general)
-		GLOB.data_core.general -= src
-	if(src in GLOB.data_core.locked)
-		GLOB.data_core.locked -= src
-	. = ..()
+/datum/datacore/table/CreateRecord(mob/user, record_name, list/row_data)
+	var/datum/record/R = record_cache[record_name]
+	// we don't check if the lists exists, it was already checked
+	var/primary_key = initial(R.primary_key)
+	var/table_name = initial(R.table_name)
+	var/list/fields = initial(R.fields)
+	var/auto_increment = initial(R.auto_increment)
 
+	var/list/table = VDB[table_name]
+	var/list/nrow = list() // clean the row so it only contains fields we want
+	for(var/field_name in fields)
+		var/value = row_data[field_name]
+		nrow[field_name] = value
+	if(primary_key)
+		if(auto_increment)
+			var/num = table["@auto_increment"]++
+			nrow[primary_key] = num
+			primary_key = "[num]" // I hate how lists work in byond
+		table[primary_key] = nrow
+	else
+		table += list(nrow)
+	if(user)
+		record_log += list(list("user" = user.name, "record" = R, "action" = "insert", "data" = row_data))
+	return TRUE
+
+// only works if we have a primary_key
+/datum/datacore/table/UpdateRecord(mob/user, record_name, rec_id, list/row_data)
+	var/datum/record/R = record_cache[record_name]
+	var/primary_key = initial(R.primary_key)
+	if(!primary_key)
+		return FALSE // no update
+	var/table_name = initial(R.table_name)
+	var/list/fields = initial(R.fields)
+
+	// we don't check if the lists exists, it was already checked
+	var/list/table = VDB[table_name]
+	if(isnum(rec_id))
+		rec_id = "[rec_id]"
+	var/list/old_row = table[rec_id]
+	if(!old_row)
+		return FALSE // row does not exist, never created
+	for(var/field_name in row_data)
+		if(!fields[field_name] )
+			continue // if its a field not in the record skip
+		var/value = row_data[field_name]
+		old_row[field_name] = value
+	if(user)
+		record_log += list(list("user" = user.name, "record" = R, "rec_id" =rec_id,  "action" = "update", "data" = row_data))
+	return old_row // returning this might be a bad idea
+
+/datum/datacore/table/DeleteRecord(mob/user,record_name, rec_id)
+	var/datum/record/R = record_cache[record_name]
+	var/primary_key = initial(R.primary_key)
+	if(!primary_key)
+		return null // no delete
+	var/table_name = initial(R.table_name)
+	var/list/fields = initial(R.fields)
+
+		// we don't check if the lists exists, it was already checked
+	var/list/table = VDB[table_name]
+	if(isnum(rec_id))
+		rec_id = "[rec_id]"
+	var/list/old_row = table[rec_id] // clean the row so it only contains fields we want
+	if(old_row) // row does not exist, so just return true?
+		table[rec_id] = null
+		table.Remove(rec_id) // really make sure its gone
+	if(user)
+		record_log += list(list("user" = user.name, "record" = R, "rec_id" =rec_id,  "action" = "delete"))
+	return old_row
+
+/datum/datacore/table/FindRecord(mob/user, record_name, find_list_or_id=null)
+	var/datum/record/R = record_cache[record_name]
+	var/primary_key = initial(R.primary_key)
+	var/table_name = initial(R.table_name)
+	var/list/table = VDB[table_name]
+	if(isnull(find_list_or_id))
+		return table // just return it all
+	else if(primary_key)
+		if(istext(find_list_or_id))
+			return table[find_list_or_id]
+		else if(isnum(find_list_or_id))
+			return table["[find_list_or_id]"]
+		else if(islist(find_list_or_id) && find_list_or_id[primary_key])
+			var/list/row = FindRecord(user,R, primary_key)  // recursive call vs full binary search
+			if(row[primary_key] == find_list_or_id[primary_key])
+				return row
+	else if(islist(find_list_or_id)) 	// if its not a list, then..what are you doing?
+		// this is an assocated list where field=value
+		var/list/rows = list()
+		var/list/entry
+		for(var/i in 1 to table.len)
+			entry = table[i]
+			for(var/field_name in find_list_or_id) // have to search them all...linearly
+				var/field_value = find_list_or_id[field_name]
+				if(entry[field_name] != field_value)
+					entry = null
+					break
+			if(!entry)
+				continue
+			rows += list(entry)
+		if(rows.len >0)
+			return rows
+	return null // return false
+
+
+#if 0
+// lets not deal with sql quite yet ugg
+/datum/datacore/sql
+	var/datacore_filename = null
+	var/database/DB = null
+	var/list/query_cache = list()
+
+
+/datum/datacore/sql/New()
+	datacore_filename = "datacore_[GLOB.round_id].db"
+	DB = database/new(datacore_filename)
+
+/datum/datacore/proc/_BuildQueryCache(datum/record/R)
+	var/list/rec_cache = list()
+	var/list/buf1 = list()
+	var/list/buf2 = list()
+	var/comma = FALSE
+	// Insert string cache	var/table_name = initial(R.table_name)
+	var/table_name = initial(R.table_name)
+	var/list/fields = initial(R.fields)
+	buf1 += "INSERT INTO"
+	buf1 += " [table_name] ("//   [GLOB.round_id])
+	for(var/field_name in fields)
+		var/value = row_data[field_name]
+		if(comma)
+			buf1 += ",[field_name]"
+			buf2 += ",?"
+		else
+			buf1 += "[field_name]"
+			buf2 += "?"
+		comma = TRUE
+	buf1 += ") VALUES ("
+	buf1 += buf2.Join()
+	buf1 += ")"
+	rec_cache["INSERT"] = buf1.Join() // Insert into record
+
+
+/datum/datacore/proc/CheckRecord(datum/record/R)
+	 new("SELECT name FROM sqlite_master WHERE type='table' AND name=?", initial(R.table_name)) // SELECT quest,complete FROM quests WHERE name=?", usr.key)
+	if(!q.Execute(DB)) // the master table dosn't exist, so we need to make one
+		var/list/buf = list()
+		buf += "CREATE TABLE "
+		buf += table_name
+		buf += "(" // need this with different rounds we get
+		var/list/fields = initial(R.fields)
+		for(var/field_name in R.fields)
+			var/field_type = fields[field_name]
+			buf += ", [field_name] [field_type]"
+		buf += ", PRIMARY KEY(RoundId"
+		if(initial(R.primary_key))
+			buf += ",[primary_key]"
+		buf += "))"
+		q = new(buf.Join())
+#ifdef TESTING
+		if(!q.Execute(DB))
+			testing("table [table_name] could not be created? [q.ErrorMsg()]")
+#else
+		q.Execute(DB)
+#endif
+
+
+/datum/datacore/sql/InsertRecord(datum/record/R, list/row)
+	var/q_text = list_query_cache[ispath(R) ? R : R.type]
+	if(!q)
+		_BuildQueryCache(R)
+
+
+	var/list/qbuf = list()
+	var/list/vbuf = list()
+	qbuf += "INSERT INTO [table_name] (RoundID"//   [GLOB.round_id])
+	for(var/field_name in fields)
+		var/value = row_data[field_name]
+		qbuf += ",[field_name]"
+		vbuf += ",[value]"
+	qbuf += ") VALUES ([GLOB.round_id]"
+	qbuf += vbuf.Join()
+	qbuf += ")"
+	var/database/query/q = new(qbuf.Join())
+#ifdef TESTING
+	if(!q.Execute(DB))
+			testing("row to table [table_name] could not be inserted")
+#else
+	q.Execute(DB)
+#endif
+
+
+// only works if we have a primary_key
+/datum/datacore/sql/UpdateRecord(datum/record/R, list/row)
+	var/primary_key = initial(R.primary_key)
+	if(!primary_key)
+		return null // no update
+	var/table_name = initial(R.table_name)
+	var/list/fields = initial(R.fields)
+
+	var/list/qbuf = list()
+	var/list/vbuf = list()
+	qbuf += "UPDATE SET [table_name] (RoundID"//   [GLOB.round_id])
+	for(var/field_name in fields)
+		var/value = row_data[field_name]
+		qbuf += ",[field_name]"
+		vbuf += ",[value]"
+	qbuf += ") VALUES ([GLOB.round_id]"
+	qbuf += vbuf.Join()
+	qbuf += ")"
+	var/database/query/q = new(qbuf.Join())
+#ifdef TESTING
+	if(!q.Execute(DB))
+			testing("row to table [table_name] could not be inserted")
+#else
+	q.Execute(DB)
+#endif
+
+
+//	DB.Add("SELECT name FROM sqlite_master WHERE type='table' AND name='{ss13_master}')
+#endif
+
+/datum/record
+	// name of the table
+	var/table_name = null
+	// if we have a primary key use this
+	var/primary_key = null
+	// primary key is an auto increment
+	var/auto_increment = null
+	// fields are fields and types in an assocated array
+	// byond sqlite only has TEXT, INTEGER, FLOAT, BLOB (icons)
+	var/list/fields = null
+
+#define RECORD_TYPE_TEXT "TEXT"
+#define RECORD_TYPE_BOOL "INTEGER"
+#define RECORD_TYPE_FLOAT "FLOAT"
+#define RECORD_TYPE_INT "INTEGER"
+#define RECORD_TYPE_BLOB "BLOB"
+#define RECORD_TYPE_ICON "BLOB"
+
+/datum/record/crime
+	table_name = "crime"
+	primary_key = "crime_id"
+	auto_increment = TRUE
+	fields = list(
+		"name" = RECORD_TYPE_TEXT,
+		"details" = RECORD_TYPE_TEXT,
+		"author" = RECORD_TYPE_TEXT,
+		"time" = RECORD_TYPE_TEXT,
+		"fine" = RECORD_TYPE_FLOAT,
+		"paid" = RECORD_TYPE_INT.
+		"criminal_id" = RECORD_TYPE_INT,
+		"crime_id" = RECORD_TYPE_INT,
+	)
+
+// general record
+/datum/record/general
+	table_name = "general"
+	primary_key = "id"
+	auto_increment = 1001
+	fields = list(
+		"id" = RECORD_TYPE_INT,
+		"name" = RECORD_TYPE_TEXT,
+		"rank" = RECORD_TYPE_TEXT,
+		"age" = RECORD_TYPE_INT,
+		"species" = RECORD_TYPE_TEXT,
+		"p_stat" = RECORD_TYPE_TEXT.
+		"m_stat" = RECORD_TYPE_TEXT,
+		"gender" = RECORD_TYPE_TEXT,
+		"photo_front" = RECORDS_TYPE_ICON,
+		"photo_side" = RECORDS_TYPE_ICON,
+	)
+
+//Medical Record
+/datum/record/medical
+	table_name = "medical"
+	primary_key = "id"
+	fields = list(
+		"id" = RECORD_TYPE_INT,
+		"blood_type" = RECORD_TYPE_TEXT,
+		"b_dna" = RECORD_TYPE_TEXT,
+		"mi_dis" = RECORD_TYPE_TEXT,
+		"mi_dis_d" = RECORD_TYPE_TEXT,
+		"ma_dis_d" = RECORD_TYPE_TEXT.
+		"ma_dis_d" = RECORD_TYPE_TEXT,
+		"cdi" = RECORD_TYPE_TEXT,
+		"cdi_d" = RECORD_TYPE_TEXT,
+		"notes" = RECORD_TYPE_TEXT,
+		"notes_d" = RECORD_TYPE_TEXT,
+	)
+
+//Citations a person gets Record
+/datum/record/security
+	table_name = "citation"
+	primary_key = "id"
+		fields = list(
+		"id" = RECORD_TYPE_INT,
+		"crime_id" = RECORD_TYPE_INT,
+	)
+
+//Security Record
+/datum/record/security
+	table_name = "security"
+	primary_key = "id"
+	fields = list(
+		"id" = RECORD_TYPE_INT,
+		"criminal" = RECORD_TYPE_TEXT,
+		"citation_count" = RECORD_TYPE_TEXT,
+		"notes" = RECORD_TYPE_TEXT,
+	)
+
+//locked record, not sure why we need this its all in H anyway
+/datum/record/locked
+	table_name = "locked"
+	primary_key = "id"
+	fields = list(
+		"id" = RECORD_TYPE_INT,
+		"name" = RECORD_TYPE_TEXT,
+		"rank" = RECORD_TYPE_TEXT,
+		"age" = RECORD_TYPE_TEXT,
+		"gender" = RECORD_TYPE_TEXT,
+		"blood_type" = RECORD_TYPE_TEXT,
+		"b_dna" = RECORD_TYPE_TEXT,
+		"identity" = RECORD_TYPE_TEXT,
+		"species" = RECORD_TYPE_TEXT,
+		"features" = RECORD_TYPE_TEXT,
+		"image" = RECORD_TYPE_ICON,
+		"mindref" = RECORD_TYPE_TEXT,
+	)
+
+#if 0
 /datum/data/crime
 	name = "crime"
 	var/crimeName = ""
@@ -73,7 +371,7 @@
 	var/paid = 0
 	var/dataId = 0
 
-/datum/datacore/proc/createCrimeEntry(cname = "", cdetails = "", author = "", time = "", fine = 0)
+/proc/createCrimeEntry(cname = "", cdetails = "", author = "", time = "", fine = 0)
 	var/datum/data/crime/c = new /datum/data/crime
 	c.crimeName = cname
 	c.crimeDetails = cdetails
@@ -160,6 +458,7 @@
 				if(crime.dataId == text2num(cDataId))
 					crime.crimeDetails = details
 					return
+#endif
 
 /datum/datacore/proc/manifest()
 	for(var/i in GLOB.new_player_list)
@@ -242,6 +541,7 @@
 
 /datum/datacore/proc/manifest_inject(mob/living/carbon/human/H, client/C)
 	set waitfor = FALSE
+	var/database/query/Q =
 	var/static/list/show_directions = list(SOUTH, WEST)
 	if(H.mind && (H.mind.assigned_role != H.mind.special_role))
 		var/assignment
@@ -290,22 +590,21 @@
 		G.fields["photo_side"]	= photo_side
 		general += G
 
-		//Medical Record
-		var/datum/data/record/M = new()
-		M.fields["id"]			= id
-		M.fields["name"]		= H.real_name
-		M.fields["blood_type"]	= H.dna.blood_type
-		M.fields["b_dna"]		= H.dna.unique_enzymes
-		M.fields["mi_dis"]		= H.get_quirk_string(!medical, CAT_QUIRK_MINOR_DISABILITY)
-		M.fields["mi_dis_d"]	= H.get_quirk_string(medical, CAT_QUIRK_MINOR_DISABILITY)
-		M.fields["ma_dis"]		= H.get_quirk_string(!medical, CAT_QUIRK_MAJOR_DISABILITY)
-		M.fields["ma_dis_d"]	= H.get_quirk_string(medical, CAT_QUIRK_MAJOR_DISABILITY)
-		M.fields["cdi"]			= "None"
-		M.fields["cdi_d"]		= "No diseases have been diagnosed at the moment."
-		M.fields["notes"]		= H.get_quirk_string(!medical, CAT_QUIRK_NOTES)
-		M.fields["notes_d"]		= H.get_quirk_string(medical, CAT_QUIRK_NOTES)
-		medical += M
 
+		Q.Add("INSERT INTO medical (id,name,blood_type,b_dna,mi_dis,mi_dis_d,ma_dis,ma_dis_d,cdi,cdi_d,notes,notes_d) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+			id,
+			H.real_name,
+			H.dna.blood_type,
+			H.dna.unique_enzymes,
+			H.get_quirk_string(!medical, CAT_QUIRK_MINOR_DISABILITY),
+			H.get_quirk_string(medical, CAT_QUIRK_MINOR_DISABILITY),
+			H.get_quirk_string(!medical, CAT_QUIRK_MAJOR_DISABILITY),
+			H.get_quirk_string(medical, CAT_QUIRK_MAJOR_DISABILITY),
+			"None",
+			"No diseases have been diagnosed at the moment.",
+			H.get_quirk_string(!medical, CAT_QUIRK_NOTES),
+			H.get_quirk_string(medical, CAT_QUIRK_NOTES),
+		)
 		//Security Record
 		var/datum/data/record/S = new()
 		S.fields["id"]			= id
