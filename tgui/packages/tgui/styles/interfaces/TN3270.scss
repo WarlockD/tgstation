@@ -185,7 +185,7 @@ $el370-magic-paddingTop: 8;
     margin:none;
     font-size:inherit;
     color:inherit;
-  
+
     .field {
       border-width:0px;
       border:none;
@@ -326,3 +326,28 @@ $el370-highlight-colors: (
   }
 };
 */
+
+.path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: dash 5s linear alternate infinite;
+}
+
+@keyframes dash {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  25% {
+    stroke-dashoffset: 0.75;
+  }
+  50% {
+    stroke-dashoffset: 0.50;
+  }
+  75% {
+    stroke-dashoffset: 0.25;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+
+}
