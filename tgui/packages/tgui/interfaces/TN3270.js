@@ -819,6 +819,33 @@ const BottomY = y=>	(TEKHEIGHT + TEKTOPPAD - (y));
 
 //const	input()		Tinput(tw)
 //const unput(c)	*Tpushback++ = (Char) c
+const ANSI_EOT = 0x04;
+const ANSI_BEL = 0x07;
+const ANSI_BS	=	0x08;
+const ANSI_HT	=	0x09;
+const ANSI_LF	=	0x0A;
+const ANSI_VT	=	0x0B;
+const	ANSI_FF	=	0x0C;		/* C0, C1 control names		*/
+const ANSI_CR	=	0x0D;
+const ANSI_SO	=	0x0E;
+const ANSI_SI	=	0x0F;
+const ANSI_XON = 0x11;		/* DC1 */
+const ANSI_XOFF = 0x13;		/* DC3 */
+const ANSI_NAK = 0x15;
+const ANSI_CAN = 0x18;
+const ANSI_ESC = 0x1B;
+const ANSI_SPA = 0x20;
+const XTERM_POUND = 0x1E;		/* internal mapping for '#'	*/
+const ANSI_DEL = 0x7F;
+const ANSI_SS2 = 0x8E;
+const ANSI_SS3 = 0x8F;
+const ANSI_DCS = 0x90;
+const ANSI_SOS = 0x98;
+const ANSI_CSI = 0x9B;
+const ANSI_ST	=	0x9C;
+	const ANSI_OSC = 0x9D;
+  const ANSI_PM	=	0x9E;
+const ANSI_APC = 0x9F;
 
 const CASE_REPORT =1;
 const CASE_VT_MODE =2;
@@ -3455,19 +3482,20 @@ const SHIFTLO	=	2;
 const TWOBITS		=3;
 const TRACE = (X) => { logger.log(X); }
 
-const getpoint = (cmd_array, x, y) => {
+const getpoint = (cmd_array, vec_pt) => {
     //cmd_array is an array of chars
     let e=0;
     let lo_y = 0;
-
-    for (;;) {
-      const c = cmd_array.shift();
-
+    let x = vec_pt.x=0;
+    let y = vec_pt.y=0;
+    while (cmd_array.length > 0) {
+      const c =  cmd_array.shift();
       if (c < 32) {	/* control character 32 is space*/
           cmd_array.unshift(c);
-          return null;
+          return false;
       }
-      if (c < '@') {		/* Hi X or Hi Y */
+     ;
+      if (c < 64) {		/* Hi X or Hi Y */
         if (lo_y) {		/* seen a Lo Y, so this must be Hi X */
           x &= ~HIBITS;
           x |= (c & FIVEBITS) << SHIFTHI;
@@ -3478,10 +3506,12 @@ const getpoint = (cmd_array, x, y) => {
         y |= (c & FIVEBITS) << SHIFTHI;
         continue;
       }
-      if (c < '`'.charCodeAt(0)) {		/* Lo X */
+      if (c < 96) {		/* Lo X */
         x &= ~LOBITS;
         x |= (c & FIVEBITS) << SHIFTLO;
-        return { x: x, y:y };	/* OK */
+        vec_pt.y = y;
+        vec_pt.x = x;
+        return true;	/* OK */
       }
       /* else Lo Y */
       if (lo_y) {		/* seen a Lo Y, so other must be extra bits */
@@ -3495,10 +3525,14 @@ const getpoint = (cmd_array, x, y) => {
       y |= (c & FIVEBITS) << SHIFTLO;
       lo_y++;
     }
-    return null;
+    return false;
 };
 
-const tek_us_map = "7 @&y&T#}@}'H&yHy&@#}@$q@@#}T%e@@#}'H%y&@@$q'H&m&@@%e'HH&y&H%y'HH&y&\m'H#}&@}'_})G-sGs'_#}_$q__#}(S%e'__#})G%y'__$q)G&m'__%e)G'a'__%y)G'u'__&m)G(i'__'a)G(}'__'u)G)q'__(i)G*e'__(})G*y'__)q)G+m'__*e)G,a'__*y)G,u'__+m)G-i'__,a)GG-s(I,u)GG-s(]i)G#}'_})]}+E({E{)]#}]$q]]#}*Q%e)]]#}+E%y)]]$q+E&m)]]%e+E'a)]]%y+E'u)]]&m+E(i)]]'a+EE({)_'u+EE({*Si+E#})]}+\}-D0D}+\#\$q\\#},P%e+\\#}-D%y+\\$q-D&m+\\%e-D'a+\\%y-D'u+\\&m-D(i+\\'a-D(}+\\'u-D)q+\\(i-D*e+\\(}-D*y+\\)q-D+m+\\*e-D,a+\\*y-D,u+\\+m-D-i+\\,a-D-}+\\,u-D.q+\\-i-D/e+\\-}-D/y+\\.q-F0m+\\/e-DD0},@/y-DD0},Tm-D#}+\}-Z}/B-sBs-Z#}Z$qZZ#}.N%e-ZZ#}/B%y-ZZ$q/B&m-ZZ%e/B'a-ZZ%y/B'u-ZZ&m/B(i-ZZ'a/B(}-ZZ'u/B)q-ZZ(i/B*e-ZZ(}/B*y-ZZ)q/B+m-ZZ*e/B,a-ZZ*y/B,u-ZZ+m/B-i-ZZ,a/BB-s.D,u/BB-s.Xi/B#}-Z}/Y}1A*`A`/Y#}Y$qYY#}0M%e/YY#}1A%y/YY$q1A&m/YY%e1A'a/YY%y1A'u/YY&m1A(i/YY'a1A(}/YY'u1A)q/YY(i1AA*`/^(}1AA*`0R)q1A#}/Y}1W}2_(e_e1W#}W$qWW#}2K%e1WW#}2_%y1WW$q2_&m1WW%e2_'a1WW%y2_'u1WW&m2__(e1['a2__(eO'u_#}1W}3V}4^,a^a3V#}V$qVV#}4J%e3VV#}4^%y3VV$q4^&m3VV%e4^'a3VV%y4^'u3VV&m4^(i3VV'a4^(}3VV'u4^)q3VV(i4^*e3VV(}4^*y3VV)q4^+m3VV*e4^,a3VV*y4^^,aJ+m^#}3V}5T}6\.v\v5T#}T$qTT#}6H%e5TT#}6\%y5TT$q6\&m5TT%e6\'a5TT%y6\'u5TT&m6\(i5TT'a6\(}5TT'u6\)q5TT(i6\*e5TT(}6\*y5TT)q6\+m5TT*e6\,a5TT*y6\,u5TT+m6\-i5TT,a6\-}5TT,u6\.q5TT-i6\\.vC-}\\.vWq\#}5T}7S}8[2q[q7S#}S$qSS#}8G%e7SS#}8[%y7SS$q8[&m7SS%e8['a7SS%y8['u7SS&m8[(i7SS'a8[(}7SS'u8[)q7SS(i8[*e7SS(}8[*y7SS)q8[+m7SS*e8[,a7SS*y8[,u7SS+m8[-i7SS,a8[-}7SS,u8[.q7SS-i8[/e7SS-}8[/y7SS.q8[0m7SS/e8[1a7SS/y8[1u7SS0m8[2i7SS1a8[[2q7_1u8[[2qSi[#}7S}9Q}:Y/yYy9Q#}Q$qQQ#}:E%e9QQ#}:Y%y9QQ$q:Y&m9QQ%e:Y'a9QQ%y:Y'u9QQ&m:Y(i9QQ'a:Y(}9QQ'u:Y)q9QQ(i:Y*e9QQ(}:Y*y9QQ)q:Y+m9QQ*e:Y,a9QQ*y:Y,u9QQ+m:Y-i9QQ,a:Y-}9QQ,u:Y.q9QQ-i:Y/e9QQ-}:Y/y9QQ.q:YY/yEeY#}9Q};P}<D-|D|;P#}P$qPP#}<D%e;PP$q<D%y;PPe<D&m;PP%y<D'a;PP&m<D'u;PPa<D(i;PP'u<D(};PPi<D)q;PP(}<D*e;PP)q<D*y;PPe<D+m;PP*y<D,a;PP+m<D,u;PPa<D-i;PP,u<DD-|;Qi<D#};P5|$V#}VB}<D&d$LV(lBl<D*t$LV,|B|<D/d$LV1lBl<D3t$LV5|B|<D#}$V}<D\"t$Q0\"t(N2\"t,K4\"t0H6\"t4E8\"t7[10\"t;X12#v\"U200(e\"U400,u\"U6001e\"U8005u\"G1000"
+
+const tek_us_map2 = ";)f{+Z*kc)Y,cm*Eag+Ona,_)kxXf{+Z,g}2K`{QexScs3EKdoPcmPogPhhSieRnaT+l|P`yPd{SnTW,heYmg[lg\ad[+kwVcsVnmTajU*k}SlsVbq2OfuId{HbI+fdFiFikDeo1^cs\jtXlyQ,dcQffRiOknQdrWi|Vn~Xd}\n~2@-kbHmaJ,k|Hg}K)fp8DokF`hFgm7]ok]gg](XfVmwTQeyNlnLehHofIbcGn`BkaA'i~@c}6[i~Zk{Ul}R(iaQhaOlcLakFepFotJhxJ`}Lf|MazNk{Oh~O)cbOeRbeVlk[ow[m|Zj}\l_nn7M`eObkSckUlnXfm[io\lq8@fpD/ml%_`o&@ml%_`o&ChpCimB`oCdkCijBdkCmfElfCgbChaFe`EdbCmfBaiEmfE-et'_nm^isEhs&]arQksOmrHluFdw@nu%YlxU.aUcdRodOkhLjhJmiHboJkjIekKgqLfqJetKdtOkvLmuK/hdLniJhpLkpLgkRlf[]id_`c&@ge@cc@mcBf`A.m~%_/f`^.a{ZnxYhy]iyZ`{[i&BB/aB.`~Cc~@ez%_jy&Aau%_fw^et\`x]lu[jvYgtXdt[`r[et\or]lu&@hvCb~D/iaHnfGliFniDekEoiFblGnoG`oFisEdtFbc(I-et'_(jl7JemK`zOcwRhxU)a`W(gX)g]m]`h8FokFbkJnhJleRobR(c}OmzQb}SdyWgyZ`w]ku9@cq@q8]dvWhuWko]jo9Aan8_em9B`kChl@dj@ki@fj8^gmZdmZak\fh9AehBofCjdAnf8^gh]ZhiZfhXhgZ]ge]kd9@bcAocCgeCidH'~K(c`I'j~Jl}Iiu7\dn6Gol5[fs6EowG(iaQ'b}Si{W~Zb}\(c`7AkaAacEbcGofIehHjlJdy9InzLirKhoIaiHgjFlnFntGhuIdyIh{NixMh{N,ojN`sNjJ-ie:B,`~C{Cnv9^as_kh]+f{^`y:@nv9U,dfQjeOojN(g(H*k}Tcv)\kcY)n*T'huK(a(CgH$iy,Z'ac-@o`.L%i|KkyOmxTdzUaxWmuWgt]`u/@nrAgtCetHgqIcoIenKhpOkmRcoTkmTalVenVipYm\lo]km]ek0BgnFfnJipMaoPhpTnlXjj^di1@E$lEngIodH#kKd}NiwMhnKkhK`dHjbI\"o|0Zn^cZ#ad\faXmaV\"`Wf{XayVcyTjtRbjAnjAapKnpJmDcpCjnAcp@om@in/_eo\am\el_kk]lj0@mh/\hkZajYdgZceWggW`eWneSgdR!nS\"i`N!nPb|P`|RovOfuMexNguLxIitKduOcsOfmMleO mQoRk}Rn|SM`IbD!k`@nb.^ob[ceXmeTanQiqNduOb|MmH\"aeEkiA`mAit-]jt\e{ZbV#j`SmaTgaRmdQheOdfGmgCgfAef,]\"bYo|XdxUoyPa|Om|Lg~JlG#ff+_ik]hq^kyYb~T$jhKnjHapFbrCuCp,YiyZ&fw5YhsX`rUhmUoi4Pcf2\i_hm_jm]`o_gn_lr3Bft@wC`xEd|Em}Do}EdE'ocEiaGmc[ig[mf4Abl5Yhp6X`lXofRO`cLkdJaG&gGaz@fw5Y*{-Vj},\,`s-Akn0@hh/]ec0B+aB`b@*l|@izBas/_nn0Aio/_`s]bvU`vOhtL`yFf{-V&eb6NnfKbiEdkDloGnuPax7EmuEgwFcrIetZbf8Me`H%`{FfzDlxFivEftAgn7]mo\al\kjXhhXmgTbdSgfOibQoaR$n~P%d`LffJkhFcoCip@ft6\jv\b{V`~R&ebN+jk:U`hWneUkfTdiTfiRedS`bNknK`pQikSjkU)`t8Ijl6_*`vXo|7AfxB+hc8]*m9Bg{CmyHhtFjqDfjDgjFjcL)i}He{EBhx@`t8I,dx'ZcsTdoTkkW+meMg~$O,i`NknOavTn{Y-am%@luDa{Ec{F.fcGldIhhIffJgfOodOlaU-xUmuZlu&FmrHcrThs]mr'BisEnm^ld(C,n{'[dxZ&oo0]%jj^nlXhpTjpRaoPipMfnJgnFfkAkm/]lo]dnZipYboXlUooThmRfqMenKcoIbrGetHgtCnrA`u@gt.]muWdzUmxTkyOm{Ni|K'o`L`c-AolA`i/]ni0[&oo](kr5[`tXkrUotM`zJgyD*ji4_fj5QokShXejZki[fgYnh\eg6@ckJepN`vX)j}\a|Zgv[ejZbeVcbO(h~Ok{OazN`}LhxJotJmqIepFgsAiu@kr5[,er-N`sA.fkEbg/X-axY`m],o{]`v0@kn@cp.Xer-N'nq9Rm}Ki~KnqRmq7Ciu\h~9Ij{Ji{KevMbzJcwKjxGcwIdvIcwFjuGiuEfsDjrAot@w@mw8_hu9@jrApAoqFgsIirKmoKgnKfnJnqL`tNmqPdnQmiMjjLkgKigHaiHkgF`iFdkFoiCjgDfh8^mf_lf9C`fCbfGocFmcEl`F&gC'ia8_m`_&j~9Ak~F'``F&fG'iaH&dI'jaJ&eKh{IozFd|Fgy@az8_`x9@jv8^hv]fy[iv\`u]ooWliWalVkgTbfMet7ZcrIgwFmuEaxEnu6PloGhm5U`rUgtXox[az6@gG'kdJbcMofOnfSclU`lXhpXmq7C*nn9RilSlkQnnRgpTcsWvZ]y:Ek}Hn|IgxEhwHf{Ik}No|NjqAaq9_cv:Eer9_mVkoWcnTgpT{7UfxBo|A+`hLjkJmmHiqHmsNguXns[gu]hw8F`|Ih}L,kbIecKieKgfI`dIagHkwRo{Wj9J`sNinMjeOkeQ+bvU*k}WizYexVrVfrUguT{C+a@ic8\*g{7U&ai*D'huKm,Uol-A`cA$bp,Ycu+BdqDet*JglHhn)\&ai*D)bt9RemPgmNcqNnqLaqK`tFcwCf{D*jcLgjFbkDjqDmyHguTosTlkQejSnkU`hW)W*icV)oyTlyTbtR,fl:OObdUcaTj`R+o|N`y@f{9^,kh]iw_`{:C~C-f`AbjAglE,flO'mt'E)hx%XkzX+do&F*k}(T'gs@kp']ctWjrUkgTgbT&eS'mtE*ae,Zj}\`y/FnsM`vOduWgr]io_an0BlhCobF)`FcFgyIonIjfLm`P`/Njc-SevTkx,X*aeZ,lg)_ie^agUngTjeRogNjeLmgJamJbpFdxEa~D-d`B,k|(\o~Z-ad\md^bj]mr)Ar(^ft]et\hW.bdR`gTcoQ/baU.`u*So,Afk-E,na,_la^ag+Ocm*EecDfi@lg)_(f0U)bbOoeNjfLmkKgm2BmhG(eGjxLotQgmSlnYjlZciYncWfbWc`Y'm}^hx3EjrFdqEllHclKkgKmcJgeHiaGncFccEn`F&o}Em}Dh{EfyCox2Y'a`^db\b`0[(q[nqXhxT~WfU$ei2PnjOojQfoRnpTfqTopQgqQdtVfwRkvSySoxQa{SjRl~Q%hbQjeRdfQjhRmgPdiQihPjjOimPjmRorQgtSmuSivUgwSdzVl{Y&d`Y%jZ&haYjd]cf\eh3[cf\$hn\#dr_grYnsWpQhqPjnNinLlvHj|Ic{2KkK$jbLhbNkeNagMeiP,hh/]om0@`v@o{/]-`m]axY.`aZbgXcg0QkmQmlVkbWca]d`1C-`~C.baI-hQe}PSkyTj|XezYdw_w2Ba{GcxHlxQkvSewXbmFefA,i|1VdrWlmQjhOffRdcQ+lyQjtXcs\eo^fi2FicGea0B,cBhh/]-dc4GheSe`R,hV-ca[,i|]cy5Aex@ay4XfuWxTcyMbvKduDfrCkn3_`p_ns4@bs3]eo[ms[cpYndTbdTieRhRhhPcmPdoPapLcsKosBfx2R`{Qo{N-laVib[je3@bjC`jEamGinJfoNnmNbjIheHjeFaaGheKfcIndNfcQ,a~Ul~Ye}[b~]e}^j4@-dcG+`5Md{MkzJeuIhtGmpFomG`mJapLfuNhwSlvUmsWce[*l|[bYh}XayWlvUdrUjlQi4_dgDhqJbyK+eaIcjDnmEdrD`yGi}F,jbHadLjhN`NldPi`OgcPiPikR`mVcpSasUjtWfr_`p5AmJihLlgJ+`Mh;HegDbhFgiE`hHch:_le\hf\fi]ch_lm\nm[bhXlhWjkUikS`pQbj9UnvUo|:N,j`RcaT+o|Wb|UhwTfuUavYbs[kqZjn]hn_bp;CsCfu@duBrEcmEomBcj:\lm\)aq7Whx9@cbFkcN({Nh{NeMnzLowFixEozFd|Fk{CgCc}CeBa}Bj~8^)c`]ab_kc]ob9@me8_ae\lh]kl]fm[`q]mq_lt9@ju8^lt]mq\gpZioYemYanVlkZbkX`hZbhXeXl`Z(h~]m}\)b`X(}[`}]jx^mz\bz[j{XozWe|Vj{Un}SmzQg|O)c`OjfSdgRhfOnhJbkJokFjoDbqDmq7_io\fm[cnXmnWckUbkS`eOnnMaqW-b~;Lc~QaxSjvTgwV`uYarXeq[lmYknVcmVbmTnjTojQgQihPePlgNbgLkeKndImaJjbFfcF`dHcgEecD,}Dh|EjyCezAa{Ajw@dx:_kw\os\bv[itYkqWapYdoWjeUheTmjP-glEHoHdoKgqHfzLl~K.jhLoxQlxT`uWox\ky\dz_ou;E-b~L#iw1Md}NhK$ecJodHdiHlEhE%d`2Q$l~QjRk|Qa{SoxQkvSjvRdtVbrTgqQapSeqUbpTfoRojQbjOdiQefMhbNjbLe`M#kKc{Kh|3Hn{IjtIlmMfoFopBfo@dl2_nj3@F`mHamJelJomKglKiHmgLkkMlmSmjRgiSbgQ`gPdcM\"nNj}Qk}Sn|Tc|VhzVjzTfxTlySkwPjzQm|Oe~LJ#j`IF\"o|Ea|GbyCl|Bf{@m|2^e{^byZizUnR#i`P\"oN#naLadMgcHieGfcCgaE\"lB#j`1]cdQjbI`dHglKdrKiwM'ci4SmfAig3[mc[dbHgeHhdKclKmlJkpKgqMfnTjpTntTgvYazXi~[^c}_(`_'g4B`}G(kaJ'gM(m`OidOjdQbfQebUncWdhYem]aq]fs5EntElwDfyE`zJjxKotMkrUes]hu6AepFakFlcLhaOiaQ'g|LowGfsEirCjpBbl5Yci4S(ev0VnqXbq['ni[`i/]li.Ucl-O)jcSm`/Nda0Q(h~TfUd|WhxTevV*d{2HfuIanSilSgjVceVj`T)h}Qo|KdyKmtMlnKjlFmhGgmBmk0KonIgyIcF`F*meElhCanBms/_iz0Bl|@+`b@ic2G*bId{H)ct5A(lwDfsEep@aq4]biZigXncWebUmcRbfQidO'gM(haJ'`}G(c`3_'`}_i~[e|[g|Ym}X(bcZfZ`f\cn_hr_ku\i~^*neZdd_g4Dfj_)ct5Aoe2EjlFlnKevMo|K*j`TceV`kVbqOls3VnVneZ(az^ku\cn_`f\kdY'~Ym}Xg|YeyXgvYntToqSjpTdnSgqMkpKalJkmHllHdqElwEzBf|2](jaWncWjlZlnYhoVgmSanSotQeG)oeE,i'_-mg(Bnm'^et_/bc(IaU.gnQldTbdR-oxZet\mr^ar)Aj(^bj]og\md^ad\,o~Zk|\-d`)B,a~DdxEmsGkqEinGamJmgJjeLogNjeRngTagUie^fi*@ecD*cv)\+me'M,keTkWmmVdoTcsTjwXby[i_#o~6Gc~5U$ffQmrO`xPezRo~P%mdL&gkAlo6GhjDmfInfK%`~Rb{VcxXjv\ft\ip7@boDkhFdcL$hLa~Qo{Ob{MezN`xLnuMetKgtLmpKopIcmImmHojIikKcjIjeJndGefCcdA#e}C@$f`6_#o~Ge}7C$jeBgfCmdK#l~LmsQlgXfc[\"c|]dg8ImeK!nMmnNfpM`kLggLedKcbFk`@ab7_ed_mb8B`eCne7^ilZanWemTonRvOgxLe~KlLmHo|Im|H\"j`DfBeg@ohAjAknCmpCknAq6^do^in7@jk6_nm\s\`y^m]n\#da^ieZgfUfiSojOlmOdoLrJjtEit@kq5^bp_\dlXbmVkkU`jPflNinOljPglPeoOdrJkqMdrMasIhtJguGhtGjtHfrHnv4\v5BdxAfx4\ov[itRmvUfxTcvSfxQlsP`sMeuOkyM|Jo~J$dc5S#c~U$f`6_#d}7Ae}C)dg8RjfSddRjfPdgRaq9Bhx@e{BEctCbqGckIggNahMbeLkcNcbFaqB+mbVbjUkn:KobN*H+i`G*k}@d~@jz9^cyZovWexVizY+mbV'gq+Mhu*K)nTev-T'clOgq+M)fm$SpSjoVrShrR`nRfmPioNesLkrJevLgvLjxK*neE`hGfuH`|G+h`DgdDflKjnK`vOjzMg~Odo&F)hx%X&e'SftUnoXdkQncOfbL%h|L`xNluLez&Ea~Ef}D&acEciCis%\`uXeyW`}O'kdIeh$]`l[jp\ev]lw[g|[(ebWmkTioQltR`wUlzUo}O)daO`hOokOlkRmhQaeTceUokRfmS$j2Ch1E%diE@jj0^&bl^'`[gb2\a`^&f|]oxYfy3C`xEcuBft@lrBkm2_`o_jm]ll_hg_of\c\`aY%jZ&d`Y%`{YgwSmuUSrSorQhmQolQjmOjOlgQjhRdfQfcRhbQd`Q$jC'lc*H$hn)\mr(\%ar'HouI`xN{Nh|L&fbLeePclQjpXlzT'`TgbTkgTesVfsXjp^gs(@(haC'u*KlcH#gz4DfrC`s3_$hn\&cf\dh\gk5A%baN$o~P{PezRmrOffQdcS#o~4Jk|JyMeuOrLlpGnpEfrHitFgzDitF jd DnjDjdDkdJ7m}?Un}[jw[n}[4w ACD/2000\n:DAIPAC602:DAC\n)";
+const imtest_pxi = " ` @ `?_ `?_8m?_8m?_8m @8m @ ` @!r#D(0,0) ` @8m?_ `?_8m @,p @";
+
+const tek_us_map = imtest_pxi;
 
 class SVGTesting extends Component {
   constructor(props,context) {
@@ -3510,7 +3544,7 @@ class SVGTesting extends Component {
     this.screen_height = 780;  // side note, origin is lower left
     this.state = {
       lines : [],
-      beam: { x:0, y:0 },
+      vec_pt: { x:0, y:0 },
       cursor: { x:0, y:0 },
       last_draw: {x :0, y:0 },
       path: "",
@@ -3518,6 +3552,7 @@ class SVGTesting extends Component {
       margin: MARGIN1,
       linetype: 0,
       text_list: [], // array of chars to print
+      points: [],
       font_size: tek_char_sizes[0],
       curstate :Talptable,
       Tparsestate : Talptable
@@ -3526,8 +3561,9 @@ class SVGTesting extends Component {
 
 
 
-  Tekparse(cmd_array, count_to_process = -1)
+  Tekparse(count_to_process = -1)
   {
+    const out_point = pt => pt ? "( " + pt.x + ", " + pt.y + " )" : "null";
       let TekGIN =  this.state.TekGIN;
       let margin = this.state.margin;
       let Tparsestate = this.state.Tparsestate;
@@ -3535,17 +3571,19 @@ class SVGTesting extends Component {
       let cursor = this.state.cursor;
       let last_draw = this.state.last_draw;
       let pen = this.state.pen;
-      let beam = this.state.beam;
+      let vec_pt = this.state.vec_pt;
       let path = this.state.path;
       let text_list = this.state.text_list;
+      let points = this.state.points;
       let t = this.state.font_size;
       const TekGINoff = ()=> {
         TRACE(("TekGINoff\n"));
         TekGIN = false;
       };
+
       const TCursorBack =()=>
       {
-          if (((margin == MARGIN1) && (x < 0)) || ((margin == MARGIN2) && (x < TEKWIDTH / 2))) {
+          if (((margin == MARGIN1) && (cursor.x < 0)) || ((margin == MARGIN2) && (cursor.x < TEKWIDTH / 2))) {
             let l = cursor.y  + (t.pix_height - 1) / (t.pix_height + 1);
             if (l >= t.rows) {
               margin = !margin;
@@ -3558,7 +3596,7 @@ class SVGTesting extends Component {
       const TCursorForward =()=>
       {
         if ((cursor.x += t.pixel_width) > TEKWIDTH) {
-            let l = (cursor.y / t.pixel_height - 1);
+            let l = (cursor.y / t.pix_height - 1);
             if (l < 0) {
                 margin = !margin;
                 l = t.rows - 1;
@@ -3583,7 +3621,7 @@ class SVGTesting extends Component {
       };
       const TCursorDown =()=>
       {
-          let l = (cursor.y / t.pixel.pix_height )- 1;
+          let l = (cursor.y / t.pix_height )- 1;
           if(l  < 0) {
             l = t.rows - 1;
                 margin = !margin;
@@ -3598,24 +3636,44 @@ class SVGTesting extends Component {
       const TekMove = (x,y) => {
         cursor.x = x;
         cursor.y = y;
+        TekDrawPoint(x,y);
+      //  path += "M " + cursor.x + " " + cursor.y + " "; // need a move too
       };
       const TekDraw = (x,y) => {
-        if(last_draw.x != cursor.x && last_draw.y != cursor.y){
+        if(last_draw.x != cursor.x || last_draw.y != cursor.y){
           path += "M " + cursor.x + " " + cursor.y + " "; // need a move too
+          cursor.x = x;
+          cursor.y = y;
         }
         path += "L " + x + " " + y + " ";
         last_draw.x = x;
         last_draw.x = y;
+        TekDrawPoint(x,y);
       };
+      const TekDrawPoint = (x,y) => {
+        points.push({x:x, y:y});
 
+      }
       const TekClear = () => {
         path = ""; // no path, no drawing.  Be sure to remember we have to have different paths for different dot types
         text_list = [];
+        points = [];
       };
+      const TekPage =() =>{
+
+        TRACE(("TekPage\n"));
+        TekClear();
+        cursor.x = 0;
+        cursor.y = TEKHOME;
+        margin = MARGIN1;
+
+      Tparsestate = curstate = Talptable;		/* Tek Alpha mode */
+      }
+      let cmd_array = this.cmd;
       while ((count_to_process == -1 || count_to_process > 0 ) && cmd_array.length > 0) {
         if(count_to_process > 0)
           count_to_process--;
-        let c = cmd_array.unshift()
+        let c = cmd_array.shift()
     /*
     * The parsing tables all have 256 entries.  If we're supporting
     * wide characters, we handle them by treating them the same as
@@ -3641,16 +3699,16 @@ class SVGTesting extends Component {
           */
           Tparsestate = curstate;
           break;
-/*
+
       case CASE_VT_MODE:
           TRACE(("case: special return to vt102 mode\n"));
           Tparsestate = curstate;
-          TekRecord->ptr[-1] = ANSI_NAK;	//remove from recording
-          FlushLog();
+      //   TekRecord->ptr[-1] = ANSI_NAK;	//remove from recording
+       //   FlushLog();
           return;
-*/
+
       case CASE_SPT_STATE:
-          TRACE(("case: Enter Special Point Plot mode"));
+          TRACE("case: Enter Special Point Plot mode");
           if (TekGIN)
              this.TekGINoff();
           Tparsestate = curstate = Tspttable;
@@ -3693,23 +3751,24 @@ class SVGTesting extends Component {
           break;
 
       case CASE_PT_STATE:
-          TRACE(("case: Enter Tek Point Plot mode\n"));
+          TRACE("case: Enter Tek Point Plot mode\n");
           if (TekGIN)
             TekGINoff();
           Tparsestate = curstate = Tpttable;
           break;
 
       case CASE_PLT_STATE:
-          TRACE(("case: Enter Tek Plot mode\n"));
+
           if (TekGIN)
             TekGINoff();
           Tparsestate = curstate = Tplttable;
-          if ((c = cmd_array.unshift()) == ANSI_BEL)
+          if ((c = cmd_array.shift()) == ANSI_BEL)
             pen = PENDOWN;
           else {
-            cmd_array.shift(c);
+            cmd_array.unshift(c);
             pen = PENUP;
           }
+          TRACE("case: Enter Tek Plot mode(" + pen == PENUP ? "UP" : "DOWN" + ")");
           break;
 
       case CASE_TAB:
@@ -3728,12 +3787,10 @@ class SVGTesting extends Component {
           break;
 
       case CASE_ALP_STATE:
-          TRACE(("case: Enter Tek Alpha mode from any other mode\n"));
+          TRACE("case: Enter Tek Alpha mode from any other mode\n");
           if (TekGIN)
             TekGINoff();
           /* if in one of graphics states, move alpha cursor */
-          if (nplot > 0)	/* flush line VTbuffer */
-            TekFlush();
           Tparsestate = curstate = Talptable;
           break;
 
@@ -3755,11 +3812,11 @@ class SVGTesting extends Component {
 
       case CASE_PAGE:
           TRACE(("case: Page Function\n"));
-          /*
+
           if (TekGIN)
             TekGINoff();
-          TekPage();	// clear bypass condition
-          */ // skip page
+         TekPage();	// clear bypass condition
+
           break;
 
       case CASE_BES_STATE:
@@ -3810,17 +3867,17 @@ class SVGTesting extends Component {
           break;
 
       case CASE_PENUP:
-          TRACE(("case: Ipl: penup\n"));
+          TRACE(("case: Ipl: PENUP\n"));
           pen = PENUP;
           break;
 
       case CASE_PENDOWN:
-          TRACE(("case: Ipl: pendown\n"));
+          TRACE(("case: Ipl: PENDOWN\n"));
           pen = PENDOWN;
           break;
 
       case CASE_IPL_POINT: {
-          TRACE(("case: Ipl: point\n"));
+
           let x = cursor.x;
           let y = cursor.y;
           if (c & NORTH)
@@ -3835,44 +3892,47 @@ class SVGTesting extends Component {
             TekDraw( x, y);
           else
             TekMove(x, y);
+          TRACE("case: Ipl: point " + pen == PENUP ? "UP" : "DOWN" + ":" + out_point(cursor));
           break;
       }
       case CASE_PLT_VEC: {
-          TRACE(("case: Plt: vector\n"));
-          cmd_array.shift(String.fromCharCode(c));
-          const new_cursor = getpoint(cmd_array, cursor.x, cursor.y);
-            if (new_cursor) {
+          cmd_array.unshift(c);
+            if (getpoint(cmd_array,vec_pt)) {
               if (pen == PENDOWN) {
-                TekDraw(tw, new_cursor.x, new_cursor.y);
+                TekDraw( vec_pt.x, vec_pt.y);
             } else {
-                TekMove(tw, new_cursor.x, new_cursor.y);
+                TekMove( vec_pt.x, vec_pt.y);
             }
               pen = PENDOWN;
             }
+            TRACE("case: Plt: vector " + (pen == PENUP ? "UP" : "DOWN") + ":" + out_point(vec_pt));
           }
+
           break;
 
       case CASE_PT_POINT: {
-        TRACE(("case: Pt: point\n"));
-        cmd_array.shift(String.fromCharCode(c));
-        const new_cursor = getpoint(cmd_array, cursor.x, cursor.y);
-        if (new_cursor) {
-          TekMove(tw, new_cursor.x, new_cursor.y);
-          TekDraw(tw, new_cursor.x, new_cursor.y);
+
+        cmd_array.unshift(c);
+        if (getpoint(cmd_array,vec_pt)) {
+         TekDrawPoint(vec_pt.x, vec_pt.y);
+         TekMove(vec_pt.x, vec_pt.y);
+          TekDraw( vec_pt.x, vec_pt.y);
         }
+        TRACE("case: Pt: point " + (pen == PENUP ? "UP" : "DOWN" )+ ":" + out_point(vec_pt));
         break;
       }
 
 
       case CASE_SPT_POINT:{
-        TRACE(("case: Spt: point\n"));
+
         /* ignore intensity character in c */
-        cmd_array.shift(String.fromCharCode(c));
-        const new_cursor = getpoint(cmd_array, cursor.x, cursor.y);
-        if (getpoint(tw)) {
-          TekMove(tw, new_cursor.x, new_cursor.y);
-          TekDraw(tw, new_cursor.x, new_cursor.y);
+     //   cmd_array.unshift(c);
+        if (getpoint(cmd_array,vec_pt)) {
+          TekDrawPoint(vec_pt.x, vec_pt.y);
+          TekMove(vec_pt.x, vec_pt.y);
+          TekDraw(vec_pt.x, vec_pt.y);
         }
+        TRACE("case: Spt: point "+ pen == PENUP ? "UP" : "DOWN" + ":" + out_point(vec_pt));
         break;
       }
 
@@ -3904,9 +3964,9 @@ class SVGTesting extends Component {
 
       case CASE_PRINT:
           TRACE(("case: printable character\n"));
-          ch = c;
+         // char ch = c;
           // hack for now
-          text_list.push({ c: String.fromCharCode(c), x:cursor.x, y:cursor.y });
+          text_list.push({ text: String.fromCharCode(c), x:cursor.x, y:cursor.y });
           TCursorForward();
           break;
       case CASE_OSC:
@@ -3945,6 +4005,7 @@ class SVGTesting extends Component {
         }
       }
     }
+      TRACE("Path='" + path + "'");
     const new_state = {
       TekGIN: TekGIN,
       margin : margin,
@@ -3956,21 +4017,24 @@ class SVGTesting extends Component {
       path: path,
       text_list:text_list,
       font_size : t,
+      vec_pt: vec_pt,
     };
     this.setState(new_state);
+    this.forceUpdate();
   }
   componentDidMount() {
     // Call this function so that it fetch first time right after mounting the component
     //this.addRandomLine();
-    let cmd = [];
     const { act, data } = useBackend(this.context);
     const test_data = data.test_data;
-    for(let i=0;i < test_data.length;i++){
-      const char = test_data.charCodeAt(i);
-      cmd.push(char);
-    }
-    this.cmd = cmd;
-    this.Tekparse(cmd,10);
+    this.cmd = [];
+    for(let i =0; i < tek_us_map.length;i++){
+      if(tek_us_map[i] >= 256)
+        logger.log("Bad data " + i + " ugh");
+      this.cmd.push(tek_us_map.charCodeAt(i));
+   }
+   this.cmd = test_data;
+    this.Tekparse(1000);
     // set Interval
     this.working = false;
     this.interval = setInterval(this.addRandomLine.bind(this), 5000);
@@ -3982,8 +4046,9 @@ componentWillUnmount() {
   addRandomLine() {
     if(!this.working) {
       this.working = true;
-      this.Tekparse(this.cmd,10);
+      this.Tekparse(1000);
       this.working = false;
+      this.forceUpdate();
     }
 
     /*
@@ -3992,20 +4057,26 @@ componentWillUnmount() {
       this.setState({ lines: nlines });
       */
   }
+  //      <svg viewBox="0 0 4096 4096">
   render() {
     const lines = this.state.lines;
-    const path = this.state.path;
          // lines.map(vec => <line x1={vec.start[0]} y1={vec.start[1]} x2={vec.end[0]} y2={vec.end[1]} stroke="url('#myGradient')" />)
     return (
-      <svg viewBox="0 0 4096 4096">
-      <defs>
-      <linearGradient id="myGradient" gradientTransform="rotate(90)">
-        <stop offset="0%"  stop-color="green" />
-        <stop offset="97%"  stop-color="green" />
-        <stop offset="99%" stop-color="white" />
-      </linearGradient>
-      </defs>
-        <path d={path} fill="transparent" stroke="green"/>
+      <svg viewBox="0 0 4096 4096" width="100%" height="100%">
+
+         <rect width="100%" height="100%" fill="black"/>
+         <g>
+    <rect fill="#FFFFFF" stroke="#000" x="50" y="50" width="150" height="150" />
+    <rect fill="#FFFFFF" stroke="#000" x="200" y="200" width="150" height="150" />
+  </g>
+         { this.state.points.map(pt => <circle cx={pt.x} cy={pt.y} r="10" fill="#FFFFFF" stroke="white" />)}
+        <path d={this.state.path}  fill="none" stroke="greenyellow" />
+        { this.state.text_list.map(pt => (
+          <text x={pt.x} y={pt.y} fill="#FFFFFF" stroke="white">
+            {pt.text}
+            </text>))
+        }
+        <text x="200" y="200" fill="#FFFFFF" stroke="white" style="font: 100px serif">This is a test</text>
       </svg>
   );
 }
@@ -4079,16 +4150,16 @@ export const TN3270 = (props, context) => {
     [ "text", CELL_WHITE|CELL_BLINK|CELL_REVERSE, "\xA0" ],
   ];
 */
-//      <RealTerminal numRows={24}  numCols={80} screen={0} screens={[ header ] }/>
+/*
+<Box fillPositionedParent>
+<RealTerminal numRows={24}  numCols={80} screen={0} screens={[ header ] }/>
+</Box>
+*/
   return (
     <Window
       width={1024}
       height={768}>
       <Window.Content>
-
-          <Box fillPositionedParent>
-          <RealTerminal numRows={24}  numCols={80} screen={0} screens={[ header ] }/>
-          </Box>
           <Box fillPositionedParent>
            <SVGTesting />
           </Box>
