@@ -23,8 +23,8 @@
 
 /obj/machinery/computer/med_data/Initialize(mapload)
 	. = ..()
-	var/test_2 = 'pltfiles/ICEMD_pltfiles/icemddn_spacelab.plt'
-	var/test_1 = 'pltfiles/07_usmap.plt'
+	var/test_2 = 'tektests/usmap.tek'
+	var/test_1 = 'tektests/dmerc.tek'
 
 	var/text = file2text(file(test_2))
 	for(var/i in 1 to length(text))
@@ -53,32 +53,34 @@
 		ui = new(user, src, "TN3270", name)
 		ui.open()
 
+#define  CELL_NORMAL       0
+#define   CELL_BLINK       (1 << 0)
+#define   CELL_HIDDEN      (1 << 1)
+#define   CELL_HIGHLIGHT   (1 << 2)
+#define   CELL_UNDERLINE   (1 << 3)
+#define   CELL_REVERSE     (1 << 4)
+#define   CELL_NEUTRAL     (0 << 5)
+#define   CELL_BLUE        (1 << 5)
+#define   CELL_RED         (2 << 5)
+#define   CELL_PINK        (3 << 5)
+#define   CELL_GREEN       (4 << 5)
+#define   CELL_TURQUOISE   (5 << 5)
+#define   CELL_YELLOW      (6 << 5)
+#define   CELL_WHITE       (7 << 5)
+#define   CELL_COLOR_MASK  (7 << 5)
+#define   CELL_UPDATE_ON_ENTER  (1<<9)
+#define   CELL_UPDATE_ON_LOST_FOCUS  (1<<10) // like on tab, we send an act
+#define   CELL_UPDATE_ALWAYS  (1<<11) // this cell is always sent on any act update
+#define   CELL_READONLY 		(1<<12) // this cell is always sent on any act update
+#define   CELL_TAB_ON_ENTER  (1<<13)
 
-#define CELL_NORMAL       (0)
-#define CELL_BLINK       (1 << 0)
-#define CELL_HIDDEN      (1 << 1)
-#define CELL_HIGHLIGHT   (1 << 2)
-#define CELL_UNDERLINE   (1 << 3)
-#define CELL_REVERSE     (1 << 4)
-#define CELL_NEUTRAL     (0 << 5)
-#define CELL_BLUE        (1 << 5)
-#define CELL_RED         (2 << 5)
-#define CELL_PINK        (3 << 5)
-#define CELL_GREEN       (4 << 5)
-#define CELL_TURQUOISE   (5 << 5)
-#define CELL_YELLOW      (6 << 5)
-#define CELL_WHITE       (7 << 5)
-#define CELL_COLOR_MASK  (7 << 5)
-#define CELL_UPDATE_ON_ENTER  (1<<9)
-#define CELL_UPDATE_ON_LOST_FOCUS  (1<<10) // like on tab, we send an act
-#define CELL_UPDATE_ALWAYS (1<<11) // this cell is always sent on any act update
-#define CELL_READONLY 		(1<<12) // this cell is always sent on any act update
 
 /obj/machinery/computer/med_data/ui_static_data(mob/user)
 	var/list/data = list()
 	data["screen"] = "medical"
 	data["menu_mode"] = "login"
-	data["test_data"] = clean_data
+	data["screens"] = list(create_screens())
+	data["screen_index"] = 1
 	if(force_update_fields)
 		var/list/F = list();
 		for(var/name in fields)
@@ -112,7 +114,54 @@
 			force_update_fields = FALSE
 			return TRUE;
 
+/datum/terminal_screen
+	var/list/screen = list()
+	var/list/fields = list()
+
+/datum/terminal_screen/proc/gotoXY(x,y)
+	screen +=list(list("goto",x,y))
+
+/datum/terminal_screen/proc/addText(text,attribute = null)
+	if(isnum(attribute))
+		screen +=list(list("text",attribute,text))
+	else
+		screen +=list(list("text",text))
+
+/datum/terminal_screen/proc/addField(field_name,field_length, attribute=null,default_value="" )
+	if(fields[field_name])
+		return // silent error
+	if(isnum(attribute))
+		screen +=list(list("field",attribute,field_name,field_length))
+	else
+		screen +=list(list("field",field_name,field_length))
+	fields[field_name] = default_value
+
+
 	//switch(action)
+/obj/machinery/computer/med_data/proc/create_screens()
+	var/datum/terminal_screen/menu = new
+	menu.gotoXY(10,10)
+	menu.addField("search_records",1,CELL_UPDATE_ALWAYS)
+	menu.addText(" Search Records")
+	menu.gotoXY(10,11)
+	menu.addField("list_records",1,CELL_UPDATE_ALWAYS)
+	menu.addText(" List Records")
+	menu.gotoXY(10,12)
+	menu.addField("virus_database",1,CELL_UPDATE_ALWAYS)
+	menu.addText(" Virus Database")
+	menu.gotoXY(10,13)
+	menu.addField("list_records",1,CELL_UPDATE_ALWAYS)
+	menu.addText(" List Records")
+	menu.gotoXY(10,14)
+	menu.addField("medbot_tracking",1,CELL_UPDATE_ALWAYS)
+	menu.addText(" Medbot Tracking")
+	menu.gotoXY(10,15)
+	menu.addField("record_maintenance",1,CELL_UPDATE_ALWAYS)
+	menu.addText(" Record Maintenance")
+
+	var/datum/terminal_screen/list_records = new
+	list_records.add
+	return menu.screen
 
 #if 0
 /obj/machinery/computer/med_data/ui_interact(mob/user)

@@ -139,6 +139,8 @@ $el370-magic-paddingTop: 8;
 }
 .blink_me {
   animation: blinker 1s linear infinite;
+  background-color: yellow;
+  color: white;
 }
 
 @keyframes blinker {
@@ -153,15 +155,17 @@ $el370-magic-paddingTop: 8;
 .lu3270 {
   background-clip:content-box;
   overflow-wrap: break-word;
+  color:white;
   background:none;
+  background-color:black;
   white-space: nowrap;
   width:100%;
   height:100%;
   display: block;
   position:relative;
   background:'black';
-  font-family: '3270 Font';
-  //font-family: monospace;
+  //font-family: '3270 Font';
+  font-family: 'Consolas', monospace;
   font-size: 18px;
   overflow: hidden;
   padding: none;
@@ -172,36 +176,37 @@ $el370-magic-paddingTop: 8;
     text-indent: 0;
     text-align: left;
     overflow-wrap: break-word;
-    background:none;
     align-self: left;
     position: absolute;
+    top: 0;
+    left: 0;
     display:block;
   //  flex: 1 1 auto;
-    width: auto;
-    height:auto;
     outline: none;
     padding: none;
     border:none;
     margin:none;
     font-size:inherit;
-    color:inherit;
-
-    .field {
-      border-width:0px;
-      border:none;
+    input {
+      //display: inline;
+    //  word-break:break-all;
+      width: 100%;
+      height: 100%;
+      border: none;
       position: relative;
-      outline: none;
-      padding: none;
-      overflow:none;
-      margin:none;
-      &::-ms-clear {  display: none; width : 0; height: 0; }
-      &::-ms-reveal {  display: none; width : 0; height: 0; }
-      height:100%;
-      width:100%;
-      font-size:inherit;
+      background:none;
       background-color:transparent;
       color:inherit;
-      border-bottom : 1px solid red;
+      font-family:inherit;
+      outline: none;
+      overflow:visible;
+      &::-ms-clear {  display: none; width : 0; height: 0; }
+      &::-ms-reveal {  display: none; width : 0; height: 0; }
+      &:enabled {
+        &:focus {
+          outline : 1px solid red;
+        }
+      }
       &:disabled {
         background-color:transparent;
         color:inherit;
@@ -209,11 +214,15 @@ $el370-magic-paddingTop: 8;
         border:none;
         outline: none;
       }
+    }
   }
 }
-}
 
 
+
+.focus {
+  border : '1px solid yellow'
+};
 
 .lu3270-status-bar {
 // border-top: 1px  solid yellow;
