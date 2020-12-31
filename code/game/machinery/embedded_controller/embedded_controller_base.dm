@@ -1,21 +1,11 @@
-/datum/computer/file/embedded_program
-	var/list/memory = list()
-	var/state
-	var/obj/machinery/embedded_controller/master
-
-/datum/computer/file/embedded_program/proc/post_signal(datum/signal/signal, comm_line)
-	if(master)
-		master.post_signal(signal, comm_line)
-	else
-		qdel(signal)
-
-/datum/computer/file/embedded_program/proc/receive_user_command(command)
-
-/datum/computer/file/embedded_program/proc/receive_signal(datum/signal/signal)
-	return null
-
-/datum/computer/file/embedded_program/process()
-	return 0
+/*
+ * Ok som history.  Originaly we had something called
+ * /datum/computer/file/embedded_program.  I beleve it was for
+ * abstraction when we had circuits in.  All well and good
+ * but makes things messy for simple buttons..airlock controlers
+ * and a shit ton more stuff.  So I striped it, and put it all
+ * into the embedded_controller base with tgui
+*/
 
 /obj/machinery/embedded_controller
 	var/datum/computer/file/embedded_program/program
