@@ -7,24 +7,36 @@
 
 
 // automates control of a door or doors
-/obj/machinery/remote_door_controller
-	power_channel = AREA_USAGE_ENVIRON
-	use_power = IDLE_POWER_USE
-	idle_power_usage = 2
-	active_power_usage = 4
-	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
-	network_id = null // you NEED to set this to get it on the network
+/datum/remote_door_controller
+	var/obj/parent = null
 	var/list/doors = list() // list of doors we control
 
-/obj/machinery/remote_door_controller/Initialize(mapload)
+/datum/New(obj/P)
 	. = ..()
-	if(mapload && !network_id)
-		log_mapping("network_id NOT set on map load, I don't know where this button connects to")
-		THROW(0) // force a runtime to pop up
-	RegisterSignal(src, COMSIG_COMPONENT_NTNET_RECEIVE, .proc/ntnet_receive)
+
+	if(NIC)
+		parent = P
+		TakeComponent(NIC)
+		RegisterSignal(src, COMSIG_COMPONENT_NTNET_RECEIVE, .proc/ntnet_receive)
+
+/datum/Destroy()
+	if(parent)
+		var/list/door_broadcast = list()
+		for(var/door_id in doors)
+			door_broadcast += door_id
+		if(door_broadcast.len > 0)
+			ntnet_send(
+				list("data" = "config", "data_secondary" = null),
+				door_broadcast.len == 1 ? door_broadcast[1] : door_broadcast
+			)
+		UnregisterSignal(src, COMSIG_COMPONENT_NTNET_RECEIVE)
+		var/datum/component/ntnet_interface/NIC = GetComponent(/datum/component/ntnet_interface)
+		parent.TakeComponent(NIC)
+		parent = null
+	return ..()
 
 
-/obj/machinery/remote_door_controller/proc/handle_door_state(door_id)
+/datum/remote_door_controller/proc/handle_door_state(door_id)
 	var/list/door = doors[door_id]
 	switch(door["state"])
 		if(DOOR_STATE_IDLE)
@@ -47,14 +59,14 @@
 				else
 					door["state"] = DOOR_STATE_IDLE
 
-/obj/machinery/remote_door_controller/proc/close_door(door_id)
+/datum/remote_door_controller/proc/close_door(door_id)
 	var/list/door = doors[door_id]
 	if(door["state"] != DOOR_STATE_IDLE)
 		return
 	door["state"] = DOOR_STATE_WAITING_ON_CLOSE
 	ntnet_send(list("data" = "open", "data_secondary" = "off"), door_id)
 
-/obj/machinery/remote_door_controller/proc/open_door(door_id)
+/datum/remote_door_controller/proc/open_door(door_id)
 	var/list/door = doors[door_id]
 	if(door["state"] != DOOR_STATE_IDLE)
 		return
@@ -65,17 +77,16 @@
 		door["state"] = DOOR_STATE_WAITING_ON_OPEN
 		ntnet_send(list("data" = "bolt", "data_secondary" = "off"), door_id)
 
-/obj/machinery/door/airlock/proc/ntnet_receive(datum/source, datum/netdata/data)
+/datum/remote_door_controller/proc/ntnet_receive(datum/source, datum/netdata/data)
 	if(!doors[data.sender_id]) // door message was received log it though
 		log_runtime("Received door info even if its not configs")
 		return
 	var/list/door = doors[data.sender_id]
 	door["bolted"] = data.data["bolted"]
 	door["opened"] = data.data["opened"]
+	handle_door_state(data.sender_id)
 
-	"bolted" = locked, "opened"
-
-/obj/machinery/remote_door_controller/proc/configure_door(door_id, config_flags=null)
+/datum/remote_door_controller/proc/configure_door(door_id, config_flags=null)
 	if(!door_id)
 		return "No door id entered"
 	var/datum/component/ntnet_interface/NIC = GetComponent(/datum/component/ntnet_interface)
@@ -89,6 +100,16 @@
 		doors[door_id] = list("config" = config_flags,"state" = DOOR_STATE_IDLE)
 	ntnet_send(list("data" = "config", "data_secondary" = config_flags),door_id)
 	// return null if it all works
+
+/obj/machinery/remote_door_controller/emag_act(mob/user)
+power_channel = AREA_USAGE_ENVIRON
+	use_power = IDLE_POWER_USE
+	idle_power_usage = 2
+	active_power_usage = 4
+	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
+	var/idSelf
+
+
 
 /obj/machinery/remote_door_controller/emag_act(mob/user)
 	if(obj_flags & EMAGGED)
