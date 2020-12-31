@@ -1,8 +1,8 @@
 /*
- * Ok som history.  Originaly we had something called
- * /datum/computer/file/embedded_program.  I beleve it was for
+ * Ok som history.  Originally we had something called
+ * /datum/computer/file/embedded_program.  I believe it was for
  * abstraction when we had circuits in.  All well and good
- * but makes things messy for simple buttons..airlock controlers
+ * but makes things messy for simple buttons..airlock controllers
  * and a shit ton more stuff.  So I striped it, and put it all
  * into the embedded_controller base with tgui
 */
@@ -14,6 +14,8 @@
 	density = FALSE
 
 	var/on = TRUE
+	//var/id_tag = null
+	//var/network_id = null
 
 /obj/machinery/embedded_controller/ui_interact(mob/user)
 	. = ..()

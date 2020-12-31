@@ -89,7 +89,11 @@
 #define FIREDOOR_OPEN 1
 #define FIREDOOR_CLOSED 2
 
-
+#define AIRLOCK_NTNET_ON_REMOTE_ONLY (1<<1)
+#define AIRLOCK_NTNET_ON_CLOSED (1<<2)
+#define AIRLOCK_NTNET_ON_OPENED (2<<3)
+#define AIRLOCK_NTNET_ON_BOLTED (3<<4)
+#define AIRLOCK_NTNET_ON_UNBOLT (4<<5)
 
 // These are used by supermatter and supermatter monitor program, mostly for UI updating purposes. Higher should always be worse!
 #define SUPERMATTER_ERROR -1		// Unknown status, shouldn't happen but just in case.

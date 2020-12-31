@@ -57,6 +57,8 @@
 
 #define DOOR_CLOSE_WAIT 60 /// Time before a door closes, if not overridden
 
+
+
 /obj/machinery/door/airlock
 	name = "airlock"
 	icon = 'icons/obj/doors/airlocks/station/public.dmi'
@@ -116,6 +118,10 @@
 	rad_insulation = RAD_MEDIUM_INSULATION
 
 	network_id = NETWORK_DOOR_AIRLOCKS
+	/// Associated list of ntnet callbacks used for airlocks controled by buttons
+	/// or remotes
+	var/list/ntnet_send_backs = null
+	var/ntnet_lock_count = 0  // Its a semaphore of all the locks by buttons.
 
 /obj/machinery/door/airlock/Initialize()
 	. = ..()
@@ -142,6 +148,7 @@
 
 	RegisterSignal(src, COMSIG_MACHINERY_BROKEN, .proc/on_break)
 	RegisterSignal(src, COMSIG_COMPONENT_NTNET_RECEIVE, .proc/ntnet_receive)
+	RegisterSignal(src, COMSIG_COMPONENT_NTNET_NAK, .proc/ntnet_receive_nak)
 
 	return INITIALIZE_HINT_LATELOAD
 
@@ -216,6 +223,66 @@
 /obj/machinery/door/airlock/check_access_ntnet(datum/netdata/data)
 	return !requiresID() || ..()
 
+/*
+ * sends status updates to remote controllers so they are in sync
+*/
+/obj/machinery/door/airlock/proc/send_remote_status(action_flag)
+	// ntnet_send_backs should be checked before calling this proc, we don't use
+	// the helper to save some preformance if we have to send to a few devices
+	var/list/send_to = list()
+	for(var/target_id in ntnet_send_backs)
+		if(ntnet_send_backs[target_id] && action_flag)
+			send_to += target_id
+	if(send_to.len > 0)
+		var/datum/netdata/data = new(list("bolted" = locked, "opened" = density))
+		data.receiver_id = send_to.len == 0 ? send_to[1] : send_to
+		ntnet_send(data)
+
+/*
+ * Configures the door to only be controled by a remote or button
+ * arguments
+*/
+/obj/machinery/door/airlock/proc/remote_config(target_id, config_flags=0)
+	if(isnull(target_id))
+		// we just clear everything hard
+		ntnet_send_backs = null
+		interaction_flags_machine = initial(interaction_flags_machine)
+		ntnet_lock_count = 0
+		return
+	if(!config_mask) // clear a config
+		if(ntnet_send_backs && ntnet_send_backs[target_id]) // if it exists, remove it
+			if(ntnet_send_backs[target_id] & AIRLOCK_NTNET_ON_REMOTE_ONLY)
+				ntnet_lock_count--
+			ntnet_send_backs.Remove(target_id)
+			if(ntnet_send_backs.len == 0)
+				ntnet_send_backs = null
+			if(ntnet_lock_count == 0)
+				// reset to normal open and close
+				interaction_flags_machine = initial(interaction_flags_machine)
+	else // we are adding a config
+		if(!ntnet_send_backs)
+			ntnet_send_backs = list()
+
+		var/remote_change = ntnet_send_backs[target_id] & AIRLOCK_NTNET_ON_REMOTE_ONLY
+		if(config_flags ^ remote_change) // if the lock changed, fix
+			if(remote_change) // it was set so reduce the semaphore
+				if(ntnet_lock_count-- == 0)
+					// reset to normal open and close
+					interaction_flags_machine = initial(interaction_flags_machine)
+			else
+				ntnet_lock_count++
+				// cheaper to just set it than it is to test
+				interaction_flags_machine = INTERACT_MACHINE_WIRES_IF_OPEN
+
+		ntnet_send_backs[target_id] = config_mask
+/*
+ * We receive a bad response, usally this means a controlling device doesn't exist
+ * anymore so we will remove it from the list in that case
+*/
+/obj/machinery/door/airlock/proc/ntnet_receive_nak(datum/source, datum/netdata/data, error_code)
+	if(ntnet_send_backs && ntnet_send_backs[data.receiver_id]) // if it exists, remove it
+		remote_config(data.receiver_id, 0)
+
 /obj/machinery/door/airlock/proc/ntnet_receive(datum/source, datum/netdata/data)
 	// Check if the airlock is powered and can accept control packets.
 	if(!hasPower() || !canAIControl())
@@ -225,6 +292,12 @@
 	var/command = data.data["data"]
 	var/command_value = data.data["data_secondary"]
 	switch(command)
+		if("status")
+			ntnet_send(list( "bolted" = locked, "opened" = density), data.sender_id)
+			return
+		if("config")
+			if(command_value = 0)
+
 		if("open")
 			if(command_value == "on" && !density)
 				return
@@ -245,9 +318,9 @@
 				return
 
 			if(locked)
-				unbolt()
+				INVOKE_ASYNC(src,.proc/unbolt)
 			else
-				bolt()
+				INVOKE_ASYNC(src,.proc/bolt)
 
 		if("emergency")
 			if(command_value == "on" && emergency)
@@ -270,6 +343,8 @@
 	playsound(src,boltDown,30,FALSE,3)
 	audible_message("<span class='hear'>You hear a click from the bottom of the door.</span>", null,  1)
 	update_icon()
+	if(ntnet_send_backs)
+		send_remote_status(AIRLOCK_NTNET_ON_BOLTED)
 
 /obj/machinery/door/airlock/unlock()
 	unbolt()
@@ -281,6 +356,8 @@
 	playsound(src,boltUp,30,FALSE,3)
 	audible_message("<span class='hear'>You hear a click from the bottom of the door.</span>", null,  1)
 	update_icon()
+	if(ntnet_send_backs)
+		send_remote_status(AIRLOCK_NTNET_ON_UNBOLT)
 
 /obj/machinery/door/airlock/narsie_act()
 	var/turf/T = get_turf(src)
@@ -1141,6 +1218,9 @@
 	layer = OPEN_DOOR_LAYER
 	update_icon(AIRLOCK_OPEN, 1)
 	operating = FALSE
+	if(ntnet_send_backs)
+		send_remote_status(AIRLOCK_NTNET_ON_OPENED)
+
 	if(delayed_close_requested)
 		delayed_close_requested = FALSE
 		addtimer(CALLBACK(src, .proc/close), 1)
@@ -1199,6 +1279,9 @@
 	delayed_close_requested = FALSE
 	if(!dangerous_close)
 		CheckForMobs()
+	if(ntnet_send_backs)
+		send_remote_status(AIRLOCK_NTNET_ON_CLOSED)
+
 	return TRUE
 
 /obj/machinery/door/airlock/proc/prison_open()

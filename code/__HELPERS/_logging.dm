@@ -223,7 +223,9 @@ GLOBAL_LIST_INIT(testing_global_profiler, list("_PROFILE_NAME" = "Global"))
 
 /proc/log_mapping(text)
 	WRITE_LOG(GLOB.world_map_error_log, text)
-
+	SEND_TEXT(world.log, text)
+	testing(text)
+	
 /proc/log_perf(list/perf_info)
 	. = "[perf_info.Join(",")]\n"
 	WRITE_LOG_NO_FORMAT(GLOB.perf_log, .)

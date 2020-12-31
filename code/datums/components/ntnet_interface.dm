@@ -14,7 +14,7 @@
  */
 /datum/proc/ntnet_send(packet_data, target_id = null, passkey = null)
 	var/datum/netdata/data = packet_data
-	if(!data) // check for easy case
+	if(!istype(data)) // check for easy case
 		if(!islist(packet_data) || target_id == null)
 			stack_trace("ntnet_send: Bad packet creation") // hard fail as its runtime fault
 			return

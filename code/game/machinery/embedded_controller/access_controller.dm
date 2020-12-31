@@ -1,31 +1,96 @@
-#define CLOSING			1
-#define OPENING			2
-#define CYCLE			3
-#define CYCLE_EXTERIOR	4
-#define CYCLE_INTERIOR	5
 
-/obj/machinery/door_buttons
+#define DOOR_STATE_IDLE 0
+#define DOOR_STATE_WAITING_ON_UNBOLT 1
+#define DOOR_STATE_WAITING_ON_OPEN 	2
+#define DOOR_STATE_WAITING_ON_BOLT 	3
+#define DOOR_STATE_WAITING_ON_CLOSE 4
+
+
+// automates control of a door or doors
+/obj/machinery/remote_door_controller
 	power_channel = AREA_USAGE_ENVIRON
 	use_power = IDLE_POWER_USE
 	idle_power_usage = 2
 	active_power_usage = 4
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
-	var/idSelf
+	network_id = null // you NEED to set this to get it on the network
+	var/list/doors = list() // list of doors we control
 
-/obj/machinery/door_buttons/attackby(obj/O, mob/user)
-	return attack_hand(user)
+/obj/machinery/remote_door_controller/Initialize(mapload)
+	. = ..()
+	if(mapload && !network_id)
+		log_mapping("network_id NOT set on map load, I don't know where this button connects to")
+		THROW(0) // force a runtime to pop up
+	RegisterSignal(src, COMSIG_COMPONENT_NTNET_RECEIVE, .proc/ntnet_receive)
 
-/obj/machinery/door_buttons/proc/findObjsByTag()
-	return
 
-/obj/machinery/door_buttons/Initialize()
-	..()
-	return INITIALIZE_HINT_LATELOAD
+/obj/machinery/remote_door_controller/proc/handle_door_state(door_id)
+	var/list/door = doors[door_id]
+	switch(door["state"])
+		if(DOOR_STATE_IDLE)
+			continue // skip
+		if(DOOR_STATE_WAITING_ON_UNBOLT)
+			if(!door["bolted"])
+				door["state"] = DOOR_STATE_WAITING_ON_OPEN
+				ntnet_send(list("data" = "open", "data_secondary" = "on"), door_id)
+		if(DOOR_STATE_WAITING_ON_OPEN)
+			if(!door["opened"])
+				door["state"] = DOOR_STATE_IDLE
+		if(DOOR_STATE_WAITING_ON_BOLT)
+			if(door["bolted"])
+				door["state"] = DOOR_STATE_IDLE
+		if(DOOR_STATE_WAITING_ON_CLOSE)
+			if(!door["opened"])
+				if(door["config"] & AIRLOCK_NTNET_ON_BOLTED)
+					ntnet_send(list("data" = "bolt", "data_secondary" = "on"), door_id)
+					door["state"] = DOOR_STATE_WAITING_ON_BOLT
+				else
+					door["state"] = DOOR_STATE_IDLE
 
-/obj/machinery/door_buttons/LateInitialize()
-	findObjsByTag()
+/obj/machinery/remote_door_controller/proc/close_door(door_id)
+	var/list/door = doors[door_id]
+	if(door["state"] != DOOR_STATE_IDLE)
+		return
+	door["state"] = DOOR_STATE_WAITING_ON_CLOSE
+	ntnet_send(list("data" = "open", "data_secondary" = "off"), door_id)
 
-/obj/machinery/door_buttons/emag_act(mob/user)
+/obj/machinery/remote_door_controller/proc/open_door(door_id)
+	var/list/door = doors[door_id]
+	if(door["state"] != DOOR_STATE_IDLE)
+		return
+	if(door["config"] & AIRLOCK_NTNET_ON_UNBOLT)
+		door["state"] = DOOR_STATE_WAITING_ON_UNBOLT
+		ntnet_send(list("data" = "open", "data_secondary" = "on"), door_id)
+	else
+		door["state"] = DOOR_STATE_WAITING_ON_OPEN
+		ntnet_send(list("data" = "bolt", "data_secondary" = "off"), door_id)
+
+/obj/machinery/door/airlock/proc/ntnet_receive(datum/source, datum/netdata/data)
+	if(!doors[data.sender_id]) // door message was received log it though
+		log_runtime("Received door info even if its not configs")
+		return
+	var/list/door = doors[data.sender_id]
+	door["bolted"] = data.data["bolted"]
+	door["opened"] = data.data["opened"]
+
+	"bolted" = locked, "opened"
+
+/obj/machinery/remote_door_controller/proc/configure_door(door_id, config_flags=null)
+	if(!door_id)
+		return "No door id entered"
+	var/datum/component/ntnet_interface/NIC = GetComponent(/datum/component/ntnet_interface)
+	var/datum/component/ntnet_interface/DOOR = NIC.root_devices[door_id]
+	if(!istype(DOOR))
+		return "Door id \[[door_id]\] does not exist in network!"
+	door_id = DOOR.hardware_id // make sure we get its hardware id
+	if(isnull(config_flags)) // clear if its in doors
+		doors.Remove(door_id)
+	else
+		doors[door_id] = list("config" = config_flags,"state" = DOOR_STATE_IDLE)
+	ntnet_send(list("data" = "config", "data_secondary" = config_flags),door_id)
+	// return null if it all works
+
+/obj/machinery/remote_door_controller/emag_act(mob/user)
 	if(obj_flags & EMAGGED)
 		return
 	obj_flags |= EMAGGED
@@ -34,7 +99,7 @@
 	playsound(src, "sparks", 100, TRUE, SHORT_RANGE_SOUND_EXTRARANGE)
 	to_chat(user, "<span class='warning'>You short out the access controller.</span>")
 
-/obj/machinery/door_buttons/proc/removeMe()
+
 
 
 /obj/machinery/door_buttons/access_button
@@ -42,20 +107,44 @@
 	icon_state = "access_button_standby"
 	name = "access button"
 	desc = "A button used for the explicit purpose of opening an airlock."
-	var/idDoor
-	var/obj/machinery/door/airlock/door
-	var/obj/machinery/door_buttons/airlock_controller/controller
-	var/busy
+	var/interior_airlock_id = null // need to be set on map load
+	var/exterior_airlock_id = null
+	var/bolt_doors_on_close = TRUE
+	/// Current door status
+	var/list/interior_airlock_status = null
+	var/list/exterior_airlock_status = null
 
-/obj/machinery/door_buttons/access_button/findObjsByTag()
-	for(var/obj/machinery/door_buttons/airlock_controller/A in GLOB.machines)
-		if(A.idSelf == idSelf)
-			controller = A
-			break
-	for(var/obj/machinery/door/airlock/I in GLOB.machines)
-		if(I.id_tag == idDoor)
-			door = I
-			break
+/obj/machinery/door_buttons/Initialize(mapload)
+	. = ..()
+	if(mapload)
+		if(!interior_airlock_id && !exterior_airlock_id)
+			log_mapping("exterior_airlock_id or interior_airlock_id needs to be setup on map start")
+			THROW(0) // force a runtime to pop up
+		return INITIALIZE_HINT_LATELOAD // got to late load during mapload to find the doors and configure
+
+/obj/machinery/door_buttons/LateInitialize()
+	var/door_config = AIRLOCK_NTNET_ON_REMOTE_ONLY
+		| AIRLOCK_NTNET_ON_CLOSED
+		| AIRLOCK_NTNET_ON_OPENED
+		| AIRLOCK_NTNET_ON_BOLTED
+		| AIRLOCK_NTNET_ON_UNBOLT
+
+
+	if(interior_airlock_id)
+		DOOR = NIC.root_devices[interior_airlock_id]
+		if(!istype(DOOR))
+			log_mapping("interior_airlock_id does not exist")
+			THROW(0) // force a runtime to pop up
+		interior_airlock_id = DOOR.hardware_id // change it to hardware id
+		ntnet_send(list("data" = "config", "data_secondary" = door_config),interior_airlock_id)
+	if(exterior_airlock_id)
+			DOOR = NIC.root_devices[exterior_airlock_id]
+		if(!istype(DOOR))
+			log_mapping("exterior_airlock_id does not exist")
+			THROW(0) // force a runtime to pop up
+		exterior_airlock_id = DOOR.hardware_id // change it to hardware id
+		ntnet_send(list("data" = "config", "data_secondary" = door_config),exterior_airlock_id)
+
 
 /obj/machinery/door_buttons/access_button/interact(mob/user)
 	if(busy)
