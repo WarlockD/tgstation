@@ -37,7 +37,7 @@
 	if(isliving(user))
 		playsound(src, 'sound/machines/terminal_prompt_confirm.ogg', 50, FALSE)
 	if(src.z > 6)
-		to_chat(user, "<span class='boldannounce'>Unable to establish a connection</span>: \black You're too far away from the station!")
+		to_chat(user, "[span_boldannounce("Unable to establish a connection")]: \black You're too far away from the station!")
 		return
 	var/dat
 
@@ -272,6 +272,8 @@ What a mess.*/
 		active1 = null
 	if(!( GLOB.data_core.security.Find(active2) ))
 		active2 = null
+	if(!authenticated && href_list["choice"] != "Log In") // logging in is the only action you can do if not logged in
+		return
 	if(usr.contents.Find(src) || (in_range(src, usr) && isturf(loc)) || issilicon(usr) || isAdminGhostAI(usr))
 		usr.set_machine(src)
 		switch(href_list["choice"])
@@ -327,7 +329,7 @@ What a mess.*/
 					rank = I.assignment
 					screen = 1
 				else
-					to_chat(usr, "<span class='danger'>Unauthorized Access.</span>")
+					to_chat(usr, span_danger("Unauthorized Access."))
 				playsound(src, 'sound/machines/terminal_on.ogg', 50, FALSE)
 
 //RECORD FUNCTIONS
@@ -354,18 +356,19 @@ What a mess.*/
 						if(C && istype(C))
 							var/pay = C.get_item_credit_value()
 							if(!pay)
-								to_chat(usr, "<span class='warning'>[C] doesn't seem to be worth anything!</span>")
+								to_chat(usr, span_warning("[C] doesn't seem to be worth anything!"))
 							else
 								var/diff = p.fine - p.paid
 								GLOB.data_core.payCitation(active2.fields["id"], text2num(href_list["cdataid"]), pay)
-								to_chat(usr, "<span class='notice'>You have paid [pay] credit\s towards your fine.</span>")
+								to_chat(usr, span_notice("You have paid [pay] credit\s towards your fine."))
 								if (pay == diff || pay > diff || pay >= diff)
 									investigate_log("Citation Paid off: <strong>[p.crimeName]</strong> Fine: [p.fine] | Paid off by [key_name(usr)]", INVESTIGATE_RECORDS)
-									to_chat(usr, "<span class='notice'>The fine has been paid in full.</span>")
+									to_chat(usr, span_notice("The fine has been paid in full."))
+								SSblackbox.ReportCitation(text2num(href_list["cdataid"]),"","","","", 0, pay)
 								qdel(C)
 								playsound(src, "terminal_type", 25, FALSE)
 						else
-							to_chat(usr, "<span class='warning'>Fines can only be paid with holochips!</span>")
+							to_chat(usr, span_warning("Fines can only be paid with holochips!"))
 
 			if("Print Record")
 				if(!( printing ))
@@ -410,7 +413,7 @@ What a mess.*/
 						P.info += "<B>Security Record Lost!</B><BR>"
 						P.name = text("SR-[] '[]'", GLOB.data_core.securityPrintCount, "Record Lost")
 					P.info += "</TT>"
-					P.update_icon()
+					P.update_appearance()
 					printing = null
 			if("Print Poster")
 				if(!( printing ))
@@ -538,19 +541,19 @@ What a mess.*/
 
 				//Medical Record
 				var/datum/data/record/M = new /datum/data/record()
-				M.fields["id"]			= active1.fields["id"]
-				M.fields["name"]		= active1.fields["name"]
-				M.fields["blood_type"]	= "?"
-				M.fields["b_dna"]		= "?????"
-				M.fields["mi_dis"]		= "None"
-				M.fields["mi_dis_d"]	= "No minor disabilities have been declared."
-				M.fields["ma_dis"]		= "None"
-				M.fields["ma_dis_d"]	= "No major disabilities have been diagnosed."
-				M.fields["alg"]			= "None"
-				M.fields["alg_d"]		= "No allergies have been detected in this patient."
-				M.fields["cdi"]			= "None"
-				M.fields["cdi_d"]		= "No diseases have been diagnosed at the moment."
-				M.fields["notes"]		= "No notes."
+				M.fields["id"] = active1.fields["id"]
+				M.fields["name"] = active1.fields["name"]
+				M.fields["blood_type"] = "?"
+				M.fields["b_dna"] = "?????"
+				M.fields["mi_dis"] = "None"
+				M.fields["mi_dis_d"] = "No minor disabilities have been declared."
+				M.fields["ma_dis"] = "None"
+				M.fields["ma_dis_d"] = "No major disabilities have been diagnosed."
+				M.fields["alg"] = "None"
+				M.fields["alg_d"] = "No allergies have been detected in this patient."
+				M.fields["cdi"] = "None"
+				M.fields["cdi_d"] = "No diseases have been diagnosed at the moment."
+				M.fields["notes"] = "No notes."
 				GLOB.data_core.medical += M
 
 
@@ -688,13 +691,13 @@ What a mess.*/
 							fine = min(fine, maxFine)
 
 							if(fine < 0)
-								to_chat(usr, "<span class='warning'>You're pretty sure that's not how money works.</span>")
+								to_chat(usr, span_warning("You're pretty sure that's not how money works."))
 								return
 
 							if(!canUseSecurityRecordsConsole(usr, t1, null, a2))
 								return
 
-							var/crime = GLOB.data_core.createCrimeEntry(t1, "", authenticated, station_time_timestamp(), fine)
+							var/datum/data/crime/crime = GLOB.data_core.createCrimeEntry(t1, "", authenticated, station_time_timestamp(), fine)
 							for (var/obj/item/pda/P in GLOB.PDAs)
 								if(P.owner == active1.fields["name"])
 									var/message = "You have been fined [fine] credits for '[t1]'. Fines may be paid at security."
@@ -709,6 +712,7 @@ What a mess.*/
 									usr.log_message("(PDA: Citation Server) sent \"[message]\" to [signal.format_target()]", LOG_PDA)
 							GLOB.data_core.addCitation(active1.fields["id"], crime)
 							investigate_log("New Citation: <strong>[t1]</strong> Fine: [fine] | Added to [active1.fields["name"]] by [key_name(usr)]", INVESTIGATE_RECORDS)
+							SSblackbox.ReportCitation(crime.dataId, usr.ckey, usr.real_name, active1.fields["name"], t1, fine)
 					if("citation_delete")
 						if(istype(active1, /datum/data/record))
 							if(href_list["cdataid"])
@@ -737,11 +741,11 @@ What a mess.*/
 						if((istype(active1, /datum/data/record) && L.Find(rank)))
 							temp = "<h5>Rank:</h5>"
 							temp += "<ul>"
-							for(var/rank in get_all_jobs())
+							for(var/rank in SSjob.station_jobs)
 								temp += "<li><a href='?src=[REF(src)];choice=Change Rank;rank=[rank]'>[rank]</a></li>"
 							temp += "</ul>"
 						else
-							alert(usr, "You do not have the required rank to do this!")
+							tgui_alert(usr, "You do not have the required rank to do this!")
 //TEMPORARY MENU FUNCTIONS
 			else//To properly clear as per clear screen.
 				temp=null
@@ -749,7 +753,7 @@ What a mess.*/
 					if("Change Rank")
 						if(active1)
 							active1.fields["rank"] = strip_html(href_list["rank"])
-							if(href_list["rank"] in get_all_jobs())
+							if(href_list["rank"] in SSjob.station_jobs)
 								active1.fields["real_rank"] = href_list["real_rank"]
 
 					if("Change Criminal Status")

@@ -67,7 +67,7 @@ SUBSYSTEM_DEF(dbcore)
 	if(failed_connection_timeout <= world.time) //it's been more than 5 seconds since we failed to connect, reset the counter
 		failed_connections = 0
 
-	if(failed_connections > 5)	//If it failed to establish a connection more than 5 times in a row, don't bother attempting to connect for 5 seconds.
+	if(failed_connections > 5) //If it failed to establish a connection more than 5 times in a row, don't bother attempting to connect for 5 seconds.
 		failed_connection_timeout = world.time + 50
 		return FALSE
 
@@ -319,7 +319,7 @@ Delayed insert mode was removed in mysql 7 and only works with MyISAM type table
 /datum/db_query/proc/warn_execute(async = TRUE)
 	. = Execute(async)
 	if(!.)
-		to_chat(usr, "<span class='danger'>A SQL error occurred during this operation, check the server logs.</span>")
+		to_chat(usr, span_danger("A SQL error occurred during this operation, check the server logs."))
 
 /datum/db_query/proc/Execute(async = TRUE, log_error = TRUE)
 	Activity("Execute")

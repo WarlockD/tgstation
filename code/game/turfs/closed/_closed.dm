@@ -57,7 +57,6 @@
 	name = "Space Station 13"
 	icon = 'icons/blank_title.png'
 	icon_state = ""
-	layer = SPLASHSCREEN_LAYER
 	plane = SPLASHSCREEN_PLANE
 	bullet_bounce_sound = null
 
@@ -169,7 +168,6 @@
 	underlays += mutable_appearance('icons/obj/structures.dmi', "grille") //add a grille underlay
 	underlays += mutable_appearance('icons/turf/floors.dmi', "plating") //add the plating underlay, below the grille
 
-
 /turf/closed/indestructible/opsglass
 	name = "window"
 	icon = 'icons/obj/smooth_structures/plastitanium_window.dmi'
@@ -239,6 +237,17 @@
 	underlay_appearance.icon = 'icons/turf/floors.dmi'
 	underlay_appearance.icon_state = "necro1"
 	return TRUE
+
+/turf/closed/indestructible/iron
+	name = "impervious iron wall"
+	desc = "A wall with tough iron plating."
+	icon = 'icons/turf/walls/iron_wall.dmi'
+	icon_state = "iron_wall-0"
+	base_icon_state = "iron_wall"
+	smoothing_flags = SMOOTH_BITMASK
+	smoothing_groups = list(SMOOTH_GROUP_CLOSED_TURFS, SMOOTH_GROUP_WALLS, SMOOTH_GROUP_IRON_WALLS)
+	canSmoothWith = list(SMOOTH_GROUP_IRON_WALLS)
+	opacity = FALSE
 
 /turf/closed/indestructible/riveted/boss
 	name = "necropolis wall"

@@ -52,7 +52,7 @@
 /obj/item/clothing/mask/gas/welding/up
 
 /obj/item/clothing/mask/gas/welding/up/Initialize()
-	..()
+	. = ..()
 	visor_toggling()
 
 // ********************************************************************
@@ -70,6 +70,7 @@
 	desc = "A close-fitting tactical mask that can be connected to an air supply."
 	icon_state = "syndicate"
 	strip_delay = 60
+	w_class = WEIGHT_CLASS_SMALL
 
 /obj/item/clothing/mask/gas/clown_hat
 	name = "clown wig and mask"
@@ -77,7 +78,7 @@
 	clothing_flags = MASKINTERNALS
 	icon_state = "clown"
 	inhand_icon_state = "clown_hat"
-	dye_color = "clown"
+	dye_color = DYE_CLOWN
 	w_class = WEIGHT_CLASS_SMALL
 	flags_cover = MASKCOVERSEYES
 	resistance_flags = FLAMMABLE
@@ -118,7 +119,7 @@
 		for(var/X in actions)
 			var/datum/action/A = X
 			A.UpdateButtonIcon()
-		to_chat(user, "<span class='notice'>Your Clown Mask has now morphed into [choice], all praise the Honkmother!</span>")
+		to_chat(user, span_notice("Your Clown Mask has now morphed into [choice], all praise the Honkmother!"))
 		return TRUE
 
 /obj/item/clothing/mask/gas/sexyclown
@@ -173,7 +174,7 @@
 		for(var/X in actions)
 			var/datum/action/A = X
 			A.UpdateButtonIcon()
-		to_chat(user, "<span class='notice'>Your Mime Mask has now morphed into [choice]!</span>")
+		to_chat(user, span_notice("Your Mime Mask has now morphed into [choice]!"))
 		return TRUE
 
 /obj/item/clothing/mask/gas/monkeymask
@@ -254,7 +255,7 @@
 		for(var/X in actions)
 			var/datum/action/A = X
 			A.UpdateButtonIcon()
-		to_chat(M, "<span class='notice'>The Tiki Mask has now changed into the [choice] Mask!</span>")
+		to_chat(M, span_notice("The Tiki Mask has now changed into the [choice] Mask!"))
 		return 1
 
 /obj/item/clothing/mask/gas/tiki_mask/yalp_elor

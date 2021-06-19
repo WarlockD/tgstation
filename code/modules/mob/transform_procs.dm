@@ -25,12 +25,13 @@
 	icon = initial(icon)
 	invisibility = 0
 	set_species(/datum/species/monkey)
+	uncuff()
 	return src
 
 //////////////////////////           Humanize               //////////////////////////////
 //Could probably be merged with monkeyize but other transformations got their own procs, too
 
-/mob/living/carbon/proc/humanize()
+/mob/living/carbon/proc/humanize(species = /datum/species/human)
 	if (notransform || transformation_timer)
 		return
 
@@ -45,15 +46,15 @@
 	invisibility = INVISIBILITY_MAXIMUM
 
 	new /obj/effect/temp_visual/monkeyify/humanify(loc)
-	transformation_timer = addtimer(CALLBACK(src, .proc/finish_humanize), TRANSFORMATION_DURATION, TIMER_UNIQUE)
+	transformation_timer = addtimer(CALLBACK(src, .proc/finish_humanize, species), TRANSFORMATION_DURATION, TIMER_UNIQUE)
 
-/mob/living/carbon/proc/finish_humanize()
+/mob/living/carbon/proc/finish_humanize(species = /datum/species/human)
 	transformation_timer = null
 	to_chat(src, "<B>You are now a human.</B>")
 	notransform = FALSE
 	icon = initial(icon)
 	invisibility = 0
-	set_species(/datum/species/human)
+	set_species(species)
 	return src
 
 /mob/living/carbon/human/AIize(transfer_after = TRUE, client/preference_source)
@@ -76,20 +77,24 @@
 	invisibility = INVISIBILITY_MAXIMUM
 	return ..()
 
-/mob/proc/AIize(transfer_after = TRUE, client/preference_source)
+/mob/proc/AIize(transfer_after = TRUE, client/preference_source, move = TRUE)
 	var/list/turf/landmark_loc = list()
-	for(var/obj/effect/landmark/start/ai/sloc in GLOB.landmarks_list)
-		if(locate(/mob/living/silicon/ai) in sloc.loc)
-			continue
-		if(sloc.primary_ai)
-			LAZYCLEARLIST(landmark_loc)
-			landmark_loc += sloc.loc
-			break
-		landmark_loc += sloc.loc
-	if(!landmark_loc.len)
-		to_chat(src, "Oh god sorry we can't find an unoccupied AI spawn location, so we're spawning you on top of someone.")
+
+	if(!move)
+		landmark_loc += loc
+	else
 		for(var/obj/effect/landmark/start/ai/sloc in GLOB.landmarks_list)
+			if(locate(/mob/living/silicon/ai) in sloc.loc)
+				continue
+			if(sloc.primary_ai)
+				LAZYCLEARLIST(landmark_loc)
+				landmark_loc += sloc.loc
+				break
 			landmark_loc += sloc.loc
+		if(!landmark_loc.len)
+			to_chat(src, "Oh god sorry we can't find an unoccupied AI spawn location, so we're spawning you on top of someone.")
+			for(var/obj/effect/landmark/start/ai/sloc in GLOB.landmarks_list)
+				landmark_loc += sloc.loc
 
 	if(!landmark_loc.len)
 		message_admins("Could not find ai landmark for [src]. Yell at a mapper! We are spawning them at their current location.")
@@ -133,7 +138,7 @@
 	if(client)
 		R.updatename(client)
 
-	if(mind)		//TODO //TODO WHAT
+	if(mind) //TODO //TODO WHAT
 		if(!transfer_after)
 			mind.active = FALSE
 		mind.transfer_to(R)
@@ -152,7 +157,19 @@
 	R.notify_ai(NEW_BORG)
 
 	. = R
+	if(R.ckey && is_banned_from(R.ckey, "Cyborg"))
+		INVOKE_ASYNC(R, /mob/living/silicon/robot.proc/replace_banned_cyborg)
 	qdel(src)
+
+/mob/living/silicon/robot/proc/replace_banned_cyborg()
+	to_chat(src, "<b>You are job banned from cyborg! Appeal your job ban if you want to avoid this in the future!</b>")
+	ghostize(FALSE)
+
+	var/list/mob/dead/observer/candidates = pollCandidatesForMob("Do you want to play as [src]?", "[src]", null, "Cyborg", 50, src)
+	if(LAZYLEN(candidates))
+		var/mob/dead/observer/chosen_candidate = pick(candidates)
+		message_admins("[key_name_admin(chosen_candidate)] has taken control of ([key_name_admin(src)]) to replace a jobbanned player.")
+		key = chosen_candidate.key
 
 //human -> alien
 /mob/living/carbon/human/proc/Alienize()
@@ -179,7 +196,7 @@
 		if("Drone")
 			new_xeno = new /mob/living/carbon/alien/humanoid/drone(loc)
 
-	new_xeno.a_intent = INTENT_HARM
+	new_xeno.set_combat_mode(TRUE)
 	new_xeno.key = key
 	update_atom_languages()
 
@@ -203,7 +220,7 @@
 
 	var/mob/living/simple_animal/slime/new_slime
 	if(reproduce)
-		var/number = pick(14;2,3,4)	//reproduce (has a small chance of producing 3 or 4 offspring)
+		var/number = pick(14;2,3,4) //reproduce (has a small chance of producing 3 or 4 offspring)
 		var/list/babies = list()
 		for(var/i=1,i<=number,i++)
 			var/mob/living/simple_animal/slime/M = new/mob/living/simple_animal/slime(loc)
@@ -213,14 +230,14 @@
 		new_slime = pick(babies)
 	else
 		new_slime = new /mob/living/simple_animal/slime(loc)
-	new_slime.a_intent = INTENT_HARM
+	new_slime.set_combat_mode(TRUE)
 	new_slime.key = key
 
 	to_chat(new_slime, "<B>You are now a slime. Skreee!</B>")
 	. = new_slime
 	qdel(src)
 
-/mob/proc/become_overmind(starting_points = 60)
+/mob/proc/become_overmind(starting_points = OVERMIND_STARTING_POINTS)
 	var/mob/camera/blob/B = new /mob/camera/blob(get_turf(src), starting_points)
 	B.key = key
 	. = B
@@ -237,11 +254,11 @@
 	regenerate_icons()
 	icon = null
 	invisibility = INVISIBILITY_MAXIMUM
-	for(var/t in bodyparts)	//this really should not be necessary
+	for(var/t in bodyparts) //this really should not be necessary
 		qdel(t)
 
 	var/mob/living/simple_animal/pet/dog/corgi/new_corgi = new /mob/living/simple_animal/pet/dog/corgi (loc)
-	new_corgi.a_intent = INTENT_HARM
+	new_corgi.set_combat_mode(TRUE)
 	new_corgi.key = key
 
 	to_chat(new_corgi, "<B>You are now a Corgi. Yap Yap!</B>")
@@ -265,7 +282,7 @@
 	icon = null
 	invisibility = INVISIBILITY_MAXIMUM
 	var/mob/living/simple_animal/hostile/gorilla/new_gorilla = new (get_turf(src))
-	new_gorilla.a_intent = INTENT_HARM
+	new_gorilla.set_combat_mode(TRUE)
 	if(mind)
 		mind.transfer_to(new_gorilla)
 	else
@@ -277,10 +294,10 @@
 /mob/living/carbon/human/Animalize()
 
 	var/list/mobtypes = typesof(/mob/living/simple_animal)
-	var/mobpath = input("Which type of mob should [src] turn into?", "Choose a type") in sortList(mobtypes, /proc/cmp_typepaths_asc)
+	var/mobpath = tgui_input_list(usr, "Which type of mob should [src] turn into?", "Choose a type", sortList(mobtypes, /proc/cmp_typepaths_asc))
 
 	if(!safe_animal(mobpath))
-		to_chat(usr, "<span class='danger'>Sorry but this mob type is currently unavailable.</span>")
+		to_chat(usr, span_danger("Sorry but this mob type is currently unavailable."))
 		return
 
 	if(notransform)
@@ -298,30 +315,29 @@
 	for(var/t in bodyparts)
 		qdel(t)
 
-	var/mob/new_mob = new mobpath(src.loc)
+	var/mob/living/new_mob = new mobpath(src.loc)
 
 	new_mob.key = key
-	new_mob.a_intent = INTENT_HARM
+	new_mob.set_combat_mode(TRUE)
 
-
-	to_chat(new_mob, "<span class='boldnotice'>You suddenly feel more... animalistic.</span>")
+	to_chat(new_mob, span_boldnotice("You suddenly feel more... animalistic."))
 	. = new_mob
 	qdel(src)
 
 /mob/proc/Animalize()
 
 	var/list/mobtypes = typesof(/mob/living/simple_animal)
-	var/mobpath = input("Which type of mob should [src] turn into?", "Choose a type") in sortList(mobtypes, /proc/cmp_typepaths_asc)
+	var/mobpath = tgui_input_list(usr, "Which type of mob should [src] turn into?", "Choose a type", sortList(mobtypes, /proc/cmp_typepaths_asc))
 
 	if(!safe_animal(mobpath))
-		to_chat(usr, "<span class='danger'>Sorry but this mob type is currently unavailable.</span>")
+		to_chat(usr, span_danger("Sorry but this mob type is currently unavailable."))
 		return
 
-	var/mob/new_mob = new mobpath(src.loc)
+	var/mob/living/new_mob = new mobpath(src.loc)
 
 	new_mob.key = key
-	new_mob.a_intent = INTENT_HARM
-	to_chat(new_mob, "<span class='boldnotice'>You feel more... animalistic.</span>")
+	new_mob.set_combat_mode(TRUE)
+	to_chat(new_mob, span_boldnotice("You feel more... animalistic."))
 
 	. = new_mob
 	qdel(src)
@@ -335,7 +351,7 @@
 
 //Bad mobs! - Remember to add a comment explaining what's wrong with the mob
 	if(!MP)
-		return FALSE	//Sanity, this should never happen.
+		return FALSE //Sanity, this should never happen.
 
 	if(ispath(MP, /mob/living/simple_animal/hostile/construct))
 		return FALSE //Verbs do not appear for players.

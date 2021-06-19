@@ -1,18 +1,18 @@
 /*
- *	These absorb the functionality of the plant bag, ore satchel, etc.
- *	They use the use_to_pickup, quick_gather, and quick_empty functions
- *	that were already defined in weapon/storage, but which had been
- *	re-implemented in other classes.
+ * These absorb the functionality of the plant bag, ore satchel, etc.
+ * They use the use_to_pickup, quick_gather, and quick_empty functions
+ * that were already defined in weapon/storage, but which had been
+ * re-implemented in other classes.
  *
- *	Contains:
- *		Trash Bag
- *		Mining Satchel
- *		Plant Bag
- *		Sheet Snatcher
- *		Book Bag
+ * Contains:
+ * Trash Bag
+ * Mining Satchel
+ * Plant Bag
+ * Sheet Snatcher
+ * Book Bag
  *      Biowaste Bag
  *
- *	-Sayu
+ * -Sayu
  */
 
 //  Generic non-item
@@ -51,7 +51,7 @@
 	STR.set_holdable(null, list(/obj/item/disk/nuclear))
 
 /obj/item/storage/bag/trash/suicide_act(mob/user)
-	user.visible_message("<span class='suicide'>[user] puts [src] over [user.p_their()] head and starts chomping at the insides! Disgusting!</span>")
+	user.visible_message(span_suicide("[user] puts [src] over [user.p_their()] head and starts chomping at the insides! Disgusting!"))
 	playsound(loc, 'sound/items/eatfood.ogg', 50, TRUE, -1)
 	return (TOXLOSS)
 
@@ -65,6 +65,7 @@
 			icon_state = "[initial(icon_state)]1"
 		else
 			icon_state = "[initial(icon_state)]"
+	return ..()
 
 /obj/item/storage/bag/trash/cyborg
 	insertable = FALSE
@@ -73,9 +74,9 @@
 	if(insertable)
 		J.put_in_cart(src, user)
 		J.mybag=src
-		J.update_icon()
+		J.update_appearance()
 	else
-		to_chat(user, "<span class='warning'>You are unable to fit your [name] into the [J.name].</span>")
+		to_chat(user, span_warning("You are unable to fit your [name] into the [J.name]."))
 		return
 
 /obj/item/storage/bag/trash/filled
@@ -143,6 +144,7 @@
 		listeningTo = null
 
 /obj/item/storage/bag/ore/proc/Pickup_ores(mob/living/user)
+	SIGNAL_HANDLER
 	var/show_message = FALSE
 	var/obj/structure/ore_box/box
 	var/turf/tile = user.loc
@@ -162,17 +164,17 @@
 				show_message = TRUE
 			else
 				if(!spam_protection)
-					to_chat(user, "<span class='warning'>Your [name] is full and can't hold any more!</span>")
+					to_chat(user, span_warning("Your [name] is full and can't hold any more!"))
 					spam_protection = TRUE
 					continue
 	if(show_message)
 		playsound(user, "rustle", 50, TRUE)
 		if (box)
-			user.visible_message("<span class='notice'>[user] offloads the ores beneath [user.p_them()] into [box].</span>", \
-			"<span class='notice'>You offload the ores beneath you into your [box].</span>")
+			user.visible_message(span_notice("[user] offloads the ores beneath [user.p_them()] into [box]."), \
+			span_notice("You offload the ores beneath you into your [box]."))
 		else
-			user.visible_message("<span class='notice'>[user] scoops up the ores beneath [user.p_them()].</span>", \
-				"<span class='notice'>You scoop up the ores beneath you with your [name].</span>")
+			user.visible_message(span_notice("[user] scoops up the ores beneath [user.p_them()]."), \
+				span_notice("You scoop up the ores beneath you with your [name]."))
 	spam_protection = FALSE
 
 /obj/item/storage/bag/ore/cyborg
@@ -251,8 +253,7 @@
 	var/datum/component/storage/concrete/stack/STR = GetComponent(/datum/component/storage/concrete/stack)
 	STR.allow_quick_empty = TRUE
 	STR.set_holdable(list(
-			/obj/item/stack/sheet,
-			/obj/item/stack/tile/bronze
+			/obj/item/stack/sheet
 			),
 		list(
 			/obj/item/stack/sheet/mineral/sandstone,
@@ -324,11 +325,17 @@
 	STR.set_holdable(list(
 		/obj/item/reagent_containers/food,
 		/obj/item/reagent_containers/glass,
+		/obj/item/clothing/mask/cigarette,
+		/obj/item/storage/fancy,
+		/obj/item/storage/box/gum,
+		/obj/item/storage/box/matches,
 		/obj/item/food,
-		/obj/item/kitchen/knife,
-		/obj/item/kitchen/rollingpin,
-		/obj/item/kitchen/fork,
-		)) //Should cover: Bottles, Beakers, Bowls, Booze, Glasses, Food, and Kitchen Tools.
+		/obj/item/trash,
+		/obj/item/lighter,
+		/obj/item/rollingpaper,
+		/obj/item/kitchen,
+		/obj/item/organ,
+		)) //Should cover: Bottles, Beakers, Bowls, Booze, Glasses, Food, Food Containers, Food Trash, Organs, Tobacco Products, Lighters, and Kitchen Tools.
 	STR.insert_preposition = "on"
 	STR.max_items = 7
 
@@ -349,7 +356,7 @@
 	if(ishuman(M))
 		if(prob(10))
 			M.Paralyze(40)
-	update_icon()
+	update_appearance()
 
 /obj/item/storage/bag/tray/proc/do_scatter(obj/item/I)
 	for(var/i in 1 to rand(1,2))
@@ -367,11 +374,11 @@
 
 /obj/item/storage/bag/tray/Entered()
 	. = ..()
-	update_icon()
+	update_appearance()
 
 /obj/item/storage/bag/tray/Exited()
 	. = ..()
-	update_icon()
+	update_appearance()
 
 /obj/item/storage/bag/tray/cafeteria
 	name = "cafeteria tray"
@@ -380,7 +387,7 @@
 	desc = "A cheap metal tray to pile today's meal onto."
 
 /*
- *	Chemistry bag
+ * Chemistry bag
  */
 
 /obj/item/storage/bag/chemistry
@@ -437,7 +444,9 @@
 		/obj/item/food/deadmouse,
 		/obj/item/food/monkeycube,
 		/obj/item/organ,
-		/obj/item/bodypart
+		/obj/item/bodypart,
+		/obj/item/petri_dish,
+		/obj/item/swab
 		))
 
 /*

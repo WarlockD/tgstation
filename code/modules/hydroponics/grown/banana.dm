@@ -23,7 +23,7 @@
 	icon_state = "banana"
 	inhand_icon_state = "banana"
 	trash_type = /obj/item/grown/bananapeel
-	bite_consumption = 5
+	bite_consumption_mod = 3
 	foodtypes = FRUIT
 	juice_results = list(/datum/reagent/consumable/banana = 0)
 	distill_reagent = /datum/reagent/consumable/ethanol/bananahonk
@@ -36,7 +36,7 @@
 		peel.juice_results = list(/datum/reagent/medicine/coagulant/banana_peel = seed.potency * 0.2)
 
 /obj/item/food/grown/banana/suicide_act(mob/user)
-	user.visible_message("<span class='suicide'>[user] is aiming [src] at [user.p_them()]self! It looks like [user.p_theyre()] trying to commit suicide!</span>")
+	user.visible_message(span_suicide("[user] is aiming [src] at [user.p_them()]self! It looks like [user.p_theyre()] trying to commit suicide!"))
 	playsound(loc, 'sound/items/bikehorn.ogg', 50, TRUE, -1)
 	sleep(25)
 	if(!user)
@@ -62,8 +62,16 @@
 	throw_speed = 3
 	throw_range = 7
 
+/obj/item/grown/bananapeel/Initialize(mapload)
+	. = ..()
+	if(prob(40))
+		if(prob(60))
+			icon_state = "[icon_state]_2"
+		else
+			icon_state = "[icon_state]_3"
+
 /obj/item/grown/bananapeel/suicide_act(mob/user)
-	user.visible_message("<span class='suicide'>[user] is deliberately slipping on [src]! It looks like [user.p_theyre()] trying to commit suicide!</span>")
+	user.visible_message(span_suicide("[user] is deliberately slipping on [src]! It looks like [user.p_theyre()] trying to commit suicide!"))
 	playsound(loc, 'sound/misc/slip.ogg', 50, TRUE, -1)
 	return (BRUTELOSS)
 
@@ -115,7 +123,7 @@
 /obj/item/food/grown/banana/bluespace
 	seed = /obj/item/seeds/banana/bluespace
 	name = "bluespace banana"
-	icon_state = "banana_blue"
+	icon_state = "bluenana"
 	inhand_icon_state = "bluespace_peel"
 	trash_type = /obj/item/grown/bananapeel/bluespace
 	tastes = list("banana" = 1)
@@ -126,7 +134,7 @@
 	seed = /obj/item/seeds/banana/bluespace
 	name = "bluespace banana peel"
 	desc = "A peel from a bluespace banana."
-	icon_state = "banana_peel_blue"
+	icon_state = "bluenana_peel"
 
 // Other
 /obj/item/grown/bananapeel/specialpeel     //used by /obj/item/clothing/shoes/clown_shoes/banana_shoes

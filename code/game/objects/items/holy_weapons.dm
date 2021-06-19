@@ -1,5 +1,25 @@
 // CHAPLAIN CUSTOM ARMORS //
 
+/obj/item/clothing/head/helmet/chaplain/clock
+	name = "forgotten helmet"
+	desc = "It has the unyielding gaze of a god eternally forgotten."
+	icon_state = "clockwork_helmet"
+	inhand_icon_state = "clockwork_helmet_inhand"
+	armor = list(MELEE = 50, BULLET = 10, LASER = 10, ENERGY = 10, BOMB = 0, BIO = 0, RAD = 0, FIRE = 80, ACID = 80)
+	flags_inv = HIDEMASK|HIDEEARS|HIDEEYES|HIDEFACE|HIDEHAIR|HIDESNOUT
+	flags_cover = HEADCOVERSEYES | HEADCOVERSMOUTH
+	strip_delay = 8 SECONDS
+	dog_fashion = null
+
+/obj/item/clothing/suit/armor/riot/chaplain/clock
+	name = "forgotten armour"
+	desc = "It sounds like hissing steam, ticking cogs, gone silent, It looks like a dead machine, trying to tick with life."
+	icon_state = "clockwork_cuirass"
+	inhand_icon_state = "clockwork_cuirass_inhand"
+	allowed = list(/obj/item/storage/book/bible, /obj/item/nullrod, /obj/item/reagent_containers/food/drinks/bottle/holywater, /obj/item/storage/fancy/candle_box, /obj/item/candle, /obj/item/tank/internals/emergency_oxygen, /obj/item/tank/internals/plasmaman)
+	slowdown = 0
+	clothing_flags = NONE
+
 /obj/item/clothing/head/helmet/chaplain
 	name = "crusader helmet"
 	desc = "Deus Vult."
@@ -48,9 +68,16 @@
 		SSblackbox.record_feedback("tally", "chaplain_armor", 1, "[choice]")
 		GLOB.holy_armor_type = choice
 	else
-		to_chat(M, "<span class='warning'>A selection has already been made. Self-Destructing...</span>")
+		to_chat(M, span_warning("A selection has already been made. Self-Destructing..."))
 		return
 
+
+/obj/item/storage/box/holy/clock
+	name = "Forgotten kit"
+
+/obj/item/storage/box/holy/clock/PopulateContents()
+	new /obj/item/clothing/head/helmet/chaplain/clock(src)
+	new /obj/item/clothing/suit/armor/riot/chaplain/clock(src)
 
 /obj/item/storage/box/holy
 	name = "Templar Kit"
@@ -77,13 +104,10 @@
 	name = "cage"
 	desc = "A cage that restrains the will of the self, allowing one to see the profane world for what it is."
 	flags_inv = NONE
-	worn_icon = 'icons/mob/large-worn-icons/64x64/head.dmi'
 	icon_state = "cage"
 	inhand_icon_state = "cage"
-	worn_x_dimension = 64
-	worn_y_dimension = 64
-	clothing_flags = LARGE_WORN_ICON
 	dynamic_hair_suffix = ""
+	worn_y_offset = 7
 
 /obj/item/storage/box/holy/sentinel
 	name = "Stone Sentinel Kit"
@@ -211,7 +235,7 @@
 	AddComponent(/datum/component/anti_magic, TRUE, TRUE, FALSE, null, null, FALSE)
 
 /obj/item/nullrod/suicide_act(mob/user)
-	user.visible_message("<span class='suicide'>[user] is killing [user.p_them()]self with [src]! It looks like [user.p_theyre()] trying to get closer to god!</span>")
+	user.visible_message(span_suicide("[user] is killing [user.p_them()]self with [src]! It looks like [user.p_theyre()] trying to get closer to god!"))
 	return (BRUTELOSS|FIRELOSS)
 
 /obj/item/nullrod/attack_self(mob/user)
@@ -298,10 +322,10 @@
 	block_chance = 50
 	var/shield_icon = "shield-red"
 
-/obj/item/nullrod/staff/worn_overlays(isinhands)
-	. = list()
+/obj/item/nullrod/staff/worn_overlays(mutable_appearance/standing, isinhands)
+	. = ..()
 	if(isinhands)
-		. += mutable_appearance('icons/effects/effects.dmi', shield_icon, MOB_LAYER + 0.01)
+		. += mutable_appearance('icons/effects/effects.dmi', shield_icon, MOB_SHIELD_LAYER)
 
 /obj/item/nullrod/staff/blue
 	name = "blue holy staff"
@@ -424,8 +448,8 @@
 	attack_verb_simple = list("attack", "slash", "stab", "slice", "tear", "lacerate", "rip", "dice", "cut")
 
 /obj/item/nullrod/sord/suicide_act(mob/user) //a near-exact copy+paste of the actual sord suicide_act()
-	user.visible_message("<span class='suicide'>[user] is trying to impale [user.p_them()]self with [src]! It might be a suicide attempt if it weren't so HOLY.</span>", \
-	"<span class='suicide'>You try to impale yourself with [src], but it's TOO HOLY...</span>")
+	user.visible_message(span_suicide("[user] is trying to impale [user.p_them()]self with [src]! It might be a suicide attempt if it weren't so HOLY."), \
+	span_suicide("You try to impale yourself with [src], but it's TOO HOLY..."))
 	return SHAME
 
 /obj/item/nullrod/scythe
@@ -489,14 +513,14 @@
 	if(possessed)
 		return
 	if(!(GLOB.ghost_role_flags & GHOSTROLE_STATION_SENTIENCE))
-		to_chat(user, "<span class='notice'>Anomalous otherworldly energies block you from awakening the blade!</span>")
+		to_chat(user, span_notice("Anomalous otherworldly energies block you from awakening the blade!"))
 		return
 
-	to_chat(user, "<span class='notice'>You attempt to wake the spirit of the blade...</span>")
+	to_chat(user, span_notice("You attempt to wake the spirit of the blade..."))
 
 	possessed = TRUE
 
-	var/list/mob/dead/observer/candidates = pollGhostCandidates("Do you want to play as the spirit of [user.real_name]'s blade?", ROLE_PAI, null, FALSE, 100, POLL_IGNORE_POSSESSED_BLADE)
+	var/list/mob/dead/observer/candidates = pollGhostCandidates("Do you want to play as the spirit of [user.real_name]'s blade?", ROLE_PAI, FALSE, 100, POLL_IGNORE_POSSESSED_BLADE)
 
 	if(LAZYLEN(candidates))
 		var/mob/dead/observer/C = pick(candidates)
@@ -504,21 +528,21 @@
 		S.ckey = C.ckey
 		S.fully_replace_character_name(null, "The spirit of [name]")
 		S.status_flags |= GODMODE
-		S.copy_languages(user, LANGUAGE_MASTER)	//Make sure the sword can understand and communicate with the user.
+		S.copy_languages(user, LANGUAGE_MASTER) //Make sure the sword can understand and communicate with the user.
 		S.update_atom_languages()
-		grant_all_languages(FALSE, FALSE, TRUE)	//Grants omnitongue
+		grant_all_languages(FALSE, FALSE, TRUE) //Grants omnitongue
 		var/input = sanitize_name(stripped_input(S,"What are you named?", ,"", MAX_NAME_LEN))
 
 		if(src && input)
 			name = input
 			S.fully_replace_character_name(null, "The spirit of [input]")
 	else
-		to_chat(user, "<span class='warning'>The blade is dormant. Maybe you can try again later.</span>")
+		to_chat(user, span_warning("The blade is dormant. Maybe you can try again later."))
 		possessed = FALSE
 
 /obj/item/nullrod/scythe/talking/Destroy()
 	for(var/mob/living/simple_animal/shade/S in contents)
-		to_chat(S, "<span class='userdanger'>You were destroyed!</span>")
+		to_chat(S, span_userdanger("You were destroyed!"))
 		qdel(S)
 	return ..()
 
@@ -548,6 +572,10 @@
 	w_class = WEIGHT_CLASS_BULKY
 	attack_verb_continuous = list("smashes", "bashes", "hammers", "crunches")
 	attack_verb_simple = list("smash", "bash", "hammer", "crunch")
+
+/obj/item/nullrod/hammer/Initialize()
+	. = ..()
+	AddElement(/datum/element/kneejerk)
 
 /obj/item/nullrod/chainsaw
 	name = "chainsaw hand"
@@ -599,6 +627,10 @@
 	attack_verb_simple = list("attack", "smash", "crush", "splatter", "crack")
 	hitsound = 'sound/weapons/blade1.ogg'
 
+/obj/item/nullrod/pride_hammer/Initialize()
+	. = ..()
+	AddElement(/datum/element/kneejerk)
+
 /obj/item/nullrod/pride_hammer/afterattack(atom/A as mob|obj|turf|area, mob/user, proximity)
 	. = ..()
 	if(!proximity)
@@ -606,8 +638,8 @@
 	if(prob(30) && ishuman(A))
 		var/mob/living/carbon/human/H = A
 		user.reagents.trans_to(H, user.reagents.total_volume, 1, 1, 0, transfered_by = user)
-		to_chat(user, "<span class='notice'>Your pride reflects on [H].</span>")
-		to_chat(H, "<span class='userdanger'>You feel insecure, taking on [user]'s burden.</span>")
+		to_chat(user, span_notice("Your pride reflects on [H]."))
+		to_chat(H, span_userdanger("You feel insecure, taking on [user]'s burden."))
 
 /obj/item/nullrod/whip
 	name = "holy whip"
@@ -680,7 +712,7 @@
 /obj/item/nullrod/carp/attack_self(mob/living/user)
 	if(used_blessing)
 	else if(user.mind && (user.mind.holy_role))
-		to_chat(user, "<span class='boldnotice'>You are blessed by Carp-Sie. Wild space carp will no longer attack you.</span>")
+		to_chat(user, span_boldnotice("You are blessed by Carp-Sie. Wild space carp will no longer attack you."))
 		user.faction |= "carp"
 		used_blessing = TRUE
 
@@ -691,7 +723,7 @@
 	force = 15
 	block_chance = 40
 	slot_flags = ITEM_SLOT_BACK
-	sharpness = SHARP_NONE
+	sharpness = NONE
 	hitsound = "swing_hit"
 	attack_verb_continuous = list("smashes", "slams", "whacks", "thwacks")
 	attack_verb_simple = list("smash", "slam", "whack", "thwack")

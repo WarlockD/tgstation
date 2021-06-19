@@ -153,9 +153,10 @@ GLOBAL_LIST_INIT(xeno_recipes, list ( \
 	/// Kelvin to start drying
 	var/drying_threshold_temperature = 500
 
-/obj/item/stack/sheet/wethide/Initialize(mapload, new_amount, merge)
+/obj/item/stack/sheet/wethide/Initialize(mapload, new_amount, merge = TRUE, list/mat_override=null, mat_amt=1)
 	. = ..()
 	AddElement(/datum/element/dryable, /obj/item/stack/sheet/leather)
+	AddElement(/datum/element/atmos_sensitive, mapload)
 
 /*
  * Leather SHeet
@@ -250,9 +251,9 @@ GLOBAL_LIST_INIT(sinew_recipes, list ( \
 /obj/item/stack/sheet/animalhide/attackby(obj/item/W, mob/user, params)
 	if(W.get_sharpness())
 		playsound(loc, 'sound/weapons/slice.ogg', 50, TRUE, -1)
-		user.visible_message("<span class='notice'>[user] starts cutting hair off \the [src].</span>", "<span class='notice'>You start cutting the hair off \the [src]...</span>", "<span class='hear'>You hear the sound of a knife rubbing against flesh.</span>")
+		user.visible_message(span_notice("[user] starts cutting hair off \the [src]."), span_notice("You start cutting the hair off \the [src]..."), span_hear("You hear the sound of a knife rubbing against flesh."))
 		if(do_after(user, 50, target = src))
-			to_chat(user, "<span class='notice'>You cut the hair from this [src.singular_name].</span>")
+			to_chat(user, span_notice("You cut the hair from this [src.singular_name]."))
 			new /obj/item/stack/sheet/hairlesshide(user.drop_location(), 1)
 			use(1)
 	else
@@ -262,14 +263,15 @@ GLOBAL_LIST_INIT(sinew_recipes, list ( \
 //Step two - washing..... it's actually in washing machine code.
 
 //Step three - drying
-/obj/item/stack/sheet/wethide/temperature_expose(datum/gas_mixture/air, exposed_temperature, exposed_volume)
-	..()
-	if(exposed_temperature >= drying_threshold_temperature)
-		wetness--
-		if(wetness == 0)
-			new /obj/item/stack/sheet/leather(drop_location(), 1)
-			wetness = initial(wetness)
-			use(1)
+/obj/item/stack/sheet/wethide/should_atmos_process(datum/gas_mixture/air, exposed_temperature)
+	return (exposed_temperature > drying_threshold_temperature)
+
+/obj/item/stack/sheet/wethide/atmos_expose(datum/gas_mixture/air, exposed_temperature)
+	wetness--
+	if(wetness == 0)
+		new /obj/item/stack/sheet/leather(drop_location(), 1)
+		wetness = initial(wetness)
+		use(1)
 
 /obj/item/stack/sheet/wethide/microwave_act(obj/machinery/microwave/MW)
 	..()

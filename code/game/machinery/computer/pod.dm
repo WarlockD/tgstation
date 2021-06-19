@@ -82,7 +82,7 @@
 	if(.)
 		return
 	if(!allowed(usr))
-		to_chat(usr, "<span class='warning'>Access denied.</span>")
+		to_chat(usr, span_warning("Access denied."))
 		return
 
 	switch(action)
@@ -134,13 +134,13 @@
 	name = "\improper DoorMex control console"
 	icon_state = "oldcomp"
 	icon_screen = "library"
-	icon_keyboard = "no_keyboard"
+	icon_keyboard = null
 
 /obj/machinery/computer/pod/old/mass_driver_controller
 	name = "\improper Mass Driver Controller"
 	icon = 'icons/obj/airlock_machines.dmi'
 	icon_state = "airlock_control_standby"
-	icon_keyboard = "no_keyboard"
+	icon_keyboard = null
 	density = FALSE
 
 /obj/machinery/computer/pod/old/mass_driver_controller/toxinsdriver
@@ -155,6 +155,9 @@
 
 /obj/machinery/computer/pod/old/mass_driver_controller/trash
 	id = MASSDRIVER_DISPOSALS
+
+/obj/machinery/computer/pod/old/mass_driver_controller/shack
+	id = MASSDRIVER_SHACK
 
 /obj/machinery/computer/pod/old/syndicate
 	name = "\improper ProComp Executive IIc"

@@ -22,6 +22,7 @@
 	muzzle_ignore = TRUE
 	hands_use_check = TRUE
 	emote_type = EMOTE_AUDIBLE
+	audio_cooldown = 5 SECONDS
 	vary = TRUE
 
 /datum/emote/living/carbon/clap/get_sound(mob/living/user)
@@ -42,7 +43,7 @@
 	cooldown = 6 SECONDS
 
 /datum/emote/living/carbon/crack/can_run_emote(mob/living/carbon/user, status_check = TRUE , intentional)
-	if(user.usable_hands < 2)
+	if(!iscarbon(user) || user.usable_hands < 2)
 		return FALSE
 	return ..()
 /datum/emote/living/carbon/moan
@@ -102,16 +103,17 @@
 /datum/emote/living/carbon/circle/run_emote(mob/user, params, type_override, intentional)
 	. = ..()
 	if(!length(user.get_empty_held_indexes()))
-		to_chat(user, "<span class='warning'>You don't have any free hands to make a circle with.</span>")
+		to_chat(user, span_warning("You don't have any free hands to make a circle with."))
 		return
 	var/obj/item/circlegame/N = new(user)
 	if(user.put_in_hands(N))
-		to_chat(user, "<span class='notice'>You make a circle with your hand.</span>")
+		to_chat(user, span_notice("You make a circle with your hand."))
 
 /datum/emote/living/carbon/slap
 	key = "slap"
 	key_third_person = "slaps"
 	hands_use_check = TRUE
+	cooldown = 3 SECONDS // to prevent endless table slamming
 
 /datum/emote/living/carbon/slap/run_emote(mob/user, params, type_override, intentional)
 	. = ..()
@@ -119,8 +121,24 @@
 		return
 	var/obj/item/slapper/N = new(user)
 	if(user.put_in_hands(N))
-		to_chat(user, "<span class='notice'>You ready your slapping hand.</span>")
+		to_chat(user, span_notice("You ready your slapping hand."))
 	else
 		qdel(N)
-		to_chat(user, "<span class='warning'>You're incapable of slapping in your current state.</span>")
+		to_chat(user, span_warning("You're incapable of slapping in your current state."))
+
+/datum/emote/living/carbon/noogie
+	key = "noogie"
+	key_third_person = "noogies"
+	hands_use_check = TRUE
+
+/datum/emote/living/carbon/noogie/run_emote(mob/user, params, type_override, intentional)
+	. = ..()
+	if(!.)
+		return
+	var/obj/item/noogie/noogie = new(user)
+	if(user.put_in_hands(noogie))
+		to_chat(user, span_notice("You ready your noogie'ing hand."))
+	else
+		qdel(noogie)
+		to_chat(user, span_warning("You're incapable of noogie'ing in your current state."))
 
