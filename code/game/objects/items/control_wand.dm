@@ -44,15 +44,18 @@
 // Airlock remote works by sending NTNet packets to whatever it's pointed at.
 /obj/item/door_remote/afterattack(atom/A, mob/user)
 	. = ..()
-	var/datum/component/ntnet_interface/target_interface = A.GetComponent(/datum/component/ntnet_interface)
-
+	var/datum/component/ntnet_interface/target_interface
+	var/obj/machinery/door/door = locate() in get_turf(A)
 	// Try to find an airlock in the clicked turf
-	if(!target_interface)
-		var/obj/machinery/door/airlock/door = locate() in get_turf(A)
-		if(door)
-			target_interface = door.GetComponent(/datum/component/ntnet_interface)
+
+	if(door)
+		target_interface = door.GetComponent(/datum/component/ntnet_interface)
+	else
+		to_chat(user, pan_notice("No door in area to connect to"))
+		return
 
 	if(!target_interface)
+		to_chat(user, span_notice("Door has no ntnet interface"))
 		return
 
 	user.set_machine(src)

@@ -49,9 +49,7 @@
 	AddElement(/datum/element/connect_loc, loc_connections)
 	AddElement(/datum/element/atmos_sensitive, mapload)
 
-/obj/machinery/door/window/ComponentInitialize()
-	. = ..()
-	AddComponent(/datum/component/ntnet_interface)
+
 
 /obj/machinery/door/window/Destroy()
 	set_density(FALSE)
@@ -322,14 +320,15 @@
 		if("deny")
 			flick("[base_state]deny", src)
 
+
 /obj/machinery/door/window/check_access_ntnet(datum/netdata/data)
 	return !requiresID() || ..()
 
 /obj/machinery/door/window/proc/ntnet_receive(datum/source, datum/netdata/data)
 	SIGNAL_HANDLER
 
-	// Check if the airlock is powered.
-	if(!hasPower())
+	// Check if the airlock is powered
+	if(!hasPower()) // There is no wire interface so we don't have to check the wires.
 		return
 
 	// Handle received packet.
@@ -347,8 +346,30 @@
 				INVOKE_ASYNC(src, .proc/open)
 			else
 				INVOKE_ASYNC(src, .proc/close)
-		if("touch")
-			INVOKE_ASYNC(src, .proc/open_and_close)
+
+		if("bolt")
+			if(command_value == "on" && locked)
+				return
+
+			if(command_value == "off" && !locked)
+				return
+
+			if(locked)
+				unlock()
+			else
+				lock()
+
+		if("emergency")
+			if(command_value == "on" && emergency)
+
+				return
+
+			if(command_value == "off" && !emergency)
+				return
+
+			emergency = !emergency
+			update_appearance()
+
 
 /obj/machinery/door/window/rcd_vals(mob/user, obj/item/construction/rcd/the_rcd)
 	switch(the_rcd.mode)

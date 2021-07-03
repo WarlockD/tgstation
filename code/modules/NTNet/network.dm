@@ -144,14 +144,24 @@
 	if(interface.network)
 		if(!networks[interface.network.network_id])
 			/// If we are doing a hard jump to a new network, log it
-			log_telecomms("The device {[interface.hardware_id]} is jumping networks from '[interface.network.network_id]' to '[network_id]'")
+#ifdef NTNET_DEBUG
+			if(interface.network.network_id == network_id && interface.network == src)
+				SSnetworks.add_log("The device {[interface.hardware_id]} is being added twice to the same network '[interface.network.network_id]'")
+			if(interface.network == src)
+				SSnetworks.add_log("..........OK WE ARE ON THE SAME NETWORK so we are being called twice?")
+				return
+#else
+			if(interface.network.network_id == network_id && interface.network == src)
+				return // we are already in the network so just drop
+#endif
+			SSnetworks.add_log("The device {[interface.hardware_id]} is jumping networks from '[interface.network.network_id]' to '[network_id]'")
 			interface.network.remove_interface(interface, TRUE)
 		else // we are on the same network so we just want to be aliased to another branch
 			if(!interface.alias[network_id])
 				interface.alias[network_id] = src // add to the alias list
 				linked_devices[interface.hardware_id] = interface
 			else
-				log_telecomms("The device {[interface.hardware_id]} is trying to join '[network_id]' for a second time!")
+				SSnetworks.add_log("The device {[interface.hardware_id]} is trying to join '[network_id]' for a second time!")
 			return
 	// we have no network
 	interface.network = src  // now we do!
@@ -174,7 +184,7 @@
  */
 /datum/ntnet/proc/remove_interface(datum/component/ntnet_interface/interface, remove_all_alias=FALSE)
 	if(!interface.alias[network_id])
-		log_telecomms("The device {[interface.hardware_id]} is trying to leave a '[network_id]'' when its on '[interface.network.network_id]'")
+		log_telecomms("The device {[interface.hardware_id]} is trying to leave a '[network_id]' when its on '[interface.network.network_id]'")
 		return
 	// just cashing it
 	var/hardware_id = interface.hardware_id

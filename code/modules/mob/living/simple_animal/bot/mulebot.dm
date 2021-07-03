@@ -87,9 +87,6 @@
 	AddElement(/datum/element/ridable, /datum/component/riding/creature/mulebot)
 	diag_hud_set_mulebotcell()
 
-	if(network_id)
-		AddComponent(/datum/component/ntnet_interface, network_id)
-
 
 /mob/living/simple_animal/bot/mulebot/handle_atom_del(atom/A)
 	if(A == load)

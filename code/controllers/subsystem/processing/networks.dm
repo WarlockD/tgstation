@@ -88,15 +88,25 @@ SUBSYSTEM_DEF(networks)
 /datum/controller/subsystem/networks/proc/_process_packet(receiver_id, datum/netdata/data)
 	/// Used only for sending NAK/ACK and error reply's
 	var/datum/component/ntnet_interface/sending_interface = interfaces_by_hardware_id[data.sender_id]
-
+#ifdef NTNET_DEBUG_PACKET_TRACE
+	add_log("DEBUG PACKET: start/from: id={[data.sender_id]} type='[sending_interface.parent.type]' name='[sending_interface.parent.type]' ")
+#endif
 	/// Check if the network_id is valid and if not send an error and return
 	var/datum/ntnet/target_network = networks[data.network_id]
 	if(!target_network)
 		count_failed_packets++
 		add_log("Bad target network '[data.network_id]'", null, data.sender_id)
+
 		if(!QDELETED(sending_interface))
 			SEND_SIGNAL(sending_interface.parent, COMSIG_COMPONENT_NTNET_NAK, data , NETWORK_ERROR_BAD_NETWORK)
+#ifdef NTNET_DEBUG_PACKET_TRACE
+		add_log("DEBUG PACKET: raw= END")
+#endif
 		return
+#ifdef NTNET_DEBUG_PACKET_TRACE
+	else
+		add_log("DEBUG PACKET: network='data.network_id'")
+#endif
 
 	/// Check if the receiver_id is in the network.  If not send an error and return
 	var/datum/component/ntnet_interface/target_interface = target_network.root_devices[receiver_id]
@@ -105,7 +115,14 @@ SUBSYSTEM_DEF(networks)
 		add_log("Bad target device '[receiver_id]'", target_network, data.sender_id)
 		if(!QDELETED(sending_interface))
 			SEND_SIGNAL(sending_interface.parent, COMSIG_COMPONENT_NTNET_NAK, data,  NETWORK_ERROR_BAD_RECEIVER_ID)
+#ifdef NTNET_DEBUG_PACKET_TRACE
+		add_log("DEBUG: PACKET END")
+#endif
 		return
+#ifdef NTNET_DEBUG_PACKET_TRACE
+	else
+		add_log("DEBUG PACKET: network='data.network_id'")
+#endif
 
 	// Check if we care about permissions.  If we do check if we are allowed the message to be processed
 	if(data.passkey) // got to check permissions
@@ -240,7 +257,7 @@ SUBSYSTEM_DEF(networks)
 	log_string = log_text.Join()
 
 	logs.Add(log_string)
-	//log_telecomms("NetLog: [log_string]") // causes runtime on startup humm
+	log_telecomms("NTNET: [log_string]") // causes runtime on startup humm
 
 	// We have too many logs, remove the oldest entries until we get into the limit
 	if(logs.len > setting_maxlogcount)
