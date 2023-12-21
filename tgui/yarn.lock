@@ -10942,6 +10942,7 @@ __metadata:
     webpack: ^5.89.0
     webpack-bundle-analyzer: ^4.10.1
     webpack-cli: ^5.1.4
+    xterm: ^5.3.0
   languageName: unknown
   linkType: soft
 
@@ -12058,6 +12059,13 @@ __metadata:
   version: 4.0.2
   resolution: "xtend@npm:4.0.2"
   checksum: ac5dfa738b21f6e7f0dd6e65e1b3155036d68104e67e5d5d1bde74892e327d7e5636a076f625599dc394330a731861e87343ff184b0047fef1360a7ec0a5a36a
+  languageName: node
+  linkType: hard
+
+"xterm@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "xterm@npm:5.3.0"
+  checksum: 1bdfdfe4cae4412128376180d85e476b43fb021cdd1114b18acad821c9ea44b5b600e0d88febf2b3572f38fad7741e5161ce0178a44369617cf937222cc6e011
   languageName: node
   linkType: hard
 
