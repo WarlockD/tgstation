@@ -85,7 +85,7 @@
 @include meta.load-css('./layouts/Window.scss');
 
 @include meta.load-css('highlight.js/scss/github-dark.scss');
-
+@import 'xterm/css/xterm.css'; // this is annoying but not sure where else to put it
 // NT Theme
 .Layout__content {
   background-image: url('../assets/bg-nanotrasen.svg');

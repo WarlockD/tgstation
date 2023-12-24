@@ -1,8 +1,14 @@
-import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'inferno';
+// import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Terminal, ITerminalOptions, ITerminalAddon, ITerminalInitOnlyOptions } from 'xterm';
-import 'xterm/css/xterm.css';
+// import 'xterm/css/xterm.css';
+import { Component, createRef, RefObject } from 'inferno';
 
 interface IProps {
+  text?: string;
+  /**
+   * Inner Ref so we can get write
+   */
+  innerRef?: RefObject<HTMLDivElement>;
   /**
    * Class name to add to the terminal container.
    */
@@ -97,100 +103,135 @@ interface IProps {
   customKeyEventHandler?(event: KeyboardEvent): boolean;
 }
 
-export const XTermTerminal = forwardRef((props: IProps, ref) => {
-  // const { data } = useBackend<Data>();
-  const terminal = useRef(new Terminal(props.options));
-  const xtermRef = useRef(null); // <HTMLDivElement>();
-  const [firstRun, setFirstRun] = useState(true);
-  // const [terminal, setTerminal] = useState(new Terminal(props.options));
+export default class Xterm extends Component<IProps> {
+  /**
+   * The ref for the containing element.
+   */
+  terminalRef: RefObject<HTMLElement>;
+  lastText: string;
+  /**
+   * XTerm.js Terminal object.
+   */
+  terminal!: Terminal; // This is assigned in the setupTerminal() which is called from the constructor
 
-  // if (ref) ref.terminal = terminal;
-  useImperativeHandle(ref, () => ({
-    // Only expose focus and nothing else
-    write(data: string) {
-      terminal.current.write(data);
-    },
-  }));
-  useEffect(() => {
-    // not sure how else to handle this
-    if (!terminal.current.element && xtermRef.current) {
-      terminal.current.open(xtermRef.current);
-      //	const terminal = ;
-      // Creates the terminal within the container element.
-      // Load addons if the prop exists.
-      if (props.addons) {
-        props.addons.forEach((addon) => {
-          terminal.current.loadAddon(addon);
-        });
-      }
+  constructor(props: IProps) {
+    super(props);
 
-      // Create Listeners
-      if (props.onBinary) {
-        terminal.current.onBinary((data: string) => {
-          props.onBinary!(data);
-        });
-      }
-      if (props.onCursorMove) {
-        terminal.current.onCursorMove(() => {
-          props.onCursorMove!();
-        });
-      }
-      if (props.onData) {
-        terminal.current.onData((data: string) => {
-          props.onData!(data);
-        });
-      }
-      if (props.onKey) {
-        terminal.current.onKey(
-          (event: { key: string; domEvent: KeyboardEvent }) => {
-            props.onKey!(event);
-          }
-        );
-      }
-      if (props.onLineFeed) {
-        terminal.current.onLineFeed(() => {
-          props.onLineFeed!();
-        });
-      }
-      if (props.onScroll) {
-        terminal.current.onScroll((newPosition: number) => {
-          props.onScroll!(newPosition);
-        });
-      }
-      if (props.onSelectionChange) {
-        terminal.current.onSelectionChange(() => {
-          props.onSelectionChange!();
-        });
-      }
-      if (props.onRender) {
-        terminal.current.onRender((event: { start: number; end: number }) => {
-          props.onRender!(event);
-        });
-      }
-      if (props.onResize) {
-        terminal.current.onResize((event: { cols: number; rows: number }) => {
-          props.onResize!(event);
-        });
-      }
-      if (props.onTitleChange) {
-        terminal.current.onTitleChange((newTitle: string) => {
-          props.onTitleChange!(newTitle);
-        });
-      }
+    this.terminalRef = props.innerRef || createRef();
+    // Bind Methods
+    //	this.onData = this.onData.bind(this);
+    //  this.onCursorMove = this.onCursorMove.bind(this);
+    //  this.onKey = this.onKey.bind(this);
+    //  this.onBinary = this.onBinary.bind(this);
+    //  this.onLineFeed = this.onLineFeed.bind(this);
+    //  this.onScroll = this.onScroll.bind(this);
+    //	this.onSelectionChange = this.onSelectionChange.bind(this);
+    //	this.onRender = this.onRender.bind(this);
+    //	this.onResize = this.onResize.bind(this);
+    //	this.onTitleChange = this.onTitleChange.bind(this);
 
-      // Add Custom Key Event Handler
-      if (props.customKeyEventHandler) {
-        terminal.current.attachCustomKeyEventHandler(
-          props.customKeyEventHandler
-        );
-      }
+    // Setup the XTerm terminal.
+    this.terminal = new Terminal(props.options);
+
+    // Load addons if the prop exists.
+    if (props.addons) {
+      props.addons.forEach((addon) => {
+        this.terminal.loadAddon(addon);
+      });
     }
-  }, [xtermRef]);
 
-  // useEffect(() => {
+    // Create Listeners
+    this.terminal.onBinary(this.onBinary.bind(this));
+    this.terminal.onCursorMove(this.onCursorMove.bind(this));
+    this.terminal.onData(this.onData.bind(this));
+    this.terminal.onKey(this.onKey.bind(this));
+    this.terminal.onLineFeed(this.onLineFeed.bind(this));
+    this.terminal.onScroll(this.onScroll.bind(this));
+    this.terminal.onSelectionChange(this.onSelectionChange.bind(this));
+    this.terminal.onRender(this.onRender.bind(this));
+    this.terminal.onResize(this.onResize.bind(this));
+    this.terminal.onTitleChange(this.onTitleChange.bind(this));
 
-  if (firstRun && terminal.current && xtermRef.current) {
+    // Add Custom Key Event Handler
+    if (props.customKeyEventHandler) {
+      this.terminal.attachCustomKeyEventHandler(props.customKeyEventHandler);
+    }
+
+    // this.terminalRef.current.write = (data: string) => { this.terminal.write(data); };
+
+    if (props.text) {
+      this.terminal.write(props.text);
+    }
   }
-  // }, [firstRun]);
-  return <div className={props.className} ref={xtermRef} />;
-});
+
+  componentDidMount() {
+    if (this.terminalRef.current) {
+      // Creates the terminal within the container element.
+      this.terminal.open(this.terminalRef.current);
+    }
+  }
+  shouldComponentUpdate(
+    nextProps: IProps,
+    nextState: {},
+    context: any
+  ): boolean {
+    if (nextProps.text !== this.lastText) {
+      return true;
+    }
+    return false;
+  }
+  componentWillReceiveProps(nextProps: IProps, nextContext: any): void {
+    if (this.props.text !== this.lastText) {
+      this.terminal.write(this.props.text);
+      this.lastText = this.props.text;
+    }
+  }
+  componentWillUnmount() {
+    // When the component unmounts dispose of the terminal and all of its listeners.
+    this.terminal.dispose();
+  }
+
+  private onBinary(data: string) {
+    if (this.props.onBinary) this.props.onBinary(data);
+  }
+
+  private onCursorMove() {
+    if (this.props.onCursorMove) this.props.onCursorMove();
+  }
+
+  private onData(data: string) {
+    if (this.props.onData) this.props.onData(data);
+  }
+
+  private onKey(event: { key: string; domEvent: KeyboardEvent }) {
+    if (this.props.onKey) this.props.onKey(event);
+  }
+
+  private onLineFeed() {
+    if (this.props.onLineFeed) this.props.onLineFeed();
+  }
+
+  private onScroll(newPosition: number) {
+    if (this.props.onScroll) this.props.onScroll(newPosition);
+  }
+
+  private onSelectionChange() {
+    if (this.props.onSelectionChange) this.props.onSelectionChange();
+  }
+
+  private onRender(event: { start: number; end: number }) {
+    if (this.props.onRender) this.props.onRender(event);
+  }
+
+  private onResize(event: { cols: number; rows: number }) {
+    if (this.props.onResize) this.props.onResize(event);
+  }
+
+  private onTitleChange(newTitle: string) {
+    if (this.props.onTitleChange) this.props.onTitleChange(newTitle);
+  }
+
+  render() {
+    return <div className={this.props.className} ref={this.terminalRef} />;
+  }
+}
