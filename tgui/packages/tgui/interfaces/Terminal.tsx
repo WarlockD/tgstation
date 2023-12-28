@@ -1,5 +1,5 @@
-import { useBackend, useLocalState } from '../backend';
-import { NoticeBox, Section, TextArea, Divider, Box } from '../components';
+import { useBackend } from '../backend';
+import { NoticeBox, Section } from '../components';
 import { Window } from '../layouts';
 
 import { Component, createRef, RefObject } from 'inferno';
@@ -506,7 +506,7 @@ export const CpuConsole = (props) => {
       {/*
         {messages.map((message) => {
           return (
-            <Section
+            <Box
               key={message.key}
               dangerouslySetInnerHTML={{ __html: message }}
             />
