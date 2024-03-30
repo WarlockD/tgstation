@@ -6130,3 +6130,6 @@
 #include "interface\fonts\tiny_unicode.dm"
 #include "interface\fonts\vcr_osd_mono.dm"
 // END_INCLUDE
+
+
+#include "code\datums\components\chip8interface.dm"

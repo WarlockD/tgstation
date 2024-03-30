@@ -1,0 +1,3 @@
+C:\GitHub\tgstation\tgui\obj\Debug\TestApp.njsproj.AssemblyReference.cache
+C:\GitHub\tgstation\tgui\obj\Debug\TestApp.njsproj.CoreCompileInputs.cache
+C:\GitHub\tgstation\tgui\bin\Microsoft.NodejsTools.WebRole.dll

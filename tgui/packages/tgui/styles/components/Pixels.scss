@@ -1,0 +1,68 @@
+@use 'sass:color';
+@use '../base.scss';
+@use '../colors.scss';
+@use '../functions.scss';
+
+$display_width: 128;
+$display_height: 64;
+$display_pixel_count: $display_width * $display_height;
+
+.grid_wrapper {
+  width: 100%;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  left: 50%;
+  padding: 40px 20px;
+  border-radius: 8px;
+}
+
+.gridCol {
+  height: 1em;
+  width: 1em;
+  border: 1px solid #ddd;
+}
+.gridRow {
+  display: flex;
+}
+
+.pixel_color {
+  padding: 0 0.25em;
+  width: 100px;
+  margin: 0 1em;
+}
+
+.pixel_container {
+  --size: 4;
+  height: 800px;
+  display: grid;
+  //grid-template-columns: repeat(var(--size), 1fr);
+  -ms-grid-columns: (1fr) [var(--size)];
+  //grid-template-rows: repeat(var(--size), 1fr);
+  -ms-grid-rows: (1fr) [var(--size)];
+  gap: 3px;
+  padding: 3px;
+}
+
+.pixel_pixel {
+  background-color: rgb(61, 61, 61);
+  border-radius: 2px;
+}
+
+.pixel_col {
+  height: 1em;
+  width: 1em;
+  border: 1px solid #ddd;
+}
+
+.pixel_row {
+  display: flex;
+}
+
+@media only pixel_screen and (max-width: 768px) {
+  .pixel_col {
+    height: 0.8em;
+    width: 0.8em;
+  }
+}
+// ... can't we just use edge now?

@@ -1,0 +1,425 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{68a4c458-c7ec-4389-b00d-d872020f4c70}</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <ProjectView>ShowAllFiles</ProjectView>
+    <StartupFile>C:\GitHub\tgstation\tools\build\build.js</StartupFile>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{3AF33F2E-1136-4D97-BBB7-1795711AC8B8};{349c5851-65df-11da-9384-00065b846f21};{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}</ProjectTypeGuids>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">17.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <StartWebBrowser>True</StartWebBrowser>
+    <JavaScriptTestRoot>C:\GitHub\tgstation\tgui\</JavaScriptTestRoot>
+    <JavaScriptTestFramework>Jest</JavaScriptTestFramework>
+    <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
+    <NodeExeArguments>--experimental-modules</NodeExeArguments>
+    <DebuggerPort>1337</DebuggerPort>
+    <ScriptArguments>tgui-dev</ScriptArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <ItemGroup>
+    <Content Include="package.json" />
+    <Content Include="README.md" />
+    <Content Include="jest.config.js" />
+    <Content Include="webpack.config.js" />
+    <Content Include="docs\chat-embedded-components.md" />
+    <Content Include="docs\component-reference.md" />
+    <Content Include="docs\converting-old-tgui-interfaces.md" />
+    <Content Include="docs\migration-to-v4-from-v3.md" />
+    <Content Include="docs\state-usage.md" />
+    <Content Include="docs\tgui-for-custom-html-popups.md" />
+    <Content Include="docs\tutorial-and-examples.md" />
+    <Content Include="docs\writing-tests.md" />
+    <Content Include="public\tgui.html" />
+    <Content Include="public\tgui-panel.bundle.css" />
+    <Content Include="public\tgui-say.bundle.css" />
+    <Content Include="public\tgui.bundle.css" />
+    <Content Include="public\tgui-panel.bundle.js" />
+    <Content Include="public\tgui-polyfill.min.js" />
+    <Content Include="public\tgui-say.bundle.js" />
+    <Content Include="public\tgui.bundle.js" />
+    <Content Include="packages\common\package.json" />
+    <Content Include="packages\common\color.js" />
+    <Content Include="packages\common\events.js" />
+    <Content Include="packages\common\fp.js" />
+    <Content Include="packages\common\perf.js" />
+    <Content Include="packages\common\storage.js" />
+    <Content Include="packages\common\string.js" />
+    <Content Include="packages\common\uuid.js" />
+    <Content Include="packages\common\vector.js" />
+    <Content Include="packages\tgfont\README_ICON_TUTORIAL.txt" />
+    <Content Include="packages\tgfont\package.json" />
+    <Content Include="packages\tgui\package.json" />
+    <Content Include="packages\tgui-bench\package.json" />
+    <Content Include="packages\tgui-bench\index.js" />
+    <Content Include="packages\tgui-dev-server\package.json" />
+    <Content Include="packages\tgui-dev-server\dreamseeker.js" />
+    <Content Include="packages\tgui-dev-server\index.js" />
+    <Content Include="packages\tgui-dev-server\logging.js" />
+    <Content Include="packages\tgui-dev-server\reloader.js" />
+    <Content Include="packages\tgui-dev-server\require.js" />
+    <Content Include="packages\tgui-dev-server\util.js" />
+    <Content Include="packages\tgui-dev-server\webpack.js" />
+    <Content Include="packages\tgui-dev-server\winreg.js" />
+    <Content Include="packages\tgui-panel\package.json" />
+    <Content Include="packages\tgui-panel\panelFocus.js" />
+    <Content Include="packages\tgui-panel\telemetry.js" />
+    <Content Include="packages\tgui-polyfill\package.json" />
+    <Content Include="packages\tgui-polyfill\1-misc.js" />
+    <Content Include="packages\tgui-polyfill\index.js" />
+    <Content Include="packages\tgui-say\package.json" />
+    <Content Include="packages\tgfont\icons\air-tank-slash.svg" />
+    <Content Include="packages\tgfont\icons\air-tank.svg" />
+    <Content Include="packages\tgfont\icons\bad-touch.svg" />
+    <Content Include="packages\tgfont\icons\image-minus.svg" />
+    <Content Include="packages\tgfont\icons\image-plus.svg" />
+    <Content Include="packages\tgfont\icons\nanotrasen-logo.svg" />
+    <Content Include="packages\tgfont\icons\non-binary.svg" />
+    <Content Include="packages\tgfont\icons\prosthetic-full.svg" />
+    <Content Include="packages\tgfont\icons\prosthetic-leg.svg" />
+    <Content Include="packages\tgfont\icons\sound-minus.svg" />
+    <Content Include="packages\tgfont\icons\sound-plus.svg" />
+    <Content Include="packages\tgfont\icons\syndicate-logo.svg" />
+    <Content Include="packages\tgfont\icons\ATTRIBUTIONS.md" />
+    <Content Include="packages\tgfont\static\tgfont.css" />
+    <Content Include="packages\tgui\assets\bg-admin.svg" />
+    <Content Include="packages\tgui\assets\bg-cat.svg" />
+    <Content Include="packages\tgui\assets\bg-nanotrasen.svg" />
+    <Content Include="packages\tgui\assets\bg-neutral.svg" />
+    <Content Include="packages\tgui\assets\bg-spookycomp-compressed.svg" />
+    <Content Include="packages\tgui\assets\bg-spookycomp-raw.svg" />
+    <Content Include="packages\tgui\assets\bg-spookycomp.svg" />
+    <Content Include="packages\tgui\assets\bg-syndicate.svg" />
+    <Content Include="packages\tgui\assets\bg-synthsunset-c-grid-size.svg" />
+    <Content Include="packages\tgui\assets\bg-synthsunset-c-grid.svg" />
+    <Content Include="packages\tgui\assets\bg-wizard.svg" />
+    <Content Include="packages\tgui\components\Blink.jsx" />
+    <Content Include="packages\tgui\components\ByondUi.jsx" />
+    <Content Include="packages\tgui\components\DraggableControl.jsx" />
+    <Content Include="packages\tgui\components\FakeTerminal.jsx" />
+    <Content Include="packages\tgui\components\Grid.jsx" />
+    <Content Include="packages\tgui\components\InfinitePlane.jsx" />
+    <Content Include="packages\tgui\components\Knob.jsx" />
+    <Content Include="packages\tgui\components\RestrictedInput.jsx" />
+    <Content Include="packages\tgui\components\RoundGauge.jsx" />
+    <Content Include="packages\tgui\components\Slider.jsx" />
+    <Content Include="packages\tgui\components\Table.jsx" />
+    <Content Include="packages\tgui\components\TimeDisplay.jsx" />
+    <Content Include="packages\tgui\debug\actions.js" />
+    <Content Include="packages\tgui\debug\hooks.js" />
+    <Content Include="packages\tgui\debug\middleware.js" />
+    <Content Include="packages\tgui\debug\reducer.js" />
+    <Content Include="packages\tgui\debug\selectors.js" />
+    <Content Include="packages\tgui\debug\KitchenSink.jsx" />
+    <Content Include="packages\tgui\interfaces\AbductorConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\Achievements.jsx" />
+    <Content Include="packages\tgui\interfaces\AdminFax.jsx" />
+    <Content Include="packages\tgui\interfaces\AdminPDA.jsx" />
+    <Content Include="packages\tgui\interfaces\AiAirlock.jsx" />
+    <Content Include="packages\tgui\interfaces\AnomalyRefinery.jsx" />
+    <Content Include="packages\tgui\interfaces\AntagInfoSentient.jsx" />
+    <Content Include="packages\tgui\interfaces\AntagInfoShade.jsx" />
+    <Content Include="packages\tgui\interfaces\Apc.jsx" />
+    <Content Include="packages\tgui\interfaces\ApcControl.jsx" />
+    <Content Include="packages\tgui\interfaces\AtmosControlPanel.jsx" />
+    <Content Include="packages\tgui\interfaces\BorgPanel.jsx" />
+    <Content Include="packages\tgui\interfaces\Cargo.jsx" />
+    <Content Include="packages\tgui\interfaces\ChameleonCard.jsx" />
+    <Content Include="packages\tgui\interfaces\Changelog.jsx" />
+    <Content Include="packages\tgui\interfaces\CircuitModule.jsx" />
+    <Content Include="packages\tgui\interfaces\CivCargoHoldTerminal.jsx" />
+    <Content Include="packages\tgui\interfaces\CommunicationsConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\CrewConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\CrewManifest.jsx" />
+    <Content Include="packages\tgui\interfaces\CyborgBootDebug.jsx" />
+    <Content Include="packages\tgui\interfaces\DeathmatchPanel.jsx" />
+    <Content Include="packages\tgui\interfaces\DisposalUnit.jsx" />
+    <Content Include="packages\tgui\interfaces\DnaVault.jsx" />
+    <Content Include="packages\tgui\interfaces\DopplerArray.jsx" />
+    <Content Include="packages\tgui\interfaces\Electropack.jsx" />
+    <Content Include="packages\tgui\interfaces\EmergencyShuttleConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\EngravedMessage.jsx" />
+    <Content Include="packages\tgui\interfaces\ExosuitControlConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\ExperimentConfigure.jsx" />
+    <Content Include="packages\tgui\interfaces\Filteriffic.jsx" />
+    <Content Include="packages\tgui\interfaces\Gateway.jsx" />
+    <Content Include="packages\tgui\interfaces\GhostPoolProtection.jsx" />
+    <Content Include="packages\tgui\interfaces\Gps.jsx" />
+    <Content Include="packages\tgui\interfaces\GravityGenerator.jsx" />
+    <Content Include="packages\tgui\interfaces\GulagTeleporterConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\Holodeck.jsx" />
+    <Content Include="packages\tgui\interfaces\Holopad.jsx" />
+    <Content Include="packages\tgui\interfaces\HypnoChair.jsx" />
+    <Content Include="packages\tgui\interfaces\ImplantChair.jsx" />
+    <Content Include="packages\tgui\interfaces\Intellicard.jsx" />
+    <Content Include="packages\tgui\interfaces\InterviewManager.jsx" />
+    <Content Include="packages\tgui\interfaces\KeycardAuth.jsx" />
+    <Content Include="packages\tgui\interfaces\LaborClaimConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\LanguageMenu.jsx" />
+    <Content Include="packages\tgui\interfaces\LaunchpadConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\LibraryConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\LibraryScanner.jsx" />
+    <Content Include="packages\tgui\interfaces\LibraryVisitor.jsx" />
+    <Content Include="packages\tgui\interfaces\Limbgrower.jsx" />
+    <Content Include="packages\tgui\interfaces\MalfunctionModulePicker.jsx" />
+    <Content Include="packages\tgui\interfaces\MassDriverControl.jsx" />
+    <Content Include="packages\tgui\interfaces\MechBayPowerConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\MechpadConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\MedicalKiosk.jsx" />
+    <Content Include="packages\tgui\interfaces\MemoryPanel.jsx" />
+    <Content Include="packages\tgui\interfaces\Microscope.jsx" />
+    <Content Include="packages\tgui\interfaces\MODpaint.jsx" />
+    <Content Include="packages\tgui\interfaces\Mule.jsx" />
+    <Content Include="packages\tgui\interfaces\Newscaster.jsx" />
+    <Content Include="packages\tgui\interfaces\NotificationPreferences.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosArcade.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosCamera.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosCrewManifest.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosCyborgRemoteMonitor.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosFileManager.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosJobManager.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosMODsuit.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosNetChat.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosNetDos.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosNetMonitor.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosPhysScanner.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosPortraitPrinter.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosRecords.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosRoboControl.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosRobotact.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosScipaper.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosSkillTracker.jsx" />
+    <Content Include="packages\tgui\interfaces\NtosSpectreMeter.jsx" />
+    <Content Include="packages\tgui\interfaces\NuclearBomb.jsx" />
+    <Content Include="packages\tgui\interfaces\OperatingComputer.jsx" />
+    <Content Include="packages\tgui\interfaces\OreRedemptionMachine.jsx" />
+    <Content Include="packages\tgui\interfaces\OrionGame.jsx" />
+    <Content Include="packages\tgui\interfaces\OutfitEditor.jsx" />
+    <Content Include="packages\tgui\interfaces\OutfitManager.jsx" />
+    <Content Include="packages\tgui\interfaces\PaintingMachine.jsx" />
+    <Content Include="packages\tgui\interfaces\Photocopier.jsx" />
+    <Content Include="packages\tgui\interfaces\PortableGenerator.jsx" />
+    <Content Include="packages\tgui\interfaces\PortablePump.jsx" />
+    <Content Include="packages\tgui\interfaces\PortableTurret.jsx" />
+    <Content Include="packages\tgui\interfaces\PortraitPicker.jsx" />
+    <Content Include="packages\tgui\interfaces\PowerMonitor.jsx" />
+    <Content Include="packages\tgui\interfaces\ProbingConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\ProximitySensor.jsx" />
+    <Content Include="packages\tgui\interfaces\Radio.jsx" />
+    <Content Include="packages\tgui\interfaces\RadioactiveMicrolaser.jsx" />
+    <Content Include="packages\tgui\interfaces\Reagents.jsx" />
+    <Content Include="packages\tgui\interfaces\ReligiousTool.jsx" />
+    <Content Include="packages\tgui\interfaces\RemoteRobotControl.jsx" />
+    <Content Include="packages\tgui\interfaces\RequestManager.jsx" />
+    <Content Include="packages\tgui\interfaces\RestockTracker.jsx" />
+    <Content Include="packages\tgui\interfaces\RoboticsControlConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\Roulette.jsx" />
+    <Content Include="packages\tgui\interfaces\Safe.jsx" />
+    <Content Include="packages\tgui\interfaces\ScannerGate.jsx" />
+    <Content Include="packages\tgui\interfaces\Secrets.jsx" />
+    <Content Include="packages\tgui\interfaces\SelectEquipment.jsx" />
+    <Content Include="packages\tgui\interfaces\SentienceFunBalloon.jsx" />
+    <Content Include="packages\tgui\interfaces\ServerMonitor.jsx" />
+    <Content Include="packages\tgui\interfaces\ShuttleConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\ShuttleManipulator.jsx" />
+    <Content Include="packages\tgui\interfaces\SkillPanel.jsx" />
+    <Content Include="packages\tgui\interfaces\SkillStation.jsx" />
+    <Content Include="packages\tgui\interfaces\Sleeper.jsx" />
+    <Content Include="packages\tgui\interfaces\SlimeBodySwapper.jsx" />
+    <Content Include="packages\tgui\interfaces\Smes.jsx" />
+    <Content Include="packages\tgui\interfaces\SpaceHeater.jsx" />
+    <Content Include="packages\tgui\interfaces\StackingConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\StationAlertConsole.jsx" />
+    <Content Include="packages\tgui\interfaces\Tank.jsx" />
+    <Content Include="packages\tgui\interfaces\TankCompressor.jsx" />
+    <Content Include="packages\tgui\interfaces\TankDispenser.jsx" />
+    <Content Include="packages\tgui\interfaces\Techweb.jsx" />
+    <Content Include="packages\tgui\interfaces\Telecomms.jsx" />
+    <Content Include="packages\tgui\interfaces\Teleporter.jsx" />
+    <Content Include="packages\tgui\interfaces\ThermoMachine.jsx" />
+    <Content Include="packages\tgui\interfaces\Thermometer.jsx" />
+    <Content Include="packages\tgui\interfaces\TrackedPlaytime.jsx" />
+    <Content Include="packages\tgui\interfaces\TransferValve.jsx" />
+    <Content Include="packages\tgui\interfaces\TrophyAdminPanel.jsx" />
+    <Content Include="packages\tgui\interfaces\Trophycase.jsx" />
+    <Content Include="packages\tgui\layouts\Layout.jsx" />
+    <Content Include="packages\tgui\layouts\Pane.jsx" />
+    <Content Include="packages\tgui\stories\Blink.stories.jsx" />
+    <Content Include="packages\tgui\stories\BlockQuote.stories.jsx" />
+    <Content Include="packages\tgui\stories\Box.stories.jsx" />
+    <Content Include="packages\tgui\stories\Button.stories.jsx" />
+    <Content Include="packages\tgui\stories\ByondUi.stories.jsx" />
+    <Content Include="packages\tgui\stories\Collapsible.stories.jsx" />
+    <Content Include="packages\tgui\stories\common.jsx" />
+    <Content Include="packages\tgui\stories\Flex.stories.jsx" />
+    <Content Include="packages\tgui\stories\Input.stories.jsx" />
+    <Content Include="packages\tgui\stories\LabeledList.stories.jsx" />
+    <Content Include="packages\tgui\stories\ProgressBar.stories.jsx" />
+    <Content Include="packages\tgui\stories\Stack.stories.jsx" />
+    <Content Include="packages\tgui\stories\Storage.stories.jsx" />
+    <Content Include="packages\tgui\stories\Tabs.stories.jsx" />
+    <Content Include="packages\tgui\stories\Themes.stories.jsx" />
+    <Content Include="packages\tgui\stories\Tooltip.stories.jsx" />
+    <Content Include="packages\tgui\interfaces\common\AccessConfig.jsx" />
+    <Content Include="packages\tgui\interfaces\common\AccessList.jsx" />
+    <Content Include="packages\tgui\interfaces\common\InterfaceLockNoticeBox.jsx" />
+    <Content Include="packages\tgui\interfaces\common\PortableAtmos.jsx" />
+    <Content Include="packages\tgui\interfaces\common\ReagentLookup.jsx" />
+    <Content Include="packages\tgui\interfaces\common\RecipeLookup.jsx" />
+    <Content Include="packages\tgui\interfaces\DnaConsole\DnaConsoleEnzymes.jsx" />
+    <Content Include="packages\tgui\interfaces\DnaConsole\DnaConsoleSequencer.jsx" />
+    <Content Include="packages\tgui\interfaces\DnaConsole\DnaConsoleStorage.jsx" />
+    <Content Include="packages\tgui\interfaces\DnaConsole\DnaScanner.jsx" />
+    <Content Include="packages\tgui\interfaces\DnaConsole\GeneticMakeupInfo.jsx" />
+    <Content Include="packages\tgui\interfaces\DnaConsole\index.jsx" />
+    <Content Include="packages\tgui\interfaces\DnaConsole\MutationInfo.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\BasicInput.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\CircuitInfo.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\ComponentMenu.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\DisplayComponent.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\DisplayName.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\FundamentalTypes.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\index.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\ObjectComponent.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\Port.jsx" />
+    <Content Include="packages\tgui\interfaces\IntegratedCircuit\VariableMenu.jsx" />
+    <Content Include="packages\tgui\interfaces\LuaEditor\CallModal.jsx" />
+    <Content Include="packages\tgui\interfaces\LuaEditor\ChunkViewModal.jsx" />
+    <Content Include="packages\tgui\interfaces\LuaEditor\index.jsx" />
+    <Content Include="packages\tgui\interfaces\LuaEditor\ListMapper.jsx" />
+    <Content Include="packages\tgui\interfaces\LuaEditor\Log.jsx" />
+    <Content Include="packages\tgui\interfaces\LuaEditor\StateSelectModal.jsx" />
+    <Content Include="packages\tgui\interfaces\LuaEditor\TaskManager.jsx" />
+    <Content Include="packages\tgui-bench\lib\benchmark.js" />
+    <Content Include="packages\tgui-dev-server\link\retrace.js" />
+    <Content Include="packages\tgui-dev-server\link\server.js" />
+    <Content Include="packages\tgui-panel\audio\middleware.js" />
+    <Content Include="packages\tgui-panel\audio\player.js" />
+    <Content Include="packages\tgui-panel\audio\NowPlayingWidget.jsx" />
+    <Content Include="packages\tgui-panel\chat\actions.js" />
+    <Content Include="packages\tgui-panel\chat\middleware.js" />
+    <Content Include="packages\tgui-panel\chat\model.js" />
+    <Content Include="packages\tgui-panel\chat\reducer.js" />
+    <Content Include="packages\tgui-panel\chat\replaceInTextNode.js" />
+    <Content Include="packages\tgui-panel\chat\ChatPageSettings.jsx" />
+    <Content Include="packages\tgui-panel\chat\ChatPanel.jsx" />
+    <Content Include="packages\tgui-panel\chat\ChatTabs.jsx" />
+    <Content Include="packages\tgui-panel\chat\renderer.jsx" />
+    <Content Include="packages\tgui-panel\game\middleware.js" />
+    <Content Include="packages\tgui-panel\ping\middleware.js" />
+    <Content Include="packages\tgui-panel\ping\PingIndicator.jsx" />
+    <Content Include="packages\tgui-panel\settings\middleware.js" />
+    <Content Include="packages\tgui-panel\settings\reducer.js" />
+    <Content Include="packages\tgui-panel\settings\SettingsPanel.jsx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="docs" />
+    <Folder Include="packages" />
+    <Folder Include="packages\common" />
+    <Folder Include="packages\tgfont" />
+    <Folder Include="packages\tgfont\icons" />
+    <Folder Include="packages\tgfont\static" />
+    <Folder Include="packages\tgui" />
+    <Folder Include="packages\tgui\assets" />
+    <Folder Include="packages\tgui\components" />
+    <Folder Include="packages\tgui\debug" />
+    <Folder Include="packages\tgui\interfaces" />
+    <Folder Include="packages\tgui\interfaces\CentcomPodLauncher" />
+    <Folder Include="packages\tgui\interfaces\common" />
+    <Folder Include="packages\tgui\interfaces\DnaConsole" />
+    <Folder Include="packages\tgui\interfaces\Fabrication" />
+    <Folder Include="packages\tgui\interfaces\Hypertorus" />
+    <Folder Include="packages\tgui\interfaces\IntegratedCircuit" />
+    <Folder Include="packages\tgui\interfaces\LuaEditor" />
+    <Folder Include="packages\tgui\interfaces\Mecha" />
+    <Folder Include="packages\tgui\interfaces\MedicalRecords" />
+    <Folder Include="packages\tgui\interfaces\NtosMessenger" />
+    <Folder Include="packages\tgui\interfaces\Orbit" />
+    <Folder Include="packages\tgui\interfaces\PaiInterface" />
+    <Folder Include="packages\tgui\interfaces\Pandemic" />
+    <Folder Include="packages\tgui\interfaces\ParticleEdit" />
+    <Folder Include="packages\tgui\interfaces\PreferencesMenu" />
+    <Folder Include="packages\tgui\interfaces\PreferencesMenu\antagonists" />
+    <Folder Include="packages\tgui\interfaces\PreferencesMenu\antagonists\antagonists" />
+    <Folder Include="packages\tgui\interfaces\PreferencesMenu\preferences" />
+    <Folder Include="packages\tgui\interfaces\PreferencesMenu\preferences\features" />
+    <Folder Include="packages\tgui\interfaces\PreferencesMenu\preferences\features\character_preferences" />
+    <Folder Include="packages\tgui\interfaces\PreferencesMenu\preferences\features\game_preferences" />
+    <Folder Include="packages\tgui\interfaces\RequestsConsole" />
+    <Folder Include="packages\tgui\interfaces\SecurityRecords" />
+    <Folder Include="packages\tgui\interfaces\Uplink" />
+    <Folder Include="packages\tgui\layouts" />
+    <Folder Include="packages\tgui\stories" />
+    <Folder Include="packages\tgui\styles" />
+    <Folder Include="packages\tgui\styles\atomic" />
+    <Folder Include="packages\tgui\styles\components" />
+    <Folder Include="packages\tgui\styles\interfaces" />
+    <Folder Include="packages\tgui\styles\layouts" />
+    <Folder Include="packages\tgui\styles\themes" />
+    <Folder Include="packages\tgui-bench" />
+    <Folder Include="packages\tgui-bench\lib" />
+    <Folder Include="packages\tgui-bench\tests" />
+    <Folder Include="packages\tgui-dev-server" />
+    <Folder Include="packages\tgui-dev-server\link" />
+    <Folder Include="packages\tgui-panel" />
+    <Folder Include="packages\tgui-panel\audio" />
+    <Folder Include="packages\tgui-panel\chat" />
+    <Folder Include="packages\tgui-panel\game" />
+    <Folder Include="packages\tgui-panel\ping" />
+    <Folder Include="packages\tgui-panel\settings" />
+    <Folder Include="packages\tgui-panel\styles" />
+    <Folder Include="packages\tgui-panel\styles\components" />
+    <Folder Include="packages\tgui-panel\styles\tgchat" />
+    <Folder Include="packages\tgui-panel\styles\themes" />
+    <Folder Include="packages\tgui-polyfill" />
+    <Folder Include="packages\tgui-say" />
+    <Folder Include="packages\tgui-say\fonts" />
+    <Folder Include="packages\tgui-say\styles" />
+    <Folder Include="public" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>False</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>0</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost:48022/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>True</UseCustomServer>
+          <CustomServerUrl>http://localhost:1337</CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}" User="">
+        <WebProjectProperties>
+          <StartPageUrl>
+          </StartPageUrl>
+          <StartAction>CurrentPage</StartAction>
+          <AspNetDebugging>True</AspNetDebugging>
+          <SilverlightDebugging>False</SilverlightDebugging>
+          <NativeDebugging>False</NativeDebugging>
+          <SQLDebugging>False</SQLDebugging>
+          <ExternalProgram>
+          </ExternalProgram>
+          <StartExternalURL>
+          </StartExternalURL>
+          <StartCmdLineArguments>
+          </StartCmdLineArguments>
+          <StartWorkingDirectory>
+          </StartWorkingDirectory>
+          <EnableENC>False</EnableENC>
+          <AlwaysStartWebServerOnDebug>False</AlwaysStartWebServerOnDebug>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>
